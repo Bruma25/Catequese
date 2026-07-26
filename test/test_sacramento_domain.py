@@ -2,7 +2,7 @@
 
 import pytest
 
-from domain.sacramento import Sacramento
+from app.domain.sacramento import Sacramento
 
 
 def test_sacramento_criacao_valida():

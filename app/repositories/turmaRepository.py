@@ -1,12 +1,12 @@
 # repositories/turmaRepository.py
 from typing import Optional, Callable
 
-from infra.supabaseClient import get_supabase
-from domain.turma import Turma
-from domain.etapa import Etapa
-from domain.localEncontro import LocalEncontro
-from domain.catequista import Catequista
-from domain.sacramento import Sacramento
+from app.infra.supabaseClient import get_supabase
+from app.domain.turma import Turma
+from app.domain.etapa import Etapa
+from app.domain.localEncontro import LocalEncontro
+from app.domain.catequista import Catequista
+from app.domain.sacramento import Sacramento
 
 
 class TurmaRepository:

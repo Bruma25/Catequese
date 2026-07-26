@@ -3,7 +3,7 @@
 import pytest
 from dataclasses import dataclass
 
-from domain.responsavel import Responsavel
+from app.domain.responsavel import Responsavel
 
 
 @dataclass

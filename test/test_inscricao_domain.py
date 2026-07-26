@@ -4,8 +4,8 @@ import pytest
 from dataclasses import dataclass
 from datetime import datetime
 
-from domain.inscricao import Inscricao
-from domain.statusInscricao import StatusInscricao
+from app.domain.inscricao import Inscricao
+from app.domain.statusInscricao import StatusInscricao
 
 
 _SENTINELA = object()

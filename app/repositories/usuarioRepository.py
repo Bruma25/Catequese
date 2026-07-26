@@ -1,9 +1,9 @@
 # repositories/usuario_repository.py
 from typing import Optional
 
-from domain.usuario import Usuario
-from domain.tipoPapelUsuario import TipoPapelUsuario
-from infra.supabaseClient import get_supabase
+from app.domain.usuario import Usuario
+from app.domain.tipoPapelUsuario import TipoPapelUsuario
+from app.infra.supabaseClient import get_supabase
 
 
 class UsuarioRepository:

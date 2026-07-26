@@ -2,7 +2,7 @@
 
 import pytest
 
-from domain.tipoVinculoResponsavel import TipoVinculoResponsavel
+from app.domain.tipoVinculoResponsavel import TipoVinculoResponsavel
 
 
 def test_tipo_vinculo_responsavel_criacao_valida():

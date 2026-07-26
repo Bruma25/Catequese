@@ -2,17 +2,17 @@
 import uuid
 from datetime import date
 
-from infra.supabaseClient import get_supabase
-from domain.catequizando import Catequizando
-from domain.catequizandoResponsavel import CatequizandoResponsavel
-from domain.historicoSacramental import HistoricoSacramental
-from domain.responsavel import Responsavel
-from domain.sacramento import Sacramento
-from domain.tipoVinculoResponsavel import TipoVinculoResponsavel
-from domain.usuario import Usuario
-from repositories.catequizandoRepository import CatequizandoRepository
-from repositories.responsavelRepository import ResponsavelRepository
-from repositories.usuarioRepository import UsuarioRepository
+from app.infra.supabaseClient import get_supabase
+from app.domain.catequizando import Catequizando
+from app.domain.catequizandoResponsavel import CatequizandoResponsavel
+from app.domain.historicoSacramental import HistoricoSacramental
+from app.domain.responsavel import Responsavel
+from app.domain.sacramento import Sacramento
+from app.domain.tipoVinculoResponsavel import TipoVinculoResponsavel
+from app.domain.usuario import Usuario
+from app.repositories.catequizandoRepository import CatequizandoRepository
+from app.repositories.responsavelRepository import ResponsavelRepository
+from app.repositories.usuarioRepository import UsuarioRepository
 
 
 def test_catequizando_repository_salvar_e_editar_totalmente_sincronizado():

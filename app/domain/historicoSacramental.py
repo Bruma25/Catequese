@@ -5,8 +5,8 @@ from datetime import date
 from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from domain.catequizando import Catequizando
-    from domain.sacramento import Sacramento
+    from app.domain.catequizando import Catequizando
+    from app.domain.sacramento import Sacramento
 
 
 @dataclass

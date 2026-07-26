@@ -1,10 +1,10 @@
 #test/test_usuario_repository.py
 import uuid
 
-from infra.supabaseClient import get_supabase
-from domain.usuario import Usuario
-from domain.tipoPapelUsuario import TipoPapelUsuario
-from repositories.usuarioRepository import UsuarioRepository
+from app.infra.supabaseClient import get_supabase
+from app.domain.usuario import Usuario
+from app.domain.tipoPapelUsuario import TipoPapelUsuario
+from app.repositories.usuarioRepository import UsuarioRepository
 
 
 def test_usuario_repository_crud_basico():

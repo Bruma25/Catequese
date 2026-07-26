@@ -1,12 +1,12 @@
 from typing import List, Optional
 
-from domain.catequizando import Catequizando
-from domain.responsavel import Responsavel
-from domain.etapa import Etapa
-from domain.inscricao import Inscricao
-from domain.turma import Turma
-from domain.statusInscricao import StatusInscricao
-from domain.usuario import Usuario
+from app.domain.catequizando import Catequizando
+from app.domain.responsavel import Responsavel
+from app.domain.etapa import Etapa
+from app.domain.inscricao import Inscricao
+from app.domain.turma import Turma
+from app.domain.statusInscricao import StatusInscricao
+from app.domain.usuario import Usuario
 
 
 class ServicoInscricao:

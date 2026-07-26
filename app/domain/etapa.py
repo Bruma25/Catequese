@@ -3,11 +3,11 @@
 from dataclasses import dataclass, field
 from typing import List, Optional, TYPE_CHECKING
 
-from domain.sacramento import Sacramento
+from app.domain.sacramento import Sacramento
 
 if TYPE_CHECKING:
-    from domain.catequizando import Catequizando
-    from domain.turma import Turma
+    from app.domain.catequizando import Catequizando
+    from app.domain.turma import Turma
 
 
 @dataclass

@@ -2,7 +2,7 @@
 
 import pytest
 
-from domain.statusInscricao import StatusInscricao
+from app.domain.statusInscricao import StatusInscricao
 
 
 def test_status_inscricao_criacao_valida():

@@ -3,8 +3,8 @@ from datetime import datetime
 from typing import Any, List, Optional
 import uuid
 
-from infra.supabaseClient import get_supabase
-from domain.documentoInscricao import DocumentoInscricao
+from app.infra.supabaseClient import get_supabase
+from app.domain.documentoInscricao import DocumentoInscricao
 
 
 class DocumentoInscricaoRepository:

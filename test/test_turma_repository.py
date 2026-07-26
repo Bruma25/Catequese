@@ -1,13 +1,13 @@
 #/test/test_turma_repository.py
 import uuid
 
-from infra.supabaseClient import get_supabase
-from domain.etapa import Etapa
-from domain.localEncontro import LocalEncontro
-from domain.catequista import Catequista
-from domain.turma import Turma
-from repositories.etapaRepository import EtapaRepository
-from repositories.turmaRepository import TurmaRepository
+from app.infra.supabaseClient import get_supabase
+from app.domain.etapa import Etapa
+from app.domain.localEncontro import LocalEncontro
+from app.domain.catequista import Catequista
+from app.domain.turma import Turma
+from app.repositories.etapaRepository import EtapaRepository
+from app.repositories.turmaRepository import TurmaRepository
 
 
 def test_turma_repository_crud_basico_sem_catequistas():

@@ -2,8 +2,8 @@
 
 import pytest
 
-from domain.usuario import Usuario
-from domain.tipoPapelUsuario import TipoPapelUsuario
+from app.domain.usuario import Usuario
+from app.domain.tipoPapelUsuario import TipoPapelUsuario
 
 
 def criar_papel_responsavel() -> TipoPapelUsuario:

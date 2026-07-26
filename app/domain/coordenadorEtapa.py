@@ -3,10 +3,10 @@
 from dataclasses import dataclass
 from typing import Optional, TYPE_CHECKING
 
-from domain.usuario import Usuario
+from app.domain.usuario import Usuario
 
 if TYPE_CHECKING:
-    from domain.etapa import Etapa
+    from app.domain.etapa import Etapa
 
 
 @dataclass

@@ -2,16 +2,16 @@
 from datetime import datetime, date
 from typing import Optional, Any
 
-from domain.catequizando import Catequizando
-from domain.responsavel import Responsavel
-from domain.etapa import Etapa
-from domain.inscricao import Inscricao
-from domain.statusInscricao import StatusInscricao
-from domain.turma import Turma
-from domain.usuario import Usuario
-from domain.sacramento import Sacramento
-from repositories.usuarioRepository import UsuarioRepository
-from infra.supabaseClient import get_supabase
+from app.domain.catequizando import Catequizando
+from app.domain.responsavel import Responsavel
+from app.domain.etapa import Etapa
+from app.domain.inscricao import Inscricao
+from app.domain.statusInscricao import StatusInscricao
+from app.domain.turma import Turma
+from app.domain.usuario import Usuario
+from app.domain.sacramento import Sacramento
+from app.repositories.usuarioRepository import UsuarioRepository
+from app.infra.supabaseClient import get_supabase
 
 
 class InscricaoRepository:

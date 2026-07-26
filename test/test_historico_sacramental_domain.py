@@ -3,9 +3,9 @@
 import pytest
 from datetime import date
 
-from domain.catequizando import Catequizando
-from domain.historicoSacramental import HistoricoSacramental
-from domain.sacramento import Sacramento
+from app.domain.catequizando import Catequizando
+from app.domain.historicoSacramental import HistoricoSacramental
+from app.domain.sacramento import Sacramento
 
 
 def criar_catequizando() -> Catequizando:

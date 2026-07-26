@@ -4,9 +4,9 @@ from datetime import date
 
 import pytest
 
-from infra.supabaseClient import get_supabase
-from domain.documentoInscricao import DocumentoInscricao
-from repositories.documentoInscricaoRepository import DocumentoInscricaoRepository
+from app.infra.supabaseClient import get_supabase
+from app.domain.documentoInscricao import DocumentoInscricao
+from app.repositories.documentoInscricaoRepository import DocumentoInscricaoRepository
 
 
 @pytest.fixture(scope="module")

@@ -5,10 +5,10 @@ from datetime import date
 from typing import List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from domain.sacramento import Sacramento
-    from domain.responsavel import Responsavel
-    from domain.historicoSacramental import HistoricoSacramental
-    from domain.catequizandoResponsavel import CatequizandoResponsavel
+    from app.domain.sacramento import Sacramento
+    from app.domain.responsavel import Responsavel
+    from app.domain.historicoSacramental import HistoricoSacramental
+    from app.domain.catequizandoResponsavel import CatequizandoResponsavel
 
 
 @dataclass

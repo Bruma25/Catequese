@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List
 
-from domain.tipoPapelUsuario import TipoPapelUsuario
+from app.domain.tipoPapelUsuario import TipoPapelUsuario
 
 @dataclass
 class Usuario:

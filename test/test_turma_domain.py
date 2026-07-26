@@ -3,7 +3,7 @@
 import pytest
 from dataclasses import dataclass
 
-from domain.turma import Turma
+from app.domain.turma import Turma
 
 
 _SENTINELA = object()

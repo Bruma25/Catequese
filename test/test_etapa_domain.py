@@ -3,7 +3,7 @@
 import pytest
 from dataclasses import dataclass
 
-from domain.etapa import Etapa
+from app.domain.etapa import Etapa
 
 
 @dataclass

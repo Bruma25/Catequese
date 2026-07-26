@@ -4,9 +4,9 @@ import uuid
 from pathlib import Path
 from typing import Any, Optional
 
-from domain.documentoInscricao import DocumentoInscricao
-from repositories.documentoInscricaoRepository import DocumentoInscricaoRepository
-from services.servicoStorageSupabase import ServicoStorageSupabase
+from app.domain.documentoInscricao import DocumentoInscricao
+from app.repositories.documentoInscricaoRepository import DocumentoInscricaoRepository
+from app.services.servicoStorageSupabase import ServicoStorageSupabase
 
 
 class ServicoDocumentoInscricao:

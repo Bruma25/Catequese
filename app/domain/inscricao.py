@@ -2,14 +2,14 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 
-from domain.statusInscricao import StatusInscricao
+from app.domain.statusInscricao import StatusInscricao
 
 if TYPE_CHECKING:
-    from domain.catequizando import Catequizando
-    from domain.responsavel import Responsavel
-    from domain.etapa import Etapa
-    from domain.turma import Turma
-    from domain.usuario import Usuario
+    from app.domain.catequizando import Catequizando
+    from app.domain.responsavel import Responsavel
+    from app.domain.etapa import Etapa
+    from app.domain.turma import Turma
+    from app.domain.usuario import Usuario
 
 
 @dataclass

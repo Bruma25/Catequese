@@ -1,9 +1,9 @@
 # repositories/etapaRepository.py
 from typing import Optional, Callable
 
-from infra.supabaseClient import get_supabase
-from domain.etapa import Etapa
-from domain.sacramento import Sacramento
+from app.infra.supabaseClient import get_supabase
+from app.domain.etapa import Etapa
+from app.domain.sacramento import Sacramento
 
 
 class EtapaRepository:

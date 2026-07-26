@@ -4,9 +4,9 @@ from dataclasses import dataclass, field
 from typing import List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from domain.usuario import Usuario
-    from domain.catequizando import Catequizando
-    from domain.catequizandoResponsavel import CatequizandoResponsavel
+    from app.domain.usuario import Usuario
+    from app.domain.catequizando import Catequizando
+    from app.domain.catequizandoResponsavel import CatequizandoResponsavel
 
 
 @dataclass

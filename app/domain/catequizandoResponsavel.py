@@ -5,9 +5,9 @@ from dataclasses import dataclass
 from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from domain.catequizando import Catequizando
-    from domain.responsavel import Responsavel
-    from domain.tipoVinculoResponsavel import TipoVinculoResponsavel
+    from app.domain.catequizando import Catequizando
+    from app.domain.responsavel import Responsavel
+    from app.domain.tipoVinculoResponsavel import TipoVinculoResponsavel
 
 
 @dataclass

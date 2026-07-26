@@ -3,20 +3,20 @@ import tempfile
 import uuid
 from datetime import date, datetime
 
-from infra.supabaseClient import get_supabase
+from app.infra.supabaseClient import get_supabase
 
-from domain.responsavel import Responsavel
-from domain.catequizando import Catequizando
-from domain.etapa import Etapa
-from domain.inscricao import Inscricao
-from domain.statusInscricao import StatusInscricao
+from app.domain.responsavel import Responsavel
+from app.domain.catequizando import Catequizando
+from app.domain.etapa import Etapa
+from app.domain.inscricao import Inscricao
+from app.domain.statusInscricao import StatusInscricao
 
-from repositories.responsavelRepository import ResponsavelRepository
-from repositories.catequizandoRepository import CatequizandoRepository
-from repositories.etapaRepository import EtapaRepository
-from repositories.inscricaoRepository import InscricaoRepository
+from app.repositories.responsavelRepository import ResponsavelRepository
+from app.repositories.catequizandoRepository import CatequizandoRepository
+from app.repositories.etapaRepository import EtapaRepository
+from app.repositories.inscricaoRepository import InscricaoRepository
 
-from services.servicoDocumentoInscricao import ServicoDocumentoInscricao
+from app.services.servicoDocumentoInscricao import ServicoDocumentoInscricao
 
 
 def garantir_status_inicial() -> StatusInscricao:

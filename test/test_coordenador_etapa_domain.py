@@ -3,7 +3,7 @@
 import pytest
 from dataclasses import dataclass
 
-from domain.coordenadorEtapa import CoordenadorEtapa
+from app.domain.coordenadorEtapa import CoordenadorEtapa
 
 
 @dataclass

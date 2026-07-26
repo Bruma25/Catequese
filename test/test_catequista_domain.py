@@ -3,7 +3,7 @@
 import pytest
 from dataclasses import dataclass
 
-from domain.catequista import Catequista
+from app.domain.catequista import Catequista
 
 
 @dataclass

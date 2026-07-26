@@ -1,10 +1,10 @@
 # test/test_etapa_repository.py
 import uuid
 
-from infra.supabaseClient import get_supabase
-from domain.etapa import Etapa
-from domain.sacramento import Sacramento
-from repositories.etapaRepository import EtapaRepository
+from app.infra.supabaseClient import get_supabase
+from app.domain.etapa import Etapa
+from app.domain.sacramento import Sacramento
+from app.repositories.etapaRepository import EtapaRepository
 
 
 def test_etapa_repository_crud_basico():

@@ -2,7 +2,7 @@
 from pathlib import Path
 from typing import Any, BinaryIO, Optional, Union
 
-from infra.supabaseClient import get_supabase
+from app.infra.supabaseClient import get_supabase
 
 
 class ServicoStorageSupabase:

@@ -2,7 +2,7 @@
 
 import pytest
 
-from domain.localEncontro import LocalEncontro
+from app.domain.localEncontro import LocalEncontro
 
 
 def test_local_encontro_criacao_valida():

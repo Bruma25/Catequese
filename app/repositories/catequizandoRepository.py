@@ -3,13 +3,13 @@ from datetime import date
 from typing import Optional
 from uuid import uuid4
 
-from infra.supabaseClient import get_supabase
-from domain.catequizando import Catequizando
-from domain.catequizandoResponsavel import CatequizandoResponsavel
-from domain.historicoSacramental import HistoricoSacramental
-from domain.responsavel import Responsavel
-from domain.sacramento import Sacramento
-from domain.tipoVinculoResponsavel import TipoVinculoResponsavel
+from app.infra.supabaseClient import get_supabase
+from app.domain.catequizando import Catequizando
+from app.domain.catequizandoResponsavel import CatequizandoResponsavel
+from app.domain.historicoSacramental import HistoricoSacramental
+from app.domain.responsavel import Responsavel
+from app.domain.sacramento import Sacramento
+from app.domain.tipoVinculoResponsavel import TipoVinculoResponsavel
 
 
 class CatequizandoRepository:

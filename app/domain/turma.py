@@ -3,13 +3,13 @@
 from dataclasses import dataclass, field
 from typing import List, Optional, TYPE_CHECKING
 
-from domain.localEncontro import LocalEncontro
+from app.domain.localEncontro import LocalEncontro
 
 if TYPE_CHECKING:
-    from domain.etapa import Etapa
-    from domain.catequista import Catequista
-    from domain.catequizando import Catequizando
-    from domain.inscricao import Inscricao
+    from app.domain.etapa import Etapa
+    from app.domain.catequista import Catequista
+    from app.domain.catequizando import Catequizando
+    from app.domain.inscricao import Inscricao
 
 
 @dataclass

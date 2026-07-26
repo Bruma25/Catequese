@@ -5,8 +5,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from domain.turma import Turma
-    from domain.catequista import Catequista
+    from app.domain.turma import Turma
+    from app.domain.catequista import Catequista
 
 
 @dataclass

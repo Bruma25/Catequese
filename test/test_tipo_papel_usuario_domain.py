@@ -2,7 +2,7 @@
 
 import pytest
 
-from domain.tipoPapelUsuario import TipoPapelUsuario
+from app.domain.tipoPapelUsuario import TipoPapelUsuario
 
 
 def test_tipo_papel_usuario_criacao_valida():

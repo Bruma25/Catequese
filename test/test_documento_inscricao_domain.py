@@ -3,7 +3,7 @@
 import pytest
 from datetime import datetime, timedelta
 
-from domain.documentoInscricao import DocumentoInscricao
+from app.domain.documentoInscricao import DocumentoInscricao
 
 
 def criar_documento(

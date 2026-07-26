@@ -3,8 +3,8 @@ import pytest
 from dataclasses import dataclass
 from typing import Optional
 
-from domain.servicoInscricao import ServicoInscricao
-from domain.statusInscricao import StatusInscricao
+from app.domain.servicoInscricao import ServicoInscricao
+from app.domain.statusInscricao import StatusInscricao
 
 @dataclass
 class CatequizandoFake:

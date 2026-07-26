@@ -3,7 +3,7 @@ import os
 import uuid
 import pytest
 from supabase import create_client
-from infra.supabaseClient import get_supabase
+from app.infra.supabaseClient import get_supabase
 
 pytestmark = pytest.mark.integration
 

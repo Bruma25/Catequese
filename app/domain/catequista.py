@@ -4,7 +4,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from domain.usuario import Usuario
+from app.domain.usuario import Usuario
 
 
 @dataclass

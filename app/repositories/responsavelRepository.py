@@ -1,8 +1,8 @@
 # repositories/responsavelRepository.py
 from typing import Optional
 
-from infra.supabaseClient import get_supabase
-from domain.responsavel import Responsavel
+from app.infra.supabaseClient import get_supabase
+from app.domain.responsavel import Responsavel
 
 
 class ResponsavelRepository:

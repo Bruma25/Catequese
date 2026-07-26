@@ -1,8 +1,8 @@
 ### Teste responsavelRepository.py
 import uuid
 
-from domain.responsavel import Responsavel
-from repositories.responsavelRepository import ResponsavelRepository
+from app.domain.responsavel import Responsavel
+from app.repositories.responsavelRepository import ResponsavelRepository
 
 
 def test_responsavel_repository_crud():

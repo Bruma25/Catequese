@@ -3,10 +3,10 @@
 import pytest
 from datetime import date
 
-from domain.catequizando import Catequizando
-from domain.responsavel import Responsavel
-from domain.tipoVinculoResponsavel import TipoVinculoResponsavel
-from domain.catequizandoResponsavel import CatequizandoResponsavel
+from app.domain.catequizando import Catequizando
+from app.domain.responsavel import Responsavel
+from app.domain.tipoVinculoResponsavel import TipoVinculoResponsavel
+from app.domain.catequizandoResponsavel import CatequizandoResponsavel
 
 
 def criar_catequizando(

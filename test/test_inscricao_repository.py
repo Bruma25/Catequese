@@ -2,19 +2,19 @@
 import uuid
 from datetime import date, datetime
 
-from infra.supabaseClient import get_supabase
-from domain.catequizando import Catequizando
-from domain.responsavel import Responsavel
-from domain.etapa import Etapa
-from domain.inscricao import Inscricao
-from domain.statusInscricao import StatusInscricao
-from domain.usuario import Usuario
-from domain.tipoPapelUsuario import TipoPapelUsuario
-from repositories.catequizandoRepository import CatequizandoRepository
-from repositories.responsavelRepository import ResponsavelRepository
-from repositories.etapaRepository import EtapaRepository
-from repositories.inscricaoRepository import InscricaoRepository
-from repositories.usuarioRepository import UsuarioRepository
+from app.infra.supabaseClient import get_supabase
+from app.domain.catequizando import Catequizando
+from app.domain.responsavel import Responsavel
+from app.domain.etapa import Etapa
+from app.domain.inscricao import Inscricao
+from app.domain.statusInscricao import StatusInscricao
+from app.domain.usuario import Usuario
+from app.domain.tipoPapelUsuario import TipoPapelUsuario
+from app.repositories.catequizandoRepository import CatequizandoRepository
+from app.repositories.responsavelRepository import ResponsavelRepository
+from app.repositories.etapaRepository import EtapaRepository
+from app.repositories.inscricaoRepository import InscricaoRepository
+from app.repositories.usuarioRepository import UsuarioRepository
 
 
 def test_inscricao_repository_busca_override_enriquecido():
