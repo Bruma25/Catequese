@@ -3,3 +3,4 @@ uvicorn[standard]
 supabase
 python-dotenv
 pytest
+python-multipart

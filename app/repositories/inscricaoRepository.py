@@ -1,6 +1,6 @@
 # repositories/inscricaoRepository.py
 from datetime import datetime, date
-from typing import Optional, Any
+from typing import Optional, Any, List
 
 from app.domain.catequizando import Catequizando
 from app.domain.responsavel import Responsavel
@@ -380,3 +380,101 @@ class InscricaoRepository:
             return valor.isoformat()
 
         return valor
+
+    def listar_todos(self) -> List[dict]:
+        """Lista todas as inscrições (apenas dados básicos, sem enriquecimento completo)."""
+        result = (
+            self.db.table(self.table)
+            .select("""
+                id,
+                termo_assinado,
+                data_inscricao,
+                catequizando:catequizando_id (
+                    id,
+                    nome
+                ),
+                responsavel:responsavel_id (
+                    id,
+                    nome
+                ),
+                etapa:etapa_id (
+                    id,
+                    nome
+                ),
+                status:status_id (
+                    id,
+                    codigo
+                )
+            """)
+            .execute()
+        )
+
+        data = self._extrair_lista(result)
+
+        # Transformar para formato simplificado
+        inscricoes = []
+        for item in data:
+            inscricoes.append({
+                "id": item["id"],
+                "catequizando_nome": item["catequizando"]["nome"] if item.get("catequizando") else None,
+                "responsavel_nome": item["responsavel"]["nome"] if item.get("responsavel") else None,
+                "etapa_id": item["etapa"]["id"] if item.get("etapa") else None,
+                "status_id": item["status"]["id"] if item.get("status") else None,
+                "created_at": item.get("data_inscricao")
+            })
+
+        return inscricoes
+
+    def listar_etapas(self) -> List[dict]:
+        """Lista todas as etapas disponíveis."""
+        result = (
+            self.db.table("etapa")
+            .select("""
+                id,
+                nome,
+                descricao,
+                ano_nasc_minimo,
+                ano_nasc_maximo,
+                sacramentos_requeridos:etapa_sacramento_requerido (
+                    sacramento_id
+                )
+            """)
+            .order("nome")
+            .execute()
+        )
+
+        data = self._extrair_lista(result)
+
+        etapas = []
+        for item in data:
+            sacramentos_ids = [
+                sr["sacramento_id"]
+                for sr in item.get("sacramentos_requeridos", [])
+            ]
+
+            etapas.append({
+                "id": item["id"],
+                "nome": item["nome"],
+                "ano_nascimento_min": item.get("ano_nasc_minimo"),
+                "ano_nascimento_max": item.get("ano_nasc_maximo"),
+                "sacramentos_requeridos": sacramentos_ids
+            })
+
+        return etapas
+
+    def buscar_inscricao_completa(self, inscricao_id: str) -> Optional[dict]:
+        """Busca uma inscrição completa (com todos os relacionamentos)."""
+        inscricao = self.buscar_por_id(inscricao_id)
+
+        if not inscricao:
+            return None
+
+        # Extrair dados em formato simplificado para API
+        return {
+            "id": inscricao.id,
+            "catequizando_nome": inscricao.catequizando.nome,
+            "responsavel_nome": inscricao.responsavel.nome,
+            "etapa_id": inscricao.etapa.id,
+            "status_id": inscricao.status.id,
+            "created_at": str(inscricao.data_inscricao) if inscricao.data_inscricao else None
+        }
