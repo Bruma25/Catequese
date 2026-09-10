@@ -149,7 +149,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
     Cria uma nova inscrição de catequizando.
 
     Fluxo:
-    1. Cria catequizando no banco
+    1. Cria catequizando no banco (com histórico sacramental)
     2. Cria responsável no banco
     3. Cria vínculo entre eles
     4. Busca etapa e status
@@ -167,22 +167,20 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
 
         etapa_data = etapa_db.data
 
-        # Buscar sacramentos requeridos da etapa
-        sacramentos_req = supabase.table("etapa_sacramento_requerido").select("sacramento_id").eq("etapa_id",
-                                                                                                  inscricao_data.etapa_id).execute()
-        sacramentos_ids = [s["sacramento_id"] for s in sacramentos_req.data] if sacramentos_req.data else []
-
         etapa = Etapa(
             id=etapa_data["id"],
             nome=etapa_data["nome"],
             descricao=etapa_data.get("descricao"),
             ano_nasc_minimo=etapa_data.get("ano_nasc_minimo"),
             ano_nasc_maximo=etapa_data.get("ano_nasc_maximo"),
-            sacramentos_requeridos=[],  # TODO: buscar sacramentos se necessário
+            sacramentos_requeridos=[],
             sacramentos_proibidos=[],
         )
 
-        # 2. Criar catequizando (sem ID ainda, o banco vai gerar)
+        # 2. Criar catequizando SEM histórico (inicialmente)
+        from app.domain.historicoSacramental import HistoricoSacramental
+        from app.domain.sacramento import Sacramento
+
         catequizando_novo = Catequizando(
             id=str(uuid.uuid4()),
             nome=inscricao_data.catequizando_nome,
@@ -194,10 +192,10 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
             necessidade_especial=False,
             descricao_necessidade_especial=None,
             vinculos_responsaveis=[],
-            historico_sacramental=[],
+            historico_sacramental=[],  # ← VAZIO inicialmente!
         )
 
-        # 3. Criar responsável (sem ID ainda)
+        # 3. Criar responsável
         responsavel_novo = Responsavel(
             id=str(uuid.uuid4()),
             nome=inscricao_data.responsavel_nome,
@@ -211,14 +209,40 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
         repo_catequizando = CatequizandoRepository()
         repo_responsavel = ResponsavelRepository()
 
-        # Salvar catequizando
+        # Salvar catequizando (apenas dados básicos)
         catequizando_salvo = repo_catequizando.salvar(catequizando_novo)
+
+        # 5. Criar e adicionar histórico sacramental (APÓS salvar o catequizando)
+        for sacramento_id in inscricao_data.catequizando_sacramentos:
+            # Buscar sacramento no banco
+            sacramento_db = supabase.table("sacramento").select("*").eq("id", sacramento_id).maybe_single().execute()
+
+            if sacramento_db.data:
+                sacramento = Sacramento(
+                    id=sacramento_db.data["id"],
+                    codigo=sacramento_db.data["codigo"],
+                    nome_exibicao=sacramento_db.data["nome_exibicao"],
+                )
+
+                historico = HistoricoSacramental(
+                    id=str(uuid.uuid4()),
+                    catequizando=catequizando_salvo,
+                    sacramento=sacramento,
+                    data_recebimento=date.today(),
+                    local=None,
+                    observacoes=None,
+                )
+
+                # Adicionar ao catequizando
+                catequizando_salvo.adicionar_historico_sacramental(historico)
+
+        # Sincronizar histórico sacramental
+        repo_catequizando.sincronizar_historico_sacramental(catequizando_salvo)
 
         # Salvar responsável
         responsavel_salvo = repo_responsavel.salvar(responsavel_novo)
 
-        # 5. Criar vínculo entre responsável e catequizando
-        # Buscar tipo de vínculo (ex: "pai", "mae", "outro")
+        # 6. Criar vínculo entre responsável e catequizando
         tipo_vinculo_db = supabase.table("tipo_vinculo_responsavel").select("*").eq("id",
                                                                                     inscricao_data.responsavel_vinculo).maybe_single().execute()
 
@@ -232,7 +256,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
             descricao=tipo_vinculo_db.data["descricao"],
         )
 
-        # Criar vínculo
         vinculo = CatequizandoResponsavel(
             catequizando=catequizando_salvo,
             responsavel=responsavel_salvo,
@@ -241,14 +264,12 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
         )
         vinculo.validar()
 
-        # Adicionar vínculo ao catequizando
         catequizando_salvo.adicionar_vinculo_responsavel(vinculo)
         responsavel_salvo.adicionar_vinculo(vinculo)
 
-        # Sincronizar vínculo no banco
         repo_catequizando.sincronizar_vinculos_responsaveis(catequizando_salvo)
 
-        # 6. Buscar status "pendente de distribuição"
+        # 7. Buscar status "pendente de distribuição"
         status_db = supabase.table("status_inscricao").select("*").eq("codigo",
                                                                       "pendente_distribuicao").maybe_single().execute()
 
@@ -261,7 +282,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
             descricao=status_db.data["descricao"],
         )
 
-        # 7. Validar regras de domínio
+        # 8. Validar regras de domínio
         if not responsavel_salvo.pode_responder_por(catequizando_salvo):
             raise HTTPException(
                 status_code=400,
@@ -274,7 +295,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
                 detail="O catequizando não atende aos requisitos da etapa."
             )
 
-        # 8. Criar serviço e inscrever
+        # 9. Criar serviço e inscrever
         servico = ServicoInscricao(status_pendente_distribuicao=status)
 
         inscricao = servico.criar_inscricao(
@@ -286,7 +307,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
             observacao_responsavel=None,
         )
 
-        # 9. Salvar inscrição no banco
+        # 10. Salvar inscrição no banco
         repo_inscricao = InscricaoRepository()
         inscricao_salva = repo_inscricao.salvar(inscricao)
 
