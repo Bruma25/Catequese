@@ -51,6 +51,17 @@ class EtapaResponse(BaseModel):
     ano_nascimento_max: Optional[int] = None
     sacramentos_requeridos: List[int]
 
+class SacramentoResponse(BaseModel):
+    id: int
+    codigo: str
+    nome_exibicao: str
+    ordem: Optional[int] = None
+
+
+class TipoVinculoResponse(BaseModel):
+    id: int
+    codigo: str
+    descricao: str
 
 # --- Endpoints ---
 
@@ -72,6 +83,65 @@ def listar_etapas():
         ]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao listar etapas: {str(e)}")
+
+@router.get("/sacramentos", response_model=List[SacramentoResponse])
+def listar_sacramentos():
+    """Lista todos os sacramentos disponíveis."""
+    try:
+        supabase = get_supabase()
+
+        resultado = (
+            supabase
+            .table("sacramento")
+            .select("id, codigo, nome_exibicao, ordem")
+            .order("ordem")
+            .execute()
+        )
+
+        return [
+            SacramentoResponse(
+                id=s["id"],
+                codigo=s["codigo"],
+                nome_exibicao=s["nome_exibicao"],
+                ordem=s["ordem"]
+            )
+            for s in resultado.data
+        ]
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao listar sacramentos: {str(e)}"
+        )
+
+@router.get("/tipos-vinculo", response_model=List[TipoVinculoResponse])
+def listar_tipos_vinculo():
+    """Lista os tipos de vínculo disponíveis para o responsável."""
+    try:
+        supabase = get_supabase()
+
+        resultado = (
+            supabase
+            .table("tipo_vinculo_responsavel")
+            .select("id, codigo, descricao")
+            .order("id")
+            .execute()
+        )
+
+        return [
+            TipoVinculoResponse(
+                id=v["id"],
+                codigo=v["codigo"],
+                descricao=v["descricao"]
+            )
+            for v in resultado.data
+        ]
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao listar tipos de vínculo: {str(e)}"
+        )
 
 @router.post("/inscricoes", response_model=InscricaoResponse)
 def criar_inscricao(inscricao_data: InscricaoCreate):
