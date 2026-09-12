@@ -1,0 +1,257 @@
+.etapa-container {
+  min-height: 100vh;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Cabeçalho (mesmo estilo da HomePage) */
+.etapa-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+  gap: 15px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.header-logo {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.header-title {
+  font-family: 'Goudy Old Style, Georgia, serif';
+  font-size: 16px;
+  color: #b3b2b4;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-right {
+  display: flex;
+  gap: 15px;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-icon {
+  width: 35px;
+  height: 35px;
+  object-fit: contain;
+}
+
+/* Conteúdo Principal */
+.etapa-content {
+  flex: 1;
+  padding: 30px 20px;
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Seções */
+.dados-section,
+.etapas-section {
+  margin-bottom: 40px;
+}
+
+.section-title {
+  font-family: 'Goudy Old Style, Georgia, serif';
+  font-size: 22px;
+  color: #b3b2b4;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+/* Formulário */
+.form-group {
+  margin-bottom: 25px;
+}
+
+.form-label {
+  display: block;
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.form-input {
+  width: 100%;
+  padding: 15px;
+  font-size: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #f5f5f5;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #b3b2b4;
+}
+
+/* Sacramentos */
+.sacramentos-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  color: #333;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+/* Botão Buscar */
+.buscar-button {
+  width: 100%;
+  padding: 18px;
+  background-color: #b3b2b4;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 10px;
+}
+
+.buscar-button:hover {
+  background-color: #9a999b;
+}
+
+.buscar-button:active {
+  background-color: #828183;
+}
+
+/* Lista de Etapas */
+.etapas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.etapa-card {
+  background-color: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.etapa-nome {
+  font-family: 'Goudy Old Style, Georgia, serif';
+  font-size: 20px;
+  color: #b3b2b4;
+  margin: 0;
+}
+
+.etapa-desc {
+  font-size: 15px;
+  color: #666;
+  margin: 0;
+}
+
+.etapa-idade {
+  font-size: 14px;
+  color: #888;
+  margin: 0;
+  font-style: italic;
+}
+
+.selecionar-button {
+  padding: 15px;
+  background-color: #b3b2b4;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 10px;
+}
+
+.selecionar-button:hover {
+  background-color: #9a999b;
+}
+
+.selecionar-button:active {
+  background-color: #828183;
+}
+
+/* Responsivo */
+@media (max-width: 480px) {
+  .header-title {
+    font-size: 14px;
+  }
+
+  .header-logo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .etapa-content {
+    padding: 20px 15px;
+  }
+
+  .section-title {
+    font-size: 20px;
+  }
+
+  .etapa-nome {
+    font-size: 18px;
+  }
+}
+
+@media (min-width: 768px) {
+  .etapa-content {
+    padding: 40px 30px;
+  }
+}
+
+.loading-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 18px;
+  color: #666;
+}

@@ -1,0 +1,165 @@
+.home-container {
+  min-height: 100vh;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Cabeçalho */
+.home-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+  gap: 15px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.header-logo {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.header-title {
+  font-family: 'Goudy Old Style, Georgia, serif';
+  font-size: 16px;
+  color: #b3b2b4;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-right {
+  display: flex;
+  gap: 15px;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-icon {
+  width: 35px;
+  height: 35px;
+  object-fit: contain;
+}
+
+.menu-icon {
+  font-size: 28px;
+  color: #b3b2b4;
+}
+
+/* Conteúdo Principal */
+.home-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+  gap: 40px;
+}
+
+.inscricao-button {
+  width: 100%;
+  max-width: 400px;
+  padding: 20px 30px;
+  background-color: #b3b2b4;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.inscricao-button:hover {
+  background-color: #9a999b;
+}
+
+.inscricao-button:active {
+  background-color: #828183;
+}
+
+.periodo-container {
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.periodo-label {
+  display: block;
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.periodo-texto {
+  font-size: 18px;
+  color: #333;
+  background-color: #f5f5f5;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+/* Responsivo para celular */
+@media (max-width: 480px) {
+  .header-title {
+    font-size: 14px;
+  }
+
+  .header-logo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .inscricao-button {
+    font-size: 16px;
+    padding: 18px 25px;
+  }
+
+  .periodo-label {
+    font-size: 14px;
+  }
+
+  .periodo-texto {
+    font-size: 16px;
+  }
+}
+
+/* Responsivo para tablet/desktop */
+@media (min-width: 768px) {
+  .home-content {
+    padding: 60px 40px;
+  }
+
+  .header-title {
+    font-size: 18px;
+  }
+
+  .inscricao-button {
+    max-width: 500px;
+    font-size: 20px;
+  }
+}
