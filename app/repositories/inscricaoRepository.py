@@ -148,23 +148,40 @@ class InscricaoRepository:
         )
 
     def contar_inscricoes_por_etapa(
-        self,
-        etapa_id: str,
-        excluir_status_codigo: Optional[str] = "cancelada",
+            self,
+            etapa_id: str,
+            excluir_status_codigo: Optional[str] = "cancelada",
     ) -> int:
         """
         Conta o número de inscrições de uma etapa,
         excluindo as que possuem o status com o código informado.
         Por padrão, exclui as canceladas.
         """
+        # Primeiro busca o ID do status a excluir
+        status_id_excluir = None
+        if excluir_status_codigo:
+            result = (
+                self.db.table("status_inscricao")
+                .select("id")
+                .eq("codigo", excluir_status_codigo)
+                .limit(1)
+                .execute()
+            )
+
+            data = self._extrair_lista(result)
+            if data and len(data) > 0:
+                status_id_excluir = data[0]["id"]
+
+        # Conta inscrições da etapa
         query = (
             self.db.table(self.table)
             .select("id", count="exact")
             .eq("etapa_id", etapa_id)
         )
 
-        if excluir_status_codigo is not None:
-            query = query.neq("status:codigo", excluir_status_codigo)
+        # Exclui pelo status_id se encontrou
+        if status_id_excluir is not None:
+            query = query.neq("status_id", status_id_excluir)
 
         result = query.execute()
 
