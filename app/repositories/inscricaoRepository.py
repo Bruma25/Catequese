@@ -10,6 +10,7 @@ from app.domain.statusInscricao import StatusInscricao
 from app.domain.turma import Turma
 from app.domain.usuario import Usuario
 from app.domain.sacramento import Sacramento
+from app.domain.localEncontro import LocalEncontro
 from app.repositories.usuarioRepository import UsuarioRepository
 from app.infra.supabaseClient import get_supabase
 
