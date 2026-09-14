@@ -474,13 +474,11 @@ def listar_locais_encontro():
 
         return [
             LocalEncontroResponse(
-                id=str(l["id"]),  ← Converta
-        para
-        string
-        codigo = l["codigo"],
-        nome_exibicao = l["nome_exibicao"]
-        )
-        for l in resultado.data
+                id=str(l["id"]),
+                codigo=l["codigo"],
+                nome_exibicao=l["nome_exibicao"]
+            )
+            for l in resultado.data
         ]
 
     except Exception as e:
