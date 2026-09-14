@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage'
 import HomePage from './pages/HomePage'
 import EtapaPage from './pages/EtapaPage'
 import FichaInscricaoPage from './pages/FichaInscricaoPage'
+import GestaoEtapasPage from './pages/GestaoEtapasPage'
 import './App.css'
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
         <Route path="/home" element={<HomePage />} />
         <Route path="/etapas" element={<EtapaPage />} />
         <Route path="/inscricao" element={<FichaInscricaoPage />} />
+        <Route path="/gestao-etapas" element={<GestaoEtapasPage />} />
       </Routes>
     </Router>
   )

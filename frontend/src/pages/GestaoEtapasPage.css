@@ -1,0 +1,368 @@
+.gestao-container {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Cabeçalho */
+.gestao-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+  gap: 15px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.header-logo {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.header-title {
+  font-family: 'Goudy Old Style, Georgia, serif';
+  font-size: 16px;
+  color: #b3b2b4;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-right {
+  display: flex;
+  gap: 15px;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-icon {
+  width: 35px;
+  height: 35px;
+  object-fit: contain;
+}
+
+/* Conteúdo Principal */
+.gestao-content {
+  flex: 1;
+  padding: 30px 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.gestao-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  gap: 15px;
+}
+
+.page-title {
+  font-family: 'Goudy Old Style, Georgia, serif';
+  font-size: 24px;
+  color: #b3b2b4;
+  margin: 0;
+}
+
+.nova-etapa-button {
+  padding: 12px 25px;
+  background-color: #b3b2b4;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  white-space: nowrap;
+}
+
+.nova-etapa-button:hover {
+  background-color: #9a999b;
+}
+
+/* Lista de Etapas */
+.etapas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sem-etapas {
+  text-align: center;
+  color: #888;
+  font-size: 16px;
+  padding: 40px;
+  background-color: white;
+  border-radius: 12px;
+}
+
+.etapa-card {
+  background-color: white;
+  border-radius: 12px;
+  padding: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.etapa-info {
+  flex: 1;
+}
+
+.etapa-nome {
+  font-family: 'Goudy Old Style, Georgia, serif';
+  font-size: 20px;
+  color: #b3b2b4;
+  margin: 0 0 10px 0;
+}
+
+.etapa-desc {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 10px 0;
+}
+
+.etapa-idade {
+  font-size: 14px;
+  color: #888;
+  margin: 0 0 5px 0;
+  font-style: italic;
+}
+
+.etapa-anos {
+  font-size: 13px;
+  color: #aaa;
+  margin: 0;
+}
+
+.etapa-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.editar-button,
+.excluir-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.editar-button {
+  background-color: #4a90d9;
+  color: white;
+}
+
+.editar-button:hover {
+  background-color: #3a7bc8;
+}
+
+.excluir-button {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.excluir-button:hover {
+  background-color: #c0392b;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 12px;
+  padding: 30px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-title {
+  font-family: 'Goudy Old Style, Georgia, serif';
+  font-size: 22px;
+  color: #b3b2b4;
+  margin: 0 0 25px 0;
+  text-align: center;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 15px;
+  color: #555;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.form-input,
+.form-textarea {
+  width: 100%;
+  padding: 12px 15px;
+  font-size: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: #b3b2b4;
+  background-color: white;
+}
+
+.form-textarea {
+  resize: vertical;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 30px;
+}
+
+.cancelar-button,
+.salvar-button {
+  flex: 1;
+  padding: 15px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.cancelar-button {
+  background-color: #e0e0e0;
+  color: #666;
+}
+
+.cancelar-button:hover {
+  background-color: #d0d0d0;
+}
+
+.salvar-button {
+  background-color: #b3b2b4;
+  color: white;
+}
+
+.salvar-button:hover {
+  background-color: #9a999b;
+}
+
+/* Loading */
+.loading-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 18px;
+  color: #666;
+}
+
+/* Responsivo */
+@media (max-width: 480px) {
+  .header-title {
+    font-size: 14px;
+  }
+
+  .header-logo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .gestao-content {
+    padding: 20px 15px;
+  }
+
+  .gestao-header-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-title {
+    font-size: 20px;
+    text-align: center;
+  }
+
+  .nova-etapa-button {
+    width: 100%;
+  }
+
+  .etapa-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .etapa-actions {
+    justify-content: stretch;
+  }
+
+  .editar-button,
+  .excluir-button {
+    flex: 1;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 768px) {
+  .gestao-content {
+    padding: 40px 30px;
+  }
+}

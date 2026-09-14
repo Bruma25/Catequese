@@ -51,6 +51,7 @@ class EtapaResponse(BaseModel):
     ano_nascimento_max: Optional[int] = None
     sacramentos_requeridos: List[int]
 
+
 class SacramentoResponse(BaseModel):
     id: int
     codigo: str
@@ -62,6 +63,7 @@ class TipoVinculoResponse(BaseModel):
     id: int
     codigo: str
     descricao: str
+
 
 # --- Endpoints ---
 
@@ -83,6 +85,7 @@ def listar_etapas():
         ]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao listar etapas: {str(e)}")
+
 
 @router.get("/sacramentos", response_model=List[SacramentoResponse])
 def listar_sacramentos():
@@ -114,6 +117,7 @@ def listar_sacramentos():
             detail=f"Erro ao listar sacramentos: {str(e)}"
         )
 
+
 @router.get("/tipos-vinculo", response_model=List[TipoVinculoResponse])
 def listar_tipos_vinculo():
     """Lista os tipos de vínculo disponíveis para o responsável."""
@@ -143,6 +147,7 @@ def listar_tipos_vinculo():
             detail=f"Erro ao listar tipos de vínculo: {str(e)}"
         )
 
+
 @router.post("/inscricoes", response_model=InscricaoResponse)
 def criar_inscricao(inscricao_data: InscricaoCreate):
     """
@@ -153,14 +158,22 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
     2. Cria responsável no banco
     3. Cria vínculo entre eles
     4. Busca etapa e status
-    5. Valida regras de domínio
-    6. Cria e salva inscrição
+    5. Busca turmas da etapa e total de inscrições
+    6. Valida regras de domínio (incluindo verificação de vagas)
+    7. Cria e salva inscrição
     """
     try:
         supabase = get_supabase()
 
         # 1. Buscar etapa no banco
-        etapa_db = supabase.table("etapa").select("*").eq("id", inscricao_data.etapa_id).maybe_single().execute()
+        etapa_db = (
+            supabase
+            .table("etapa")
+            .select("*")
+            .eq("id", inscricao_data.etapa_id)
+            .maybe_single()
+            .execute()
+        )
 
         if not etapa_db.data:
             raise HTTPException(status_code=400, detail=f"Etapa {inscricao_data.etapa_id} não encontrada")
@@ -215,7 +228,14 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
         # 5. Criar e adicionar histórico sacramental (APÓS salvar o catequizando)
         for sacramento_id in inscricao_data.catequizando_sacramentos:
             # Buscar sacramento no banco
-            sacramento_db = supabase.table("sacramento").select("*").eq("id", sacramento_id).maybe_single().execute()
+            sacramento_db = (
+                supabase
+                .table("sacramento")
+                .select("*")
+                .eq("id", sacramento_id)
+                .maybe_single()
+                .execute()
+            )
 
             if sacramento_db.data:
                 sacramento = Sacramento(
@@ -243,12 +263,20 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
         responsavel_salvo = repo_responsavel.salvar(responsavel_novo)
 
         # 6. Criar vínculo entre responsável e catequizando
-        tipo_vinculo_db = supabase.table("tipo_vinculo_responsavel").select("*").eq("id",
-                                                                                    inscricao_data.responsavel_vinculo).maybe_single().execute()
+        tipo_vinculo_db = (
+            supabase
+            .table("tipo_vinculo_responsavel")
+            .select("*")
+            .eq("id", inscricao_data.responsavel_vinculo)
+            .maybe_single()
+            .execute()
+        )
 
         if not tipo_vinculo_db.data:
-            raise HTTPException(status_code=400,
-                                detail=f"Tipo de vínculo {inscricao_data.responsavel_vinculo} não encontrado")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Tipo de vínculo {inscricao_data.responsavel_vinculo} não encontrado"
+            )
 
         tipo_vinculo = TipoVinculoResponsavel(
             id=tipo_vinculo_db.data["id"],
@@ -270,8 +298,14 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
         repo_catequizando.sincronizar_vinculos_responsaveis(catequizando_salvo)
 
         # 7. Buscar status "pendente de distribuição"
-        status_db = supabase.table("status_inscricao").select("*").eq("codigo",
-                                                                      "pendente_distribuicao").maybe_single().execute()
+        status_db = (
+            supabase
+            .table("status_inscricao")
+            .select("*")
+            .eq("codigo", "pendente_distribuicao")
+            .maybe_single()
+            .execute()
+        )
 
         if not status_db.data:
             raise HTTPException(status_code=500, detail="Status 'pendente_distribuicao' não encontrado")
@@ -282,7 +316,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
             descricao=status_db.data["descricao"],
         )
 
-        # 8. Validar regras de domínio
+        # 8. Validar regras de domínio básicas
         if not responsavel_salvo.pode_responder_por(catequizando_salvo):
             raise HTTPException(
                 status_code=400,
@@ -295,20 +329,69 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
                 detail="O catequizando não atende aos requisitos da etapa."
             )
 
-        # 9. Criar serviço e inscrever
-        servico = ServicoInscricao(status_pendente_distribuicao=status)
+        # 9. Buscar turmas da etapa e total de inscrições para verificar vagas
+        repo_inscricao = InscricaoRepository()
+        turmas, total_inscricoes = repo_inscricao.buscar_dados_para_verificar_vagas(
+            etapa_id=etapa.id,
+            catequizando=catequizando_salvo,
+        )
 
+        # 10. Criar serviço com status confirmada e lista_espera
+        status_confirmada_db = (
+            supabase
+            .table("status_inscricao")
+            .select("*")
+            .eq("codigo", "confirmada")
+            .maybe_single()
+            .execute()
+        )
+
+        status_lista_espera_db = (
+            supabase
+            .table("status_inscricao")
+            .select("*")
+            .eq("codigo", "lista_espera")
+            .maybe_single()
+            .execute()
+        )
+
+        if not status_confirmada_db.data or not status_lista_espera_db.data:
+            raise HTTPException(
+                status_code=500,
+                detail="Status 'confirmada' ou 'lista_espera' não encontrados"
+            )
+
+        status_confirmada = StatusInscricao(
+            id=status_confirmada_db.data["id"],
+            codigo=status_confirmada_db.data["codigo"],
+            descricao=status_confirmada_db.data["descricao"],
+        )
+
+        status_lista_espera = StatusInscricao(
+            id=status_lista_espera_db.data["id"],
+            codigo=status_lista_espera_db.data["codigo"],
+            descricao=status_lista_espera_db.data["descricao"],
+        )
+
+        servico = ServicoInscricao(
+            status_pendente_distribuicao=status,
+            status_confirmada=status_confirmada,
+            status_lista_espera=status_lista_espera,
+        )
+
+        # 11. Criar inscrição (já com verificação de vagas)
         inscricao = servico.criar_inscricao(
             id_inscricao=str(uuid.uuid4()),
             catequizando=catequizando_salvo,
             responsavel=responsavel_salvo,
             etapa=etapa,
+            turmas=turmas,
+            total_inscricoes_etapa=total_inscricoes,
             referencia_irmao=None,
             observacao_responsavel=None,
         )
 
-        # 10. Salvar inscrição no banco
-        repo_inscricao = InscricaoRepository()
+        # 12. Salvar inscrição no banco
         inscricao_salva = repo_inscricao.salvar(inscricao)
 
         return InscricaoResponse(
@@ -324,6 +407,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao criar inscrição: {str(e)}")
+
 
 @router.get("/inscricoes", response_model=List[InscricaoResponse])
 def listar_inscricoes():

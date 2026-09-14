@@ -79,6 +79,96 @@ class InscricaoRepository:
     def buscar_por_id_com_override_enriquecido(self, inscricao_id: str) -> Optional[Inscricao]:
         return self._buscar_por_id(inscricao_id=inscricao_id, enriquecer_override=True)
 
+    def buscar_turmas_por_etapa(self, etapa_id: str) -> List[Turma]:
+        """
+        Retorna todas as turmas de uma etapa.
+        Usado para verificar vagas no ato da inscrição.
+        """
+        result = (
+            self.db.table("turma")
+            .select("""
+                id,
+                nome_sistema,
+                nome_exibicao,
+                vagas_totais,
+                ativa,
+                ano_nasc_minimo,
+                ano_nasc_maximo,
+                etapa:etapa(
+                    id,
+                    nome,
+                    descricao,
+                    ano_nasc_minimo,
+                    ano_nasc_maximo
+                )
+            """)
+            .eq("etapa_id", etapa_id)
+            .execute()
+        )
+
+        data = self._extrair_lista(result)
+
+        turmas = []
+        for item in data:
+            etapa = self._montar_etapa_simplificada(item["etapa"])
+            turma = Turma(
+                id=item["id"],
+                etapa=etapa,
+                nome_sistema=item["nome_sistema"],
+                nome_exibicao=item.get("nome_exibicao"),
+                vagas_totais=item["vagas_totais"],
+                ativa=item.get("ativa", True),
+                local_encontro=None,
+                ano_nasc_minimo=item.get("ano_nasc_minimo"),
+                ano_nasc_maximo=item.get("ano_nasc_maximo"),
+                catequistas=[],
+            )
+            turmas.append(turma)
+
+        return turmas
+
+    def contar_inscricoes_por_etapa(
+        self,
+        etapa_id: str,
+        excluir_status_codigo: Optional[str] = "cancelada",
+    ) -> int:
+        """
+        Conta o número de inscrições de uma etapa,
+        excluindo as que possuem o status com o código informado.
+        Por padrão, exclui as canceladas.
+        """
+        query = (
+            self.db.table(self.table)
+            .select("id", count="exact")
+            .eq("etapa_id", etapa_id)
+        )
+
+        if excluir_status_codigo is not None:
+            query = query.neq("status:codigo", excluir_status_codigo)
+
+        result = query.execute()
+
+        if result is None or not hasattr(result, "count") or result.count is None:
+            return 0
+
+        return result.count
+
+    def buscar_dados_para_verificar_vagas(
+        self,
+        etapa_id: str,
+        catequizando: Catequizando,
+    ) -> tuple[List[Turma], int]:
+        """
+        Retorna:
+          - lista de turmas da etapa;
+          - total de inscrições da etapa (exceto canceladas).
+        Usado pelo ServicoInscricao para verificar vagas no ato da inscrição.
+        """
+        turmas = self.buscar_turmas_por_etapa(etapa_id)
+        total_inscricoes = self.contar_inscricoes_por_etapa(etapa_id, excluir_status_codigo="cancelada")
+
+        return turmas, total_inscricoes
+
     def _buscar_por_id(self, inscricao_id: str, enriquecer_override: bool) -> Optional[Inscricao]:
         result = (
             self.db.table(self.table)
@@ -295,6 +385,18 @@ class InscricaoRepository:
 
         return etapa
 
+    def _montar_etapa_simplificada(self, data: dict) -> Etapa:
+        """Versão simplificada para montar etapa sem sacramentos, usada em turmas."""
+        return Etapa(
+            id=data["id"],
+            nome=data["nome"],
+            descricao=data.get("descricao"),
+            ano_nasc_minimo=data.get("ano_nasc_minimo"),
+            ano_nasc_maximo=data.get("ano_nasc_maximo"),
+            sacramentos_requeridos=[],
+            sacramentos_proibidos=[],
+        )
+
     def _montar_sacramento(self, data: dict) -> Sacramento:
         return Sacramento(
             id=data["id"],
@@ -411,7 +513,6 @@ class InscricaoRepository:
 
         data = self._extrair_lista(result)
 
-        # Transformar para formato simplificado
         inscricoes = []
         for item in data:
             inscricoes.append({
@@ -469,7 +570,6 @@ class InscricaoRepository:
         if not inscricao:
             return None
 
-        # Extrair dados em formato simplificado para API
         return {
             "id": inscricao.id,
             "catequizando_nome": inscricao.catequizando.nome,

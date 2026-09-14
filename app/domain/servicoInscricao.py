@@ -13,11 +13,15 @@ class ServicoInscricao:
     def __init__(
         self,
         status_pendente_distribuicao: StatusInscricao,
+        status_confirmada: Optional[StatusInscricao] = None,
+        status_lista_espera: Optional[StatusInscricao] = None,
     ):
         if status_pendente_distribuicao is None:
             raise ValueError("O status pendente de distribuição é obrigatório.")
 
         self.status_pendente_distribuicao = status_pendente_distribuicao
+        self.status_confirmada = status_confirmada
+        self.status_lista_espera = status_lista_espera
 
     def sugerir_etapas_para_catequizando(
         self,
@@ -38,19 +42,55 @@ class ServicoInscricao:
             if etapa is not None and etapa.pode_catequizando_entrar(catequizando)
         ]
 
+    def verificar_vagas_antes_da_inscricao(
+        self,
+        etapa: Etapa,
+        catequizando: Catequizando,
+        turmas: List[Turma],
+        total_inscricoes_etapa: int,
+    ) -> bool:
+        """
+        Retorna True se ainda há vaga potencial para o catequizando
+        naquela etapa, considerando todas as turmas ativas elegíveis.
+
+        total_inscricoes_etapa deve contar todas as inscrições da etapa,
+        exceto as canceladas (ou seja, inclui pendentes, confirmadas e lista de espera).
+        """
+        if etapa is None:
+            raise ValueError("A etapa é obrigatória para verificar vagas.")
+
+        if turmas is None:
+            turmas = []
+
+        turmas_elegiveis = [
+            turma
+            for turma in turmas
+            if turma is not None
+            and turma.esta_ativa()
+            and turma.pode_catequizando_entrar(catequizando)
+        ]
+
+        total_vagas = sum(turma.vagas_totais for turma in turmas_elegiveis)
+
+        return total_inscricoes_etapa < total_vagas
+
     def criar_inscricao(
         self,
         id_inscricao: str,
         catequizando: Catequizando,
         responsavel: Responsavel,
         etapa: Etapa,
+        turmas: List[Turma],
+        total_inscricoes_etapa: int,
         referencia_irmao: Optional[str] = None,
         observacao_responsavel: Optional[str] = None,
     ) -> Inscricao:
         """
         Cria uma inscrição em uma etapa, validando:
         - se o responsável pode responder pelo catequizando;
-        - se o catequizando atende aos requisitos gerais da etapa.
+        - se o catequizando atende aos requisitos gerais da etapa;
+        - se ainda há vaga potencial na etapa, definindo o status inicial
+          como confirmada ou lista de espera.
         """
         if catequizando is None:
             raise ValueError("O catequizando da inscrição é obrigatório.")
@@ -67,12 +107,27 @@ class ServicoInscricao:
         if not etapa.aceita_catequizando(catequizando):
             raise ValueError("O catequizando não atende aos requisitos da etapa.")
 
+        ainda_ha_vaga = self.verificar_vagas_antes_da_inscricao(
+            etapa=etapa,
+            catequizando=catequizando,
+            turmas=turmas,
+            total_inscricoes_etapa=total_inscricoes_etapa,
+        )
+
+        status_inicial = (
+            self.status_confirmada
+            if ainda_ha_vaga and self.status_confirmada is not None
+            else self.status_lista_espera
+            if not ainda_ha_vaga and self.status_lista_espera is not None
+            else self.status_pendente_distribuicao
+        )
+
         inscricao = Inscricao(
             id=id_inscricao,
             catequizando=catequizando,
             responsavel=responsavel,
             etapa=etapa,
-            status=self.status_pendente_distribuicao,
+            status=status_inicial,
         )
 
         inscricao.registrar_observacao_responsavel(observacao_responsavel)
