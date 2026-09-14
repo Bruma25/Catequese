@@ -93,6 +93,70 @@ class TipoVinculoResponse(BaseModel):
     descricao: str
 
 
+class LocalEncontroResponse(BaseModel):
+    id: str
+    codigo: str
+    nome_exibicao: str
+
+
+class CatequistaResponse(BaseModel):
+    id: str
+    nome: str
+    email: Optional[str] = None
+    telefone: Optional[str] = None
+
+
+class TurmaResponse(BaseModel):
+    id: str
+    nome_sistema: str
+    nome_exibicao: Optional[str] = None
+    vagas_totais: int
+    ativa: bool
+    etapa_id: str
+    etapa_nome: str
+    local_encontro_id: Optional[str] = None
+    ano_nasc_minimo: Optional[int] = None
+    ano_nasc_maximo: Optional[int] = None
+
+
+class TurmaCreate(BaseModel):
+    etapa_id: str
+    nome_sistema: str
+    nome_exibicao: Optional[str] = None
+    vagas_totais: int
+    ativa: bool = True
+    local_encontro_id: Optional[str] = None
+    ano_nasc_minimo: Optional[int] = None
+    ano_nasc_maximo: Optional[int] = None
+    catequistas_ids: List[str] = []
+
+
+class TurmaUpdate(BaseModel):
+    nome_sistema: Optional[str] = None
+    nome_exibicao: Optional[str] = None
+    vagas_totais: Optional[int] = None
+    ativa: Optional[bool] = None
+    local_encontro_id: Optional[str] = None
+    ano_nasc_minimo: Optional[int] = None
+    ano_nasc_maximo: Optional[int] = None
+    catequistas_ids: List[str] = []
+
+
+class TurmaDetailResponse(BaseModel):
+    id: str
+    etapa_id: str
+    etapa_nome: str
+    nome_sistema: str
+    nome_exibicao: Optional[str] = None
+    vagas_totais: int
+    ativa: bool
+    local_encontro_id: Optional[str] = None
+    local_encontro_nome: Optional[str] = None
+    ano_nasc_minimo: Optional[int] = None
+    ano_nasc_maximo: Optional[int] = None
+    catequistas: List[CatequistaResponse] = []
+
+
 # --- Endpoints ---
 
 @router.get("/etapas", response_model=List[EtapaResponse])
@@ -401,6 +465,409 @@ def listar_tipos_vinculo():
             status_code=500,
             detail=f"Erro ao listar tipos de vínculo: {str(e)}"
         )
+
+
+@router.get("/locais-encontro", response_model=List[LocalEncontroResponse])
+def listar_locais_encontro():
+    """Lista todos os locais de encontro."""
+    try:
+        supabase = get_supabase()
+
+        resultado = (
+            supabase
+            .table("local_encontro")
+            .select("id, codigo, nome_exibicao")
+            .order("nome_exibicao")
+            .execute()
+        )
+
+        return [
+            LocalEncontroResponse(
+                id=l["id"],
+                codigo=l["codigo"],
+                nome_exibicao=l["nome_exibicao"]
+            )
+            for l in resultado.data
+        ]
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao listar locais de encontro: {str(e)}"
+        )
+
+
+@router.get("/catequistas", response_model=List[CatequistaResponse])
+def listar_catequistas():
+    """Lista todos os catequistas."""
+    try:
+        supabase = get_supabase()
+
+        resultado = (
+            supabase
+            .table("catequista")
+            .select("id, nome, email, telefone")
+            .order("nome")
+            .execute()
+        )
+
+        return [
+            CatequistaResponse(
+                id=c["id"],
+                nome=c["nome"],
+                email=c.get("email"),
+                telefone=c.get("telefone")
+            )
+            for c in resultado.data
+        ]
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao listar catequistas: {str(e)}"
+        )
+
+
+@router.get("/turmas", response_model=List[TurmaResponse])
+def listar_turmas():
+    """Lista todas as turmas."""
+    try:
+        from app.repositories.turmaRepository import TurmaRepository
+
+        repo = TurmaRepository()
+
+        # Buscar todas as turmas
+        supabase = get_supabase()
+        result = (
+            supabase
+            .table("turma")
+            .select("*")
+            .order("nome_sistema")
+            .execute()
+        )
+
+        turmas = []
+        for t in result.data:
+            turmas.append({
+                "id": t["id"],
+                "nome_sistema": t["nome_sistema"],
+                "nome_exibicao": t.get("nome_exibicao"),
+                "vagas_totais": t["vagas_totais"],
+                "ativa": t.get("ativa", True),
+                "etapa_id": t["etapa_id"],
+                "etapa_nome": "",
+                "local_encontro_id": t.get("local_encontro_id"),
+                "ano_nasc_minimo": t.get("ano_nasc_minimo"),
+                "ano_nasc_maximo": t.get("ano_nasc_maximo")
+            })
+
+        return turmas
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao listar turmas: {str(e)}")
+
+
+@router.get("/turmas/{turma_id}", response_model=TurmaDetailResponse)
+def buscar_turma(turma_id: str):
+    """Busca uma turma específica pelo ID."""
+    try:
+        from app.repositories.turmaRepository import TurmaRepository
+
+        repo = TurmaRepository()
+        turma = repo.buscar_por_id(turma_id)
+
+        if not turma:
+            raise HTTPException(status_code=404, detail="Turma não encontrada")
+
+        return TurmaDetailResponse(
+            id=turma.id,
+            etapa_id=turma.etapa.id,
+            etapa_nome=turma.etapa.nome,
+            nome_sistema=turma.nome_sistema,
+            nome_exibicao=turma.nome_exibicao,
+            vagas_totais=turma.vagas_totais,
+            ativa=turma.ativa,
+            local_encontro_id=turma.local_encontro.id if turma.local_encontro else None,
+            local_encontro_nome=turma.local_encontro.nome_exibicao if turma.local_encontro else None,
+            ano_nasc_minimo=turma.ano_nasc_minimo,
+            ano_nasc_maximo=turma.ano_nasc_maximo,
+            catequistas=[
+                CatequistaResponse(
+                    id=c.id,
+                    nome=c.nome,
+                    email=c.email,
+                    telefone=c.telefone
+                )
+                for c in turma.catequistas
+            ]
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao buscar turma: {str(e)}")
+
+
+@router.post("/turmas", response_model=TurmaDetailResponse)
+def criar_turma(turma_data: TurmaCreate):
+    """Cria uma nova turma."""
+    try:
+        from app.repositories.turmaRepository import TurmaRepository
+        from app.domain.turma import Turma
+        from app.domain.etapa import Etapa
+        from app.domain.localEncontro import LocalEncontro
+        from app.domain.catequista import Catequista
+        from app.infra.supabaseClient import get_supabase
+        import uuid
+
+        supabase = get_supabase()
+
+        # Buscar etapa
+        etapa_db = (
+            supabase
+            .table("etapa")
+            .select("*")
+            .eq("id", turma_data.etapa_id)
+            .maybe_single()
+            .execute()
+        )
+
+        if not etapa_db.data:
+            raise HTTPException(status_code=400, detail=f"Etapa {turma_data.etapa_id} não encontrada")
+
+        etapa = Etapa(
+            id=etapa_db.data["id"],
+            nome=etapa_db.data["nome"],
+            descricao=etapa_db.data.get("descricao"),
+            ano_nasc_minimo=etapa_db.data.get("ano_nasc_minimo"),
+            ano_nasc_maximo=etapa_db.data.get("ano_nasc_maximo"),
+            sacramentos_requeridos=[],
+            sacramentos_proibidos=[]
+        )
+
+        # Buscar local de encontro
+        local_encontro = None
+        if turma_data.local_encontro_id:
+            local_db = (
+                supabase
+                .table("local_encontro")
+                .select("*")
+                .eq("id", turma_data.local_encontro_id)
+                .maybe_single()
+                .execute()
+            )
+
+            if local_db.data:
+                local_encontro = LocalEncontro(
+                    id=local_db.data["id"],
+                    codigo=local_db.data["codigo"],
+                    nome_exibicao=local_db.data["nome_exibicao"]
+                )
+
+        # Buscar catequistas
+        catequistas = []
+        if turma_data.catequistas_ids:
+            for cat_id in turma_data.catequistas_ids:
+                cat_db = (
+                    supabase
+                    .table("catequista")
+                    .select("*")
+                    .eq("id", cat_id)
+                    .maybe_single()
+                    .execute()
+                )
+
+                if cat_db.data:
+                    catequistas.append(
+                        Catequista(
+                            id=cat_db.data["id"],
+                            nome=cat_db.data["nome"],
+                            email=cat_db.data.get("email"),
+                            telefone=cat_db.data.get("telefone"),
+                            usuario=None
+                        )
+                    )
+
+        # Criar turma
+        turma = Turma(
+            id=str(uuid.uuid4()),
+            etapa=etapa,
+            nome_sistema=turma_data.nome_sistema,
+            nome_exibicao=turma_data.nome_exibicao,
+            vagas_totais=turma_data.vagas_totais,
+            ativa=turma_data.ativa,
+            local_encontro=local_encontro,
+            ano_nasc_minimo=turma_data.ano_nasc_minimo,
+            ano_nasc_maximo=turma_data.ano_nasc_maximo,
+            catequistas=catequistas
+        )
+
+        # Salvar turma
+        repo = TurmaRepository()
+        turma_salva = repo.salvar(turma)
+
+        return TurmaDetailResponse(
+            id=turma_salva.id,
+            etapa_id=turma_salva.etapa.id,
+            etapa_nome=turma_salva.etapa.nome,
+            nome_sistema=turma_salva.nome_sistema,
+            nome_exibicao=turma_salva.nome_exibicao,
+            vagas_totais=turma_salva.vagas_totais,
+            ativa=turma_salva.ativa,
+            local_encontro_id=turma_salva.local_encontro.id if turma_salva.local_encontro else None,
+            local_encontro_nome=turma_salva.local_encontro.nome_exibicao if turma_salva.local_encontro else None,
+            ano_nasc_minimo=turma_salva.ano_nasc_minimo,
+            ano_nasc_maximo=turma_salva.ano_nasc_maximo,
+            catequistas=[
+                CatequistaResponse(
+                    id=c.id,
+                    nome=c.nome,
+                    email=c.email,
+                    telefone=c.telefone
+                )
+                for c in turma_salva.catequistas
+            ]
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao criar turma: {str(e)}")
+
+
+@router.put("/turmas/{turma_id}", response_model=TurmaDetailResponse)
+def editar_turma(turma_id: str, turma_data: TurmaUpdate):
+    """Edita uma turma existente."""
+    try:
+        from app.repositories.turmaRepository import TurmaRepository
+        from app.domain.turma import Turma
+        from app.domain.etapa import Etapa
+        from app.domain.localEncontro import LocalEncontro
+        from app.domain.catequista import Catequista
+        from app.infra.supabaseClient import get_supabase
+
+        supabase = get_supabase()
+
+        # Buscar turma existente
+        repo = TurmaRepository()
+        turma_existente = repo.buscar_por_id(turma_id)
+
+        if not turma_existente:
+            raise HTTPException(status_code=404, detail="Turma não encontrada")
+
+        # Buscar local de encontro
+        local_encontro = turma_existente.local_encontro
+        if turma_data.local_encontro_id and turma_data.local_encontro_id != (
+        local_encontro.id if local_encontro else None):
+            local_db = (
+                supabase
+                .table("local_encontro")
+                .select("*")
+                .eq("id", turma_data.local_encontro_id)
+                .maybe_single()
+                .execute()
+            )
+
+            if local_db.data:
+                local_encontro = LocalEncontro(
+                    id=local_db.data["id"],
+                    codigo=local_db.data["codigo"],
+                    nome_exibicao=local_db.data["nome_exibicao"]
+                )
+
+        # Buscar catequistas
+        catequistas = []
+        if turma_data.catequistas_ids:
+            for cat_id in turma_data.catequistas_ids:
+                cat_db = (
+                    supabase
+                    .table("catequista")
+                    .select("*")
+                    .eq("id", cat_id)
+                    .maybe_single()
+                    .execute()
+                )
+
+                if cat_db.data:
+                    catequistas.append(
+                        Catequista(
+                            id=cat_db.data["id"],
+                            nome=cat_db.data["nome"],
+                            email=cat_db.data.get("email"),
+                            telefone=cat_db.data.get("telefone"),
+                            usuario=None
+                        )
+                    )
+
+        # Atualizar turma
+        turma = Turma(
+            id=turma_id,
+            etapa=turma_existente.etapa,
+            nome_sistema=turma_data.nome_sistema if turma_data.nome_sistema is not None else turma_existente.nome_sistema,
+            nome_exibicao=turma_data.nome_exibicao if turma_data.nome_exibicao is not None else turma_existente.nome_exibicao,
+            vagas_totais=turma_data.vagas_totais if turma_data.vagas_totais is not None else turma_existente.vagas_totais,
+            ativa=turma_data.ativa if turma_data.ativa is not None else turma_existente.ativa,
+            local_encontro=local_encontro,
+            ano_nasc_minimo=turma_data.ano_nasc_minimo if turma_data.ano_nasc_minimo is not None else turma_existente.ano_nasc_minimo,
+            ano_nasc_maximo=turma_data.ano_nasc_maximo if turma_data.ano_nasc_maximo is not None else turma_existente.ano_nasc_maximo,
+            catequistas=catequistas
+        )
+
+        # Salvar alterações
+        turma_editada = repo.editar(turma)
+
+        return TurmaDetailResponse(
+            id=turma_editada.id,
+            etapa_id=turma_editada.etapa.id,
+            etapa_nome=turma_editada.etapa.nome,
+            nome_sistema=turma_editada.nome_sistema,
+            nome_exibicao=turma_editada.nome_exibicao,
+            vagas_totais=turma_editada.vagas_totais,
+            ativa=turma_editada.ativa,
+            local_encontro_id=turma_editada.local_encontro.id if turma_editada.local_encontro else None,
+            local_encontro_nome=turma_editada.local_encontro.nome_exibicao if turma_editada.local_encontro else None,
+            ano_nasc_minimo=turma_editada.ano_nasc_minimo,
+            ano_nasc_maximo=turma_editada.ano_nasc_maximo,
+            catequistas=[
+                CatequistaResponse(
+                    id=c.id,
+                    nome=c.nome,
+                    email=c.email,
+                    telefone=c.telefone
+                )
+                for c in turma_editada.catequistas
+            ]
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao editar turma: {str(e)}")
+
+
+@router.delete("/turmas/{turma_id}")
+def excluir_turma(turma_id: str):
+    """Exclui uma turma."""
+    try:
+        from app.repositories.turmaRepository import TurmaRepository
+
+        repo = TurmaRepository()
+        turma_existente = repo.buscar_por_id(turma_id)
+
+        if not turma_existente:
+            raise HTTPException(status_code=404, detail="Turma não encontrada")
+
+        sucesso = repo.apagar(turma_id)
+
+        if not sucesso:
+            raise HTTPException(status_code=500, detail="Não foi possível excluir a turma")
+
+        return {"message": "Turma excluída com sucesso"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao excluir turma: {str(e)}")
 
 
 @router.post("/inscricoes", response_model=InscricaoResponse)
