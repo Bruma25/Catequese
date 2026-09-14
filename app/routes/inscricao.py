@@ -27,12 +27,12 @@ router = APIRouter()
 class InscricaoCreate(BaseModel):
     catequizando_nome: str
     catequizando_data_nascimento: date
-    catequizando_sacramentos: List[int]  # IDs dos sacramentos
+    catequizando_sacramentos: List[int]
     etapa_id: str
     responsavel_nome: str
     responsavel_email: Optional[str] = None
     responsavel_telefone: str
-    responsavel_vinculo: int  # ID do tipo_vinculo_responsavel
+    responsavel_vinculo: int
 
 
 class InscricaoResponse(BaseModel):
@@ -57,8 +57,8 @@ class EtapaCreate(BaseModel):
     descricao: Optional[str] = None
     ano_nasc_minimo: Optional[int] = None
     ano_nasc_maximo: Optional[int] = None
-    sacramentos_requeridos: List[int] = []  # IDs dos sacramentos
-    sacramentos_proibidos: List[int] = []  # IDs dos sacramentos
+    sacramentos_requeridos: List[int] = []
+    sacramentos_proibidos: List[int] = []
 
 
 class EtapaUpdate(BaseModel):
@@ -218,7 +218,6 @@ def criar_etapa(etapa_data: EtapaCreate):
 
         supabase = get_supabase()
 
-        # Buscar sacramentos requeridos
         sacramentos_requeridos = []
         if etapa_data.sacramentos_requeridos:
             for sac_id in etapa_data.sacramentos_requeridos:
@@ -239,7 +238,6 @@ def criar_etapa(etapa_data: EtapaCreate):
                         )
                     )
 
-        # Buscar sacramentos proibidos
         sacramentos_proibidos = []
         if etapa_data.sacramentos_proibidos:
             for sac_id in etapa_data.sacramentos_proibidos:
@@ -260,7 +258,6 @@ def criar_etapa(etapa_data: EtapaCreate):
                         )
                     )
 
-        # Criar etapa
         etapa = Etapa(
             id=str(uuid.uuid4()),
             nome=etapa_data.nome,
@@ -271,7 +268,6 @@ def criar_etapa(etapa_data: EtapaCreate):
             sacramentos_proibidos=sacramentos_proibidos
         )
 
-        # Salvar etapa
         repo = EtapaRepository()
         etapa_salva = repo.salvar(etapa)
 
@@ -302,14 +298,12 @@ def editar_etapa(etapa_id: str, etapa_data: EtapaUpdate):
 
         supabase = get_supabase()
 
-        # Buscar etapa existente
         repo = EtapaRepository()
         etapa_existente = repo.buscar_por_id(etapa_id)
 
         if not etapa_existente:
             raise HTTPException(status_code=404, detail="Etapa não encontrada")
 
-        # Buscar sacramentos requeridos
         sacramentos_requeridos = []
         if etapa_data.sacramentos_requeridos:
             for sac_id in etapa_data.sacramentos_requeridos:
@@ -330,7 +324,6 @@ def editar_etapa(etapa_id: str, etapa_data: EtapaUpdate):
                         )
                     )
 
-        # Buscar sacramentos proibidos
         sacramentos_proibidos = []
         if etapa_data.sacramentos_proibidos:
             for sac_id in etapa_data.sacramentos_proibidos:
@@ -351,7 +344,6 @@ def editar_etapa(etapa_id: str, etapa_data: EtapaUpdate):
                         )
                     )
 
-        # Atualizar etapa
         etapa = Etapa(
             id=etapa_id,
             nome=etapa_data.nome if etapa_data.nome is not None else etapa_existente.nome,
@@ -362,7 +354,6 @@ def editar_etapa(etapa_id: str, etapa_data: EtapaUpdate):
             sacramentos_proibidos=sacramentos_proibidos
         )
 
-        # Salvar alterações
         etapa_editada = repo.editar(etapa)
 
         return EtapaDetailResponse(
@@ -536,7 +527,6 @@ def listar_turmas():
 
         repo = TurmaRepository()
 
-        # Buscar todas as turmas
         supabase = get_supabase()
         result = (
             supabase
@@ -556,7 +546,7 @@ def listar_turmas():
                 "ativa": t.get("ativa", True),
                 "etapa_id": t["etapa_id"],
                 "etapa_nome": "",
-                "local_encontro_id": t.get("local_encontro_id"),
+                "local_encontro_id": str(t.get("local_encontro_id")) if t.get("local_encontro_id") else None,
                 "ano_nasc_minimo": t.get("ano_nasc_minimo"),
                 "ano_nasc_maximo": t.get("ano_nasc_maximo")
             })
@@ -587,7 +577,7 @@ def buscar_turma(turma_id: str):
             nome_exibicao=turma.nome_exibicao,
             vagas_totais=turma.vagas_totais,
             ativa=turma.ativa,
-            local_encontro_id=turma.local_encontro.id if turma.local_encontro else None,
+            local_encontro_id=str(turma.local_encontro.id) if turma.local_encontro else None,
             local_encontro_nome=turma.local_encontro.nome_exibicao if turma.local_encontro else None,
             ano_nasc_minimo=turma.ano_nasc_minimo,
             ano_nasc_maximo=turma.ano_nasc_maximo,
@@ -622,7 +612,6 @@ def criar_turma(turma_data: TurmaCreate):
 
         supabase = get_supabase()
 
-        # Buscar etapa
         etapa_db = (
             supabase
             .table("etapa")
@@ -645,7 +634,6 @@ def criar_turma(turma_data: TurmaCreate):
             sacramentos_proibidos=[]
         )
 
-        # Buscar local de encontro
         local_encontro = None
         if turma_data.local_encontro_id:
             local_db = (
@@ -664,7 +652,6 @@ def criar_turma(turma_data: TurmaCreate):
                     nome_exibicao=local_db.data["nome_exibicao"]
                 )
 
-        # Buscar catequistas
         catequistas = []
         if turma_data.catequistas_ids:
             for cat_id in turma_data.catequistas_ids:
@@ -688,7 +675,6 @@ def criar_turma(turma_data: TurmaCreate):
                         )
                     )
 
-        # Criar turma
         turma = Turma(
             id=str(uuid.uuid4()),
             etapa=etapa,
@@ -702,7 +688,6 @@ def criar_turma(turma_data: TurmaCreate):
             catequistas=catequistas
         )
 
-        # Salvar turma
         repo = TurmaRepository()
         turma_salva = repo.salvar(turma)
 
@@ -714,7 +699,7 @@ def criar_turma(turma_data: TurmaCreate):
             nome_exibicao=turma_salva.nome_exibicao,
             vagas_totais=turma_salva.vagas_totais,
             ativa=turma_salva.ativa,
-            local_encontro_id=turma_salva.local_encontro.id if turma_salva.local_encontro else None,
+            local_encontro_id=str(turma_salva.local_encontro.id) if turma_salva.local_encontro else None,
             local_encontro_nome=turma_salva.local_encontro.nome_exibicao if turma_salva.local_encontro else None,
             ano_nasc_minimo=turma_salva.ano_nasc_minimo,
             ano_nasc_maximo=turma_salva.ano_nasc_maximo,
@@ -748,14 +733,12 @@ def editar_turma(turma_id: str, turma_data: TurmaUpdate):
 
         supabase = get_supabase()
 
-        # Buscar turma existente
         repo = TurmaRepository()
         turma_existente = repo.buscar_por_id(turma_id)
 
         if not turma_existente:
             raise HTTPException(status_code=404, detail="Turma não encontrada")
 
-        # Buscar local de encontro
         local_encontro = turma_existente.local_encontro
         if turma_data.local_encontro_id and turma_data.local_encontro_id != (
         local_encontro.id if local_encontro else None):
@@ -775,7 +758,6 @@ def editar_turma(turma_id: str, turma_data: TurmaUpdate):
                     nome_exibicao=local_db.data["nome_exibicao"]
                 )
 
-        # Buscar catequistas
         catequistas = []
         if turma_data.catequistas_ids:
             for cat_id in turma_data.catequistas_ids:
@@ -799,7 +781,6 @@ def editar_turma(turma_id: str, turma_data: TurmaUpdate):
                         )
                     )
 
-        # Atualizar turma
         turma = Turma(
             id=turma_id,
             etapa=turma_existente.etapa,
@@ -813,7 +794,6 @@ def editar_turma(turma_id: str, turma_data: TurmaUpdate):
             catequistas=catequistas
         )
 
-        # Salvar alterações
         turma_editada = repo.editar(turma)
 
         return TurmaDetailResponse(
@@ -824,7 +804,7 @@ def editar_turma(turma_id: str, turma_data: TurmaUpdate):
             nome_exibicao=turma_editada.nome_exibicao,
             vagas_totais=turma_editada.vagas_totais,
             ativa=turma_editada.ativa,
-            local_encontro_id=turma_editada.local_encontro.id if turma_editada.local_encontro else None,
+            local_encontro_id=str(turma_editada.local_encontro.id) if turma_editada.local_encontro else None,
             local_encontro_nome=turma_editada.local_encontro.nome_exibicao if turma_editada.local_encontro else None,
             ano_nasc_minimo=turma_editada.ano_nasc_minimo,
             ano_nasc_maximo=turma_editada.ano_nasc_maximo,
@@ -874,20 +854,10 @@ def excluir_turma(turma_id: str):
 def criar_inscricao(inscricao_data: InscricaoCreate):
     """
     Cria uma nova inscrição de catequizando.
-
-    Fluxo:
-    1. Cria catequizando no banco (com histórico sacramental)
-    2. Cria responsável no banco
-    3. Cria vínculo entre eles
-    4. Busca etapa e status
-    5. Busca turmas da etapa e total de inscrições
-    6. Valida regras de domínio (incluindo verificação de vagas)
-    7. Cria e salva inscrição
     """
     try:
         supabase = get_supabase()
 
-        # 1. Buscar etapa no banco
         etapa_db = (
             supabase
             .table("etapa")
@@ -912,7 +882,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
             sacramentos_proibidos=[],
         )
 
-        # 2. Criar catequizando SEM histórico (inicialmente)
         from app.domain.historicoSacramental import HistoricoSacramental
         from app.domain.sacramento import Sacramento
 
@@ -927,10 +896,9 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
             necessidade_especial=False,
             descricao_necessidade_especial=None,
             vinculos_responsaveis=[],
-            historico_sacramental=[],  # ← VAZIO inicialmente!
+            historico_sacramental=[],
         )
 
-        # 3. Criar responsável
         responsavel_novo = Responsavel(
             id=str(uuid.uuid4()),
             nome=inscricao_data.responsavel_nome,
@@ -940,16 +908,12 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
             vinculos=[],
         )
 
-        # 4. Salvar catequizando e responsável
         repo_catequizando = CatequizandoRepository()
         repo_responsavel = ResponsavelRepository()
 
-        # Salvar catequizando (apenas dados básicos)
         catequizando_salvo = repo_catequizando.salvar(catequizando_novo)
 
-        # 5. Criar e adicionar histórico sacramental (APÓS salvar o catequizando)
         for sacramento_id in inscricao_data.catequizando_sacramentos:
-            # Buscar sacramento no banco
             sacramento_db = (
                 supabase
                 .table("sacramento")
@@ -975,16 +939,12 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
                     observacoes=None,
                 )
 
-                # Adicionar ao catequizando
                 catequizando_salvo.adicionar_historico_sacramental(historico)
 
-        # Sincronizar histórico sacramental
         repo_catequizando.sincronizar_historico_sacramental(catequizando_salvo)
 
-        # Salvar responsável
         responsavel_salvo = repo_responsavel.salvar(responsavel_novo)
 
-        # 6. Criar vínculo entre responsável e catequizando
         tipo_vinculo_db = (
             supabase
             .table("tipo_vinculo_responsavel")
@@ -1019,7 +979,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
 
         repo_catequizando.sincronizar_vinculos_responsaveis(catequizando_salvo)
 
-        # 7. Buscar status "pendente de distribuição"
         status_db = (
             supabase
             .table("status_inscricao")
@@ -1038,7 +997,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
             descricao=status_db.data["descricao"],
         )
 
-        # 8. Validar regras de domínio básicas
         if not responsavel_salvo.pode_responder_por(catequizando_salvo):
             raise HTTPException(
                 status_code=400,
@@ -1051,14 +1009,12 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
                 detail="O catequizando não atende aos requisitos da etapa."
             )
 
-        # 9. Buscar turmas da etapa e total de inscrições para verificar vagas
         repo_inscricao = InscricaoRepository()
         turmas, total_inscricoes = repo_inscricao.buscar_dados_para_verificar_vagas(
             etapa_id=etapa.id,
             catequizando=catequizando_salvo,
         )
 
-        # 10. Criar serviço com status confirmada e lista_espera
         status_confirmada_db = (
             supabase
             .table("status_inscricao")
@@ -1101,7 +1057,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
             status_lista_espera=status_lista_espera,
         )
 
-        # 11. Criar inscrição (já com verificação de vagas)
         inscricao = servico.criar_inscricao(
             id_inscricao=str(uuid.uuid4()),
             catequizando=catequizando_salvo,
@@ -1113,7 +1068,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
             observacao_responsavel=None,
         )
 
-        # 12. Salvar inscrição no banco
         inscricao_salva = repo_inscricao.salvar(inscricao)
 
         return InscricaoResponse(
@@ -1183,21 +1137,17 @@ def upload_documento(
         file: UploadFile = File(...),
         tipo_documento: str = Form(...)
 ):
-    """
-    Faz upload de um documento para uma inscrição.
-    """
+    """Faz upload de um documento para uma inscrição."""
     try:
         import tempfile
         import os
 
-        # 1. Salvar arquivo temporariamente
         with tempfile.NamedTemporaryFile(delete=False,
                                          suffix=Path(file.filename).suffix if file.filename else "") as tmp:
             tmp.write(file.file.read())
             tmp_path = tmp.name
 
         try:
-            # 2. Usar o serviço para enviar
             servico = ServicoDocumentoInscricao()
 
             documento = servico.enviar_documento(
@@ -1215,7 +1165,6 @@ def upload_documento(
                 "storage_path": documento.caminho_storage
             }
         finally:
-            # 3. Limpar arquivo temporário
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)
 
