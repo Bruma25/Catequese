@@ -9,22 +9,12 @@ O que o script faz:
 3. Cria uma turma dessa etapa com vagas limitadas.
 4. Lista inscrições existentes antes do teste.
 5. Cria N inscrições novas (configurável) via API.
-6. Lista inscrições novamente e identifica as criadas no teste.
-7. Busca cada inscrição criada e verifica o status.
-8. Asserta que:
+6. Busca cada inscrição criada e verifica o status.
+7. Asserta que:
    - as primeiras inscrições têm status 'confirmada' (quando há vaga);
    - as últimas têm status 'lista_espera' (quando não há mais vaga).
-9. Limpa as inscrições criadas, a turma e a etapa de teste no final.
 
-Pré-requisitos:
-- requests instalado: pip install requests
-- supabase instalado: pip install supabase
-- .env com SUPABASE_URL e SUPABASE_SERVICE_KEY
-
-Configurações:
-- BASE_URL: URL da API (com prefixo /api/v1, se houver).
-- NUM_INSCRICOES_PARA_TESTE: quantas inscrições criar (padrão: 7).
-- VAGAS_TURMA: número de vagas da turma criada (padrão: 5).
+Limpa as inscrições, turma e etapa no final.
 """
 
 import requests
@@ -42,9 +32,9 @@ load_dotenv()
 # ==============================
 
 BASE_URL = "https://catequese-ttg8.onrender.com/api/v1"
-NUM_INSCRICOES_PARA_TESTE = 7  # ← quantas inscrições criar
-VAGAS_TURMA = 5  # ← vagas da turma de teste
-API_TIMEOUT = 60  # ← timeout em segundos
+NUM_INSCRICOES_PARA_TESTE = 7
+VAGAS_TURMA = 5
+API_TIMEOUT = 60
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
@@ -196,6 +186,39 @@ def garantir_tipo_vinculo():
 
     return 1
 
+def contar_inscricoes_etapa(etapa_id: str) -> int:
+    """
+    Conta inscrições de uma etapa, excluindo canceladas.
+    """
+    # Busca ID do status cancelada
+    result = (
+        supabase
+        .table("status_inscricao")
+        .select("id")
+        .eq("codigo", "cancelada")
+        .limit(1)
+        .execute()
+    )
+
+    status_cancelada_id = None
+    if result.data and len(result.data) > 0:
+        status_cancelada_id = result.data[0]["id"]
+
+    # Conta inscrições
+    query = (
+        supabase
+        .table("inscricao")
+        .select("id", count="exact")
+        .eq("etapa_id", etapa_id)
+    )
+
+    if status_cancelada_id:
+        query = query.neq("status_id", status_cancelada_id)
+
+    result = query.execute()
+
+    return result.count if result.count is not None else 0
+
 def obter_status_inscricao(inscricao_id: str) -> str:
     result = (
         supabase
@@ -216,9 +239,6 @@ def obter_status_inscricao(inscricao_id: str) -> str:
     return result.data["status"]["codigo"]
 
 def limpar_inscricoes(ids_inscricoes: list):
-    """
-    Apaga as inscrições criadas no teste.
-    """
     for inscricao_id in ids_inscricoes:
         try:
             (
@@ -331,23 +351,23 @@ def main():
         print(f"  → Turma criada: {turma_id}")
         print(f"  → Vagas totais: {VAGAS_TURMA}")
 
-        # 5. Listar inscrições antes do teste
-        print("\nListando inscrições existentes antes do teste...")
-        try:
-            inscricoes_antes = listar_inscricoes()
-        except Exception as e:
-            print(f"Erro ao listar inscrições: {e}")
-            print("Verifique se a API está no ar e tente novamente.")
-            return
-
-        ids_antes = {i["id"] for i in inscricoes_antes}
-        print(f"  → Inscrições existentes: {len(ids_antes)}")
+        # 5. Contar inscrições existentes antes do teste
+        print("\nContando inscrições existentes na etapa...")
+        total_inscricoes_antes = contar_inscricoes_etapa(etapa_id)
+        print(f"  → Inscrições existentes na etapa: {total_inscricoes_antes}")
 
         # 6. Criar inscrições
         n_inscricoes = NUM_INSCRICOES_PARA_TESTE
         print(f"\nSerão criadas {n_inscricoes} inscrições para teste.")
         print(f"  → Vagas disponíveis: {VAGAS_TURMA}")
-        print(f"  → Esperado: {min(n_inscricoes, VAGAS_TURMA)} confirmada(s), {max(0, n_inscricoes - VAGAS_TURMA)} em lista de espera\n")
+        print(f"  → Inscrições já existentes: {total_inscricoes_antes}")
+
+        # Calcula quantas deveriam ser confirmada vs lista_espera
+        vagas_restantes = max(0, VAGAS_TURMA - total_inscricoes_antes)
+        esperadas_confirmada = min(n_inscricoes, vagas_restantes)
+        esperadas_lista_espera = max(0, n_inscricoes - esperadas_confirmada)
+
+        print(f"  → Esperado: {esperadas_confirmada} confirmada(s), {esperadas_lista_espera} em lista de espera\n")
 
         for i in range(1, n_inscricoes + 1):
             print(f"Criando inscrição {i}/{n_inscricoes}...")
@@ -362,27 +382,12 @@ def main():
 
             time.sleep(0.5)
 
-        # 7. Listar inscrições após o teste
-        print("\nListando inscrições após o teste...")
-        try:
-            inscricoes_depois = listar_inscricoes()
-        except Exception as e:
-            print(f"Erro ao listar inscrições após o teste: {e}")
-            return
-
-        ids_depois = {i["id"] for i in inscricoes_depois}
-        ids_novas = ids_depois - ids_antes
-
-        print(f"  → Inscrições novas identificadas: {len(ids_novas)}")
-
-        # 8. Verificar status de cada inscrição criada
+        # 7. Verificar status de cada inscrição criada (na ordem de criação)
         print("\n=== Verificando status das inscrições ===\n")
 
-        ids_novas_ordenados = sorted(ids_novas)
-
         resultados = []
-        for idx, inscricao_id in enumerate(ids_novas_ordenados, start=1):
-            print(f"Buscando inscrição {idx}/{len(ids_novas_ordenados)}: {inscricao_id}...")
+        for idx, inscricao_id in enumerate(ids_inscricoes, start=1):
+            print(f"Buscando inscrição {idx}/{len(ids_inscricoes)}: {inscricao_id}...")
             try:
                 detalhe = buscar_inscricao(inscricao_id)
                 status_id = detalhe.get("status_id")
@@ -406,7 +411,7 @@ def main():
                     "erro": str(e),
                 })
 
-        # 9. Validar resultados
+        # 8. Validar resultados
         print("\n=== Resultado ===\n")
 
         erros = []
@@ -418,7 +423,7 @@ def main():
             idx = r["indice"]
             status = r["status_codigo"]
 
-            if idx <= VAGAS_TURMA:
+            if idx <= esperadas_confirmada:
                 if status != "confirmada":
                     erros.append(
                         f"Inscrição {idx} deveria ser 'confirmada', mas está '{status}'."
@@ -435,11 +440,11 @@ def main():
                 print(f"  - {erro}")
         else:
             print("TESTE APROVADO:")
-            print(f"  - As primeiras {VAGAS_TURMA} inscrições estão com status 'confirmada'.")
-            if n_inscricoes > VAGAS_TURMA:
-                print(f"  - A(s) última(s) {n_inscricoes - VAGAS_TURMA} inscrição(ões) estão com status 'lista_espera'.")
+            print(f"  - As primeiras {esperadas_confirmada} inscrições estão com status 'confirmada'.")
+            if esperadas_lista_espera > 0:
+                print(f"  - A(s) última(s) {esperadas_lista_espera} inscrição(ões) estão com status 'lista_espera'.")
 
-        # 10. Resumo
+        # 9. Resumo
         print("\n=== Resumo das inscrições criadas ===\n")
         for r in resultados:
             print(f"Inscrição {r['indice']} ({r['id']}): status_id = {r['status_id']}, status = {r['status_codigo']}")

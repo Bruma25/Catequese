@@ -52,6 +52,34 @@ class EtapaResponse(BaseModel):
     sacramentos_requeridos: List[int]
 
 
+class EtapaCreate(BaseModel):
+    nome: str
+    descricao: Optional[str] = None
+    ano_nasc_minimo: Optional[int] = None
+    ano_nasc_maximo: Optional[int] = None
+    sacramentos_requeridos: List[int] = []  # IDs dos sacramentos
+    sacramentos_proibidos: List[int] = []  # IDs dos sacramentos
+
+
+class EtapaUpdate(BaseModel):
+    nome: Optional[str] = None
+    descricao: Optional[str] = None
+    ano_nasc_minimo: Optional[int] = None
+    ano_nasc_maximo: Optional[int] = None
+    sacramentos_requeridos: List[int] = []
+    sacramentos_proibidos: List[int] = []
+
+
+class EtapaDetailResponse(BaseModel):
+    id: str
+    nome: str
+    descricao: Optional[str] = None
+    ano_nasc_minimo: Optional[int] = None
+    ano_nasc_maximo: Optional[int] = None
+    sacramentos_requeridos: List[int]
+    sacramentos_proibidos: List[int]
+
+
 class SacramentoResponse(BaseModel):
     id: int
     codigo: str
@@ -85,6 +113,233 @@ def listar_etapas():
         ]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao listar etapas: {str(e)}")
+
+
+@router.get("/etapas/{etapa_id}", response_model=EtapaDetailResponse)
+def buscar_etapa(etapa_id: str):
+    """Busca uma etapa específica pelo ID, incluindo sacramentos requeridos e proibidos."""
+    try:
+        from app.repositories.etapaRepository import EtapaRepository
+
+        repo = EtapaRepository()
+        etapa = repo.buscar_por_id(etapa_id)
+
+        if not etapa:
+            raise HTTPException(status_code=404, detail="Etapa não encontrada")
+
+        return EtapaDetailResponse(
+            id=etapa.id,
+            nome=etapa.nome,
+            descricao=etapa.descricao,
+            ano_nasc_minimo=etapa.ano_nasc_minimo,
+            ano_nasc_maximo=etapa.ano_nasc_maximo,
+            sacramentos_requeridos=[s.id for s in etapa.sacramentos_requeridos],
+            sacramentos_proibidos=[s.id for s in etapa.sacramentos_proibidos]
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao buscar etapa: {str(e)}")
+
+
+@router.post("/etapas", response_model=EtapaDetailResponse)
+def criar_etapa(etapa_data: EtapaCreate):
+    """Cria uma nova etapa com sacramentos requeridos e proibidos."""
+    try:
+        from app.repositories.etapaRepository import EtapaRepository
+        from app.domain.etapa import Etapa
+        from app.domain.sacramento import Sacramento
+        from app.infra.supabaseClient import get_supabase
+        import uuid
+
+        supabase = get_supabase()
+
+        # Buscar sacramentos requeridos
+        sacramentos_requeridos = []
+        if etapa_data.sacramentos_requeridos:
+            for sac_id in etapa_data.sacramentos_requeridos:
+                sac_db = (
+                    supabase
+                    .table("sacramento")
+                    .select("*")
+                    .eq("id", sac_id)
+                    .maybe_single()
+                    .execute()
+                )
+                if sac_db.data:
+                    sacramentos_requeridos.append(
+                        Sacramento(
+                            id=sac_db.data["id"],
+                            codigo=sac_db.data["codigo"],
+                            nome_exibicao=sac_db.data["nome_exibicao"]
+                        )
+                    )
+
+        # Buscar sacramentos proibidos
+        sacramentos_proibidos = []
+        if etapa_data.sacramentos_proibidos:
+            for sac_id in etapa_data.sacramentos_proibidos:
+                sac_db = (
+                    supabase
+                    .table("sacramento")
+                    .select("*")
+                    .eq("id", sac_id)
+                    .maybe_single()
+                    .execute()
+                )
+                if sac_db.data:
+                    sacramentos_proibidos.append(
+                        Sacramento(
+                            id=sac_db.data["id"],
+                            codigo=sac_db.data["codigo"],
+                            nome_exibicao=sac_db.data["nome_exibicao"]
+                        )
+                    )
+
+        # Criar etapa
+        etapa = Etapa(
+            id=str(uuid.uuid4()),
+            nome=etapa_data.nome,
+            descricao=etapa_data.descricao,
+            ano_nasc_minimo=etapa_data.ano_nasc_minimo,
+            ano_nasc_maximo=etapa_data.ano_nasc_maximo,
+            sacramentos_requeridos=sacramentos_requeridos,
+            sacramentos_proibidos=sacramentos_proibidos
+        )
+
+        # Salvar etapa
+        repo = EtapaRepository()
+        etapa_salva = repo.salvar(etapa)
+
+        return EtapaDetailResponse(
+            id=etapa_salva.id,
+            nome=etapa_salva.nome,
+            descricao=etapa_salva.descricao,
+            ano_nasc_minimo=etapa_salva.ano_nasc_minimo,
+            ano_nasc_maximo=etapa_salva.ano_nasc_maximo,
+            sacramentos_requeridos=[s.id for s in etapa_salva.sacramentos_requeridos],
+            sacramentos_proibidos=[s.id for s in etapa_salva.sacramentos_proibidos]
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao criar etapa: {str(e)}")
+
+
+@router.put("/etapas/{etapa_id}", response_model=EtapaDetailResponse)
+def editar_etapa(etapa_id: str, etapa_data: EtapaUpdate):
+    """Edita uma etapa existente, atualizando sacramentos requeridos e proibidos."""
+    try:
+        from app.repositories.etapaRepository import EtapaRepository
+        from app.domain.etapa import Etapa
+        from app.domain.sacramento import Sacramento
+        from app.infra.supabaseClient import get_supabase
+
+        supabase = get_supabase()
+
+        # Buscar etapa existente
+        repo = EtapaRepository()
+        etapa_existente = repo.buscar_por_id(etapa_id)
+
+        if not etapa_existente:
+            raise HTTPException(status_code=404, detail="Etapa não encontrada")
+
+        # Buscar sacramentos requeridos
+        sacramentos_requeridos = []
+        if etapa_data.sacramentos_requeridos:
+            for sac_id in etapa_data.sacramentos_requeridos:
+                sac_db = (
+                    supabase
+                    .table("sacramento")
+                    .select("*")
+                    .eq("id", sac_id)
+                    .maybe_single()
+                    .execute()
+                )
+                if sac_db.data:
+                    sacramentos_requeridos.append(
+                        Sacramento(
+                            id=sac_db.data["id"],
+                            codigo=sac_db.data["codigo"],
+                            nome_exibicao=sac_db.data["nome_exibicao"]
+                        )
+                    )
+
+        # Buscar sacramentos proibidos
+        sacramentos_proibidos = []
+        if etapa_data.sacramentos_proibidos:
+            for sac_id in etapa_data.sacramentos_proibidos:
+                sac_db = (
+                    supabase
+                    .table("sacramento")
+                    .select("*")
+                    .eq("id", sac_id)
+                    .maybe_single()
+                    .execute()
+                )
+                if sac_db.data:
+                    sacramentos_proibidos.append(
+                        Sacramento(
+                            id=sac_db.data["id"],
+                            codigo=sac_db.data["codigo"],
+                            nome_exibicao=sac_db.data["nome_exibicao"]
+                        )
+                    )
+
+        # Atualizar etapa
+        etapa = Etapa(
+            id=etapa_id,
+            nome=etapa_data.nome if etapa_data.nome is not None else etapa_existente.nome,
+            descricao=etapa_data.descricao if etapa_data.descricao is not None else etapa_existente.descricao,
+            ano_nasc_minimo=etapa_data.ano_nasc_minimo if etapa_data.ano_nasc_minimo is not None else etapa_existente.ano_nasc_minimo,
+            ano_nasc_maximo=etapa_data.ano_nasc_maximo if etapa_data.ano_nasc_maximo is not None else etapa_existente.ano_nasc_maximo,
+            sacramentos_requeridos=sacramentos_requeridos,
+            sacramentos_proibidos=sacramentos_proibidos
+        )
+
+        # Salvar alterações
+        etapa_editada = repo.editar(etapa)
+
+        return EtapaDetailResponse(
+            id=etapa_editada.id,
+            nome=etapa_editada.nome,
+            descricao=etapa_editada.descricao,
+            ano_nasc_minimo=etapa_editada.ano_nasc_minimo,
+            ano_nasc_maximo=etapa_editada.ano_nasc_maximo,
+            sacramentos_requeridos=[s.id for s in etapa_editada.sacramentos_requeridos],
+            sacramentos_proibidos=[s.id for s in etapa_editada.sacramentos_proibidos]
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao editar etapa: {str(e)}")
+
+
+@router.delete("/etapas/{etapa_id}")
+def excluir_etapa(etapa_id: str):
+    """Exclui uma etapa e suas relações com sacramentos."""
+    try:
+        from app.repositories.etapaRepository import EtapaRepository
+
+        repo = EtapaRepository()
+        etapa_existente = repo.buscar_por_id(etapa_id)
+
+        if not etapa_existente:
+            raise HTTPException(status_code=404, detail="Etapa não encontrada")
+
+        sucesso = repo.apagar(etapa_id)
+
+        if not sucesso:
+            raise HTTPException(status_code=500, detail="Não foi possível excluir a etapa")
+
+        return {"message": "Etapa excluída com sucesso"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao excluir etapa: {str(e)}")
 
 
 @router.get("/sacramentos", response_model=List[SacramentoResponse])
