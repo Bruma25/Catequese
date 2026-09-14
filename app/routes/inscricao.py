@@ -474,11 +474,13 @@ def listar_locais_encontro():
 
         return [
             LocalEncontroResponse(
-                id=l["id"],
-                codigo=l["codigo"],
-                nome_exibicao=l["nome_exibicao"]
-            )
-            for l in resultado.data
+                id=str(l["id"]),  ← Converta
+        para
+        string
+        codigo = l["codigo"],
+        nome_exibicao = l["nome_exibicao"]
+        )
+        for l in resultado.data
         ]
 
     except Exception as e:
@@ -741,7 +743,7 @@ def editar_turma(turma_id: str, turma_data: TurmaUpdate):
 
         local_encontro = turma_existente.local_encontro
         if turma_data.local_encontro_id and turma_data.local_encontro_id != (
-        local_encontro.id if local_encontro else None):
+                local_encontro.id if local_encontro else None):
             local_db = (
                 supabase
                 .table("local_encontro")
