@@ -366,3 +366,40 @@
     padding: 40px 30px;
   }
 }
+
+/* Sacramentos no card */
+.etapa-sacramentos {
+  font-size: 13px;
+  color: #666;
+  margin: 5px 0 0 0;
+}
+
+/* Container de sacramentos no modal */
+.sacramentos-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.sacramentos-container .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sacramentos-container .form-hint {
+  font-size: 11px;
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+/* Responsivo */
+@media (max-width: 480px) {
+  .sacramentos-container {
+    gap: 8px;
+  }
+}

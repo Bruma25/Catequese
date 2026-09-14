@@ -3,12 +3,13 @@ import { useState, useEffect } from 'react'
 import logo from '../assets/logo.png'
 import papel from '../assets/role.png'
 import menu from '../assets/menu.png'
-import { supabase } from '../services/supabaseClient'
+import { listarEtapas, criarEtapa, editarEtapa, excluirEtapa, listarSacramentos, buscarEtapa } from '../services/api'
 import './GestaoEtapasPage.css'
 
 function GestaoEtapasPage() {
   const navigate = useNavigate()
   const [etapas, setEtapas] = useState([])
+  const [sacramentos, setSacramentos] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editandoEtapa, setEditandoEtapa] = useState(null)
@@ -16,29 +17,40 @@ function GestaoEtapasPage() {
     nome: '',
     descricao: '',
     ano_nasc_minimo: '',
-    ano_nasc_maximo: ''
+    ano_nasc_maximo: '',
+    sacramentos_requeridos: [],
+    sacramentos_proibidos: []
   })
 
   const anoAtual = new Date().getFullYear()
 
-  // Buscar etapas do Supabase
+  // Buscar etapas e sacramentos da API
   useEffect(() => {
     window.scrollTo(0, 0)
-    fetchEtapas()
+    fetchData()
   }, [])
 
-  async function fetchEtapas() {
+  async function fetchData() {
     try {
-      const { data, error } = await supabase
-        .from('etapa')
-        .select('*')
-        .order('nome')
+      // Buscar etapas
+      const etapasData = await listarEtapas()
 
-      if (error) throw error
-      setEtapas(data || [])
+      // Buscar detalhes de cada etapa para ter sacramentos_requeridos e proibidos
+      const etapasComDetalhes = await Promise.all(
+        etapasData.map(async (etapa) => {
+          const detalhe = await buscarEtapa(etapa.id)
+          return detalhe
+        })
+      )
+
+      setEtapas(etapasComDetalhes)
+
+      // Buscar sacramentos
+      const sacramentosData = await listarSacramentos()
+      setSacramentos(sacramentosData)
     } catch (error) {
-      console.error('Erro ao buscar etapas:', error)
-      alert('Erro ao carregar etapas')
+      console.error('Erro ao buscar dados:', error)
+      alert('Erro ao carregar dados. Tente novamente.')
     } finally {
       setLoading(false)
     }
@@ -51,7 +63,9 @@ function GestaoEtapasPage() {
         nome: etapa.nome || '',
         descricao: etapa.descricao || '',
         ano_nasc_minimo: etapa.ano_nasc_minimo || '',
-        ano_nasc_maximo: etapa.ano_nasc_maximo || ''
+        ano_nasc_maximo: etapa.ano_nasc_maximo || '',
+        sacramentos_requeridos: etapa.sacramentos_requeridos || [],
+        sacramentos_proibidos: etapa.sacramentos_proibidos || []
       })
     } else {
       setEditandoEtapa(null)
@@ -59,7 +73,9 @@ function GestaoEtapasPage() {
         nome: '',
         descricao: '',
         ano_nasc_minimo: '',
-        ano_nasc_maximo: ''
+        ano_nasc_maximo: '',
+        sacramentos_requeridos: [],
+        sacramentos_proibidos: []
       })
     }
     setShowModal(true)
@@ -72,7 +88,9 @@ function GestaoEtapasPage() {
       nome: '',
       descricao: '',
       ano_nasc_minimo: '',
-      ano_nasc_maximo: ''
+      ano_nasc_maximo: '',
+      sacramentos_requeridos: [],
+      sacramentos_proibidos: []
     })
   }
 
@@ -84,6 +102,40 @@ function GestaoEtapasPage() {
     }))
   }
 
+  const handleSacramentoToggle = (sacramentoId, tipo) => {
+    if (tipo === 'requeridos') {
+      setFormData(prev => {
+        const novosRequeridos = prev.sacramentos_requeridos.includes(sacramentoId)
+          ? prev.sacramentos_requeridos.filter(id => id !== sacramentoId)
+          : [...prev.sacramentos_requeridos, sacramentoId]
+
+        // Remove dos proibidos se estiver
+        const novosProibidos = prev.sacramentos_proibidos.filter(id => id !== sacramentoId)
+
+        return {
+          ...prev,
+          sacramentos_requeridos: novosRequeridos,
+          sacramentos_proibidos: novosProibidos
+        }
+      })
+    } else if (tipo === 'proibidos') {
+      setFormData(prev => {
+        const novosProibidos = prev.sacramentos_proibidos.includes(sacramentoId)
+          ? prev.sacramentos_proibidos.filter(id => id !== sacramentoId)
+          : [...prev.sacramentos_proibidos, sacramentoId]
+
+        // Remove dos requeridos se estiver
+        const novosRequeridos = prev.sacramentos_requeridos.filter(id => id !== sacramentoId)
+
+        return {
+          ...prev,
+          sacramentos_requeridos: novosRequeridos,
+          sacramentos_proibidos: novosProibidos
+        }
+      })
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
 
@@ -92,38 +144,33 @@ function GestaoEtapasPage() {
       return
     }
 
+    if (parseInt(formData.ano_nasc_minimo) > parseInt(formData.ano_nasc_maximo)) {
+      alert('O ano mínimo não pode ser maior que o ano máximo')
+      return
+    }
+
     try {
+      const dadosEtapa = {
+        nome: formData.nome,
+        descricao: formData.descricao,
+        ano_nasc_minimo: parseInt(formData.ano_nasc_minimo),
+        ano_nasc_maximo: parseInt(formData.ano_nasc_maximo),
+        sacramentos_requeridos: formData.sacramentos_requeridos,
+        sacramentos_proibidos: formData.sacramentos_proibidos
+      }
+
       if (editandoEtapa) {
         // Editar etapa existente
-        const { error } = await supabase
-          .from('etapa')
-          .update({
-            nome: formData.nome,
-            descricao: formData.descricao,
-            ano_nasc_minimo: parseInt(formData.ano_nasc_minimo),
-            ano_nasc_maximo: parseInt(formData.ano_nasc_maximo)
-          })
-          .eq('id', editandoEtapa.id)
-
-        if (error) throw error
+        await editarEtapa(editandoEtapa.id, dadosEtapa)
         alert('Etapa atualizada com sucesso!')
       } else {
         // Criar nova etapa
-        const { error } = await supabase
-          .from('etapa')
-          .insert([{
-            nome: formData.nome,
-            descricao: formData.descricao,
-            ano_nasc_minimo: parseInt(formData.ano_nasc_minimo),
-            ano_nasc_maximo: parseInt(formData.ano_nasc_maximo)
-          }])
-
-        if (error) throw error
+        await criarEtapa(dadosEtapa)
         alert('Etapa criada com sucesso!')
       }
 
       handleCloseModal()
-      fetchEtapas()
+      fetchData()
     } catch (error) {
       console.error('Erro ao salvar etapa:', error)
       alert(`Erro: ${error.message}`)
@@ -136,14 +183,9 @@ function GestaoEtapasPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from('etapa')
-        .delete()
-        .eq('id', etapaId)
-
-      if (error) throw error
+      await excluirEtapa(etapaId)
       alert('Etapa excluída com sucesso!')
-      fetchEtapas()
+      fetchData()
     } catch (error) {
       console.error('Erro ao excluir etapa:', error)
       alert(`Erro: ${error.message}`)
@@ -211,6 +253,28 @@ function GestaoEtapasPage() {
                     <p className="etapa-anos">
                       Nascimentos: {etapa.ano_nasc_minimo} - {etapa.ano_nasc_maximo}
                     </p>
+                    {etapa.sacramentos_requeridos && etapa.sacramentos_requeridos.length > 0 && (
+                      <p className="etapa-sacramentos">
+                        <strong>Sacramentos requeridos:</strong>{' '}
+                        {etapa.sacramentos_requeridos
+                          .map(id => {
+                            const sac = sacramentos.find(s => s.id === id)
+                            return sac ? sac.nome_exibicao : id
+                          })
+                          .join(', ')}
+                      </p>
+                    )}
+                    {etapa.sacramentos_proibidos && etapa.sacramentos_proibidos.length > 0 && (
+                      <p className="etapa-sacramentos">
+                        <strong>Sacramentos proibidos:</strong>{' '}
+                        {etapa.sacramentos_proibidos
+                          .map(id => {
+                            const sac = sacramentos.find(s => s.id === id)
+                            return sac ? sac.nome_exibicao : id
+                          })
+                          .join(', ')}
+                      </p>
+                    )}
                   </div>
                   <div className="etapa-actions">
                     <button
@@ -296,6 +360,51 @@ function GestaoEtapasPage() {
                     min="1900"
                     max={anoAtual}
                   />
+                </div>
+              </div>
+
+              {/* Sacramentos Requeridos */}
+              <div className="form-group">
+                <label className="form-label">Sacramentos Requeridos:</label>
+                <div className="sacramentos-container">
+                  {sacramentos.map(sacramento => (
+                    <label key={sacramento.id} className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={formData.sacramentos_requeridos.includes(sacramento.id)}
+                        onChange={() => handleSacramentoToggle(sacramento.id, 'requeridos')}
+                        disabled={formData.sacramentos_proibidos.includes(sacramento.id)}
+                      />
+                      <span>{sacramento.nome_exibicao}</span>
+                      {formData.sacramentos_proibidos.includes(sacramento.id) && (
+                        <small className="form-hint"> (proibido)</small>
+                      )}
+                    </label>
+                  ))}
+                </div>
+                <p className="form-hint">
+                  * Um sacramento não pode ser requerido e proibido ao mesmo tempo.
+                </p>
+              </div>
+
+              {/* Sacramentos Proibidos */}
+              <div className="form-group">
+                <label className="form-label">Sacramentos Proibidos:</label>
+                <div className="sacramentos-container">
+                  {sacramentos.map(sacramento => (
+                    <label key={sacramento.id} className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={formData.sacramentos_proibidos.includes(sacramento.id)}
+                        onChange={() => handleSacramentoToggle(sacramento.id, 'proibidos')}
+                        disabled={formData.sacramentos_requeridos.includes(sacramento.id)}
+                      />
+                      <span>{sacramento.nome_exibicao}</span>
+                      {formData.sacramentos_requeridos.includes(sacramento.id) && (
+                        <small className="form-hint"> (requerido)</small>
+                      )}
+                    </label>
+                  ))}
                 </div>
               </div>
 

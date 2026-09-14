@@ -43,6 +43,31 @@ export async function listarTiposVinculo() {
   return request('/api/v1/tipos-vinculo')
 }
 
+// Etapas - CRUD completo
+export async function buscarEtapa(id) {
+  return request(`/api/v1/etapas/${id}`)
+}
+
+export async function criarEtapa(dados) {
+  return request('/api/v1/etapas', {
+    method: 'POST',
+    body: JSON.stringify(dados)
+  })
+}
+
+export async function editarEtapa(id, dados) {
+  return request(`/api/v1/etapas/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(dados)
+  })
+}
+
+export async function excluirEtapa(id) {
+  return request(`/api/v1/etapas/${id}`, {
+    method: 'DELETE'
+  })
+}
+
 // Inscrições
 export async function criarInscricao(dados) {
   return request('/api/v1/inscricoes', {
