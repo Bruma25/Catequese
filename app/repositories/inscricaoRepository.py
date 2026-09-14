@@ -100,6 +100,11 @@ class InscricaoRepository:
                     descricao,
                     ano_nasc_minimo,
                     ano_nasc_maximo
+                ),
+                local_encontro:local_encontro_id(
+                    id,
+                    codigo,
+                    nome_exibicao
                 )
             """)
             .eq("etapa_id", etapa_id)
@@ -111,6 +116,8 @@ class InscricaoRepository:
         turmas = []
         for item in data:
             etapa = self._montar_etapa_simplificada(item["etapa"])
+            local_encontro = self._montar_local_encontro(item.get("local_encontro"))
+
             turma = Turma(
                 id=item["id"],
                 etapa=etapa,
@@ -118,7 +125,7 @@ class InscricaoRepository:
                 nome_exibicao=item.get("nome_exibicao"),
                 vagas_totais=item["vagas_totais"],
                 ativa=item.get("ativa", True),
-                local_encontro=None,
+                local_encontro=local_encontro,
                 ano_nasc_minimo=item.get("ano_nasc_minimo"),
                 ano_nasc_maximo=item.get("ano_nasc_maximo"),
                 catequistas=[],
@@ -126,6 +133,18 @@ class InscricaoRepository:
             turmas.append(turma)
 
         return turmas
+
+    def _montar_local_encontro(self, data: Optional[dict]) -> Optional[LocalEncontro]:
+        if not data:
+            return None
+
+        from app.domain.localEncontro import LocalEncontro
+
+        return LocalEncontro(
+            id=data["id"],
+            codigo=data["codigo"],
+            nome_exibicao=data["nome_exibicao"],
+        )
 
     def contar_inscricoes_por_etapa(
         self,
