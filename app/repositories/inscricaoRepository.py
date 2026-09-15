@@ -909,6 +909,10 @@ class InscricaoRepository:
             raise ValueError("A turma deve pertencer à mesma etapa da inscrição")
 
         inscricao.atribuir_turma(turma)
+
+        status_distribuida= self._buscar_status_por_codigo("distribuida")
+        if status_distribuida: inscricao.definir_status(status_distribuida)
+
         return self.editar(inscricao)
 
     def remover_turma(self, inscricao_id: str) -> Optional[Inscricao]:
@@ -919,4 +923,18 @@ class InscricaoRepository:
             return None
 
         inscricao.remover_turma()
+
+        status_pendente = self._buscar_status_por_codigo("pendente_distribuicao")
+        if status_pendente: inscricao.definir_status(status_pendente)
+
         return self.editar(inscricao)
+
+    def _buscar_status_por_codigo(self, codigo: str) -> Optional[StatusInscricao]:
+        """Busca um status pelo código."""
+        result = ( self.db.table("status_inscricao") .select("*") .eq("codigo", codigo) .maybe_single() .execute() )
+
+        data = self._extrair_data_optional(result)
+        if not data:
+            return None
+
+        return StatusInscricao( id=data["id"], codigo=data["codigo"], descricao=data["descricao"], )
