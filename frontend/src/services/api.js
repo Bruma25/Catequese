@@ -83,3 +83,39 @@ export async function listarInscricoes() {
 export async function buscarInscricao(id) {
   return request(`/api/v1/inscricoes/${id}`)
 }
+
+export async function listarTurmas() {
+  return request('/api/v1/turmas')
+}
+
+export async function buscarTurma(id) {
+  return request(`/api/v1/turmas/${id}`)
+}
+
+export async function criarTurma(dados) {
+  return request('/api/v1/turmas', {
+    method: 'POST',
+    body: JSON.stringify(dados)
+  })
+}
+
+export async function editarTurma(id, dados) {
+  return request(`/api/v1/turmas/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(dados)
+  })
+}
+
+export async function excluirTurma(id) {
+  return request(`/api/v1/turmas/${id}`, {
+    method: 'DELETE'
+  })
+}
+
+export async function listarLocaisEncontro() {
+  return request('/api/v1/locais-encontro')
+}
+
+export async function listarCatequistas() {
+  return request('/api/v1/catequistas')
+}

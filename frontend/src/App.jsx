@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage'
 import EtapaPage from './pages/EtapaPage'
 import FichaInscricaoPage from './pages/FichaInscricaoPage'
 import GestaoEtapasPage from './pages/GestaoEtapasPage'
+import GestaoTurmasPage from './pages/GestaoTurmasPage'
 import './App.css'
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
         <Route path="/etapas" element={<EtapaPage />} />
         <Route path="/inscricao" element={<FichaInscricaoPage />} />
         <Route path="/gestao-etapas" element={<GestaoEtapasPage />} />
+        <Route path="/gestao-turmas" element={<GestaoTurmasPage />} />
       </Routes>
     </Router>
   )
