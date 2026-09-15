@@ -37,12 +37,14 @@ class Inscricao:
     usuario_override: Optional["Usuario"] = None
 
     STATUS_PENDENTE_DISTRIBUICAO = "PENDENTE_DISTRIBUICAO"
+    STATUS_DISTRIBUIDA = "DISTRIBUIDA"
     STATUS_CONFIRMADA = "CONFIRMADA"
     STATUS_LISTA_ESPERA = "LISTA_ESPERA"
     STATUS_CANCELADA = "CANCELADA"
 
     STATUS_DESCRICOES = {
         STATUS_PENDENTE_DISTRIBUICAO: "Pendente de distribuição em turma",
+        STATUS_DISTRIBUIDA: "Distribuída em turma",
         STATUS_CONFIRMADA: "Inscrição confirmada",
         STATUS_LISTA_ESPERA: "Aguardando vaga",
         STATUS_CANCELADA: "Inscrição cancelada",
@@ -147,6 +149,9 @@ class Inscricao:
 
     def confirmar(self) -> None:
         self.status = self._novo_status(self.STATUS_CONFIRMADA)
+
+    def distribuir(self) -> None:
+        self.status = self._novo_status(self.STATUS_DISTRIBUIDA)
 
     def colocar_em_lista_espera(self) -> None:
         self.status = self._novo_status(self.STATUS_LISTA_ESPERA)
