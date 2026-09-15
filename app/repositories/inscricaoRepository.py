@@ -264,7 +264,8 @@ class InscricaoRepository:
                     vagas_totais,
                     ativa,
                     ano_nasc_minimo,
-                    ano_nasc_maximo
+                    ano_nasc_maximo, 
+                    local_encontro:local_encontro_id ( id, codigo, nome_exibicao )
                 ),
                 status:status_id (
                     id,
@@ -445,6 +446,8 @@ class InscricaoRepository:
         if not data:
             return None
 
+        local_encontro = self._montar_local_encontro( data.get("local_encontro") )
+
         return Turma(
             id=data["id"],
             etapa=etapa,
@@ -452,7 +455,7 @@ class InscricaoRepository:
             nome_exibicao=data.get("nome_exibicao"),
             vagas_totais=data["vagas_totais"],
             ativa=data.get("ativa", True),
-            local_encontro=None,
+            local_encontro=local_encontro,
             ano_nasc_minimo=data.get("ano_nasc_minimo"),
             ano_nasc_maximo=data.get("ano_nasc_maximo"),
             catequistas=[],
@@ -897,6 +900,9 @@ class InscricaoRepository:
 
         if not turma:
             raise ValueError(f"Turma {turma_id} não encontrada")
+
+        if turma.local_encontro is None:
+            raise ValueError( "A turma encontrada não possui local de encontro carregado." )
 
         # Valida se a turma pertence à mesma etapa da inscrição
         if turma.etapa.id != inscricao.etapa.id:
