@@ -1192,3 +1192,209 @@ def listar_documentos(inscricao_id: str):
         ]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao listar documentos: {str(e)}")
+
+@router.get("/inscricoes/etapa/{etapa_id}", response_model=List[InscricaoResponse])
+def listar_inscricoes_por_etapa(etapa_id: str):
+    """Lista todas as inscrições de uma etapa específica."""
+    try:
+        repo = InscricaoRepository()
+        inscricoes = repo.listar_por_etapa(etapa_id)
+
+        return [
+            InscricaoResponse(
+                id=i["id"],
+                catequizando_nome=i["catequizando_nome"],
+                etapa_id=i["etapa_id"],
+                status_id=i["status_id"],
+                responsavel_nome=i["responsavel_nome"],
+                created_at=i.get("created_at")
+            )
+            for i in inscricoes
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao listar inscrições por etapa: {str(e)}")
+
+
+@router.get("/inscricoes/status/{status_codigo}", response_model=List[InscricaoResponse])
+def listar_inscricoes_por_status(status_codigo: str):
+    """Lista todas as inscrições com um status específico."""
+    try:
+        repo = InscricaoRepository()
+        inscricoes = repo.listar_por_status(status_codigo)
+
+        return [
+            InscricaoResponse(
+                id=i["id"],
+                catequizando_nome=i["catequizando_nome"],
+                etapa_id=i["etapa_id"],
+                status_id=i["status_id"],
+                responsavel_nome=i["responsavel_nome"],
+                created_at=i.get("created_at")
+            )
+            for i in inscricoes
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao listar inscrições por status: {str(e)}")
+
+
+@router.get("/inscricoes/pendentes-distribuicao", response_model=List[InscricaoResponse])
+def listar_pendentes_distribuicao():
+    """Lista todas as inscrições pendentes de distribuição em turma."""
+    try:
+        repo = InscricaoRepository()
+        inscricoes = repo.listar_pendentes_distribuicao()
+
+        return [
+            InscricaoResponse(
+                id=i["id"],
+                catequizando_nome=i["catequizando_nome"],
+                etapa_id=i["etapa_id"],
+                status_id=i["status_id"],
+                responsavel_nome=i["responsavel_nome"],
+                created_at=i.get("created_at")
+            )
+            for i in inscricoes
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao listar pendentes de distribuição: {str(e)}")
+
+
+@router.get("/inscricoes/{inscricao_id}/completa")
+def buscar_inscricao_completa(inscricao_id: str):
+    """Busca uma inscrição com todos os detalhes e relacionamentos."""
+    try:
+        repo = InscricaoRepository()
+        inscricao = repo.buscar_com_detalhes_completos(inscricao_id)
+
+        if not inscricao:
+            raise HTTPException(status_code=404, detail="Inscrição não encontrada")
+
+        return inscricao
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao buscar inscrição completa: {str(e)}")
+
+
+@router.put("/inscricoes/{inscricao_id}/status")
+def atualizar_status_inscricao(inscricao_id: str, status_id: int):
+    """Atualiza o status de uma inscrição."""
+    try:
+        repo = InscricaoRepository()
+        inscricao = repo.atualizar_status(inscricao_id, status_id)
+
+        if not inscricao:
+            raise HTTPException(status_code=404, detail="Inscrição não encontrada")
+
+        return {
+            "message": "Status atualizado com sucesso",
+            "inscricao_id": inscricao.id,
+            "novo_status_id": inscricao.status.id,
+            "novo_status_codigo": inscricao.status.codigo
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao atualizar status: {str(e)}")
+
+
+@router.put("/inscricoes/{inscricao_id}/turma")
+def atribuir_turma_inscricao(inscricao_id: str, turma_id: str):
+    """Atribui uma turma a uma inscrição."""
+    try:
+        repo = InscricaoRepository()
+        inscricao = repo.atribuir_turma(inscricao_id, turma_id)
+
+        if not inscricao:
+            raise HTTPException(status_code=404, detail="Inscrição não encontrada")
+
+        return {
+            "message": "Turma atribuída com sucesso",
+            "inscricao_id": inscricao.id,
+            "turma_id": inscricao.turma.id if inscricao.turma else None,
+            "turma_nome": inscricao.turma.nome_exibicao if inscricao.turma else None,
+            "status_id": inscricao.status.id,
+            "status_codigo": inscricao.status.codigo
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao atribuir turma: {str(e)}")
+
+
+@router.delete("/inscricoes/{inscricao_id}/turma")
+def remover_turma_inscricao(inscricao_id: str):
+    """Remove a turma de uma inscrição."""
+    try:
+        repo = InscricaoRepository()
+        inscricao = repo.remover_turma(inscricao_id)
+
+        if not inscricao:
+            raise HTTPException(status_code=404, detail="Inscrição não encontrada")
+
+        return {
+            "message": "Turma removida com sucesso",
+            "inscricao_id": inscricao.id,
+            "status_id": inscricao.status.id,
+            "status_codigo": inscricao.status.codigo
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao remover turma: {str(e)}")
+
+
+@router.get("/turmas/{turma_id}/vagas-ocupadas")
+def contar_vagas_ocupadas(turma_id: str):
+    """Conta quantas inscrições confirmadas existem em uma turma."""
+    try:
+        repo = InscricaoRepository()
+        ocupadas = repo.contar_vagas_ocupadas_por_turma(turma_id)
+
+        return {
+            "turma_id": turma_id,
+            "vagas_ocupadas": ocupadas
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao contar vagas ocupadas: {str(e)}")
+
+
+@router.delete("/documentos/{documento_id}")
+def excluir_documento(documento_id: str):
+    """Exclui um documento de inscrição."""
+    try:
+        from app.services.servicoDocumentoInscricao import ServicoDocumentoInscricao
+
+        servico = ServicoDocumentoInscricao()
+        documento = servico.excluir_documento(documento_id)
+
+        return {
+            "message": "Documento excluído com sucesso",
+            "documento_id": documento.id
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao excluir documento: {str(e)}")
+
+
+@router.put("/documentos/{documento_id}/status")
+def atualizar_status_documento(documento_id: str, status_validacao: str, observacao_validacao: Optional[str] = None):
+    """Aprova ou rejeita um documento."""
+    try:
+        from app.services.servicoDocumentoInscricao import ServicoDocumentoInscricao
+
+        servico = ServicoDocumentoInscricao()
+        documento = servico.atualizar_status_documento(
+            documento_id=documento_id,
+            status_validacao=status_validacao,
+            observacao_validacao=observacao_validacao
+        )
+
+        return {
+            "message": "Status do documento atualizado com sucesso",
+            "documento_id": documento.id,
+            "status_validacao": documento.status_validacao
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao atualizar status do documento: {str(e)}")

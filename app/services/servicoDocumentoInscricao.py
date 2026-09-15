@@ -11,20 +11,20 @@ from app.services.servicoStorageSupabase import ServicoStorageSupabase
 
 class ServicoDocumentoInscricao:
     def __init__(
-        self,
-        documento_repository: Optional[DocumentoInscricaoRepository] = None,
-        storage_service: Optional[ServicoStorageSupabase] = None,
+            self,
+            documento_repository: Optional[DocumentoInscricaoRepository] = None,
+            storage_service: Optional[ServicoStorageSupabase] = None,
     ):
         self.documento_repository = documento_repository or DocumentoInscricaoRepository()
         self.storage_service = storage_service or ServicoStorageSupabase()
 
     def enviar_documento(
-        self,
-        inscricao_id: str,
-        tipo_documento: str,
-        caminho_arquivo_local: str,
-        nome_original: Optional[str] = None,
-        bucket: Optional[str] = None,
+            self,
+            inscricao_id: str,
+            tipo_documento: str,
+            caminho_arquivo_local: str,
+            nome_original: Optional[str] = None,
+            bucket: Optional[str] = None,
     ) -> DocumentoInscricao:
         caminho_local = self._resolver_caminho_local(caminho_arquivo_local)
         nome_original_final = self._resolver_nome_original(caminho_local, nome_original)
@@ -81,6 +81,48 @@ class ServicoDocumentoInscricao:
             raise ValueError("Não foi possível gerar a URL assinada do documento.")
 
         return url
+
+    def excluir_documento(self, documento_id: str) -> DocumentoInscricao:
+        """
+        Exclui um documento do storage e do banco.
+        """
+        documento = self._buscar_documento_obrigatorio(documento_id)
+
+        # Remove do storage (continua mesmo se falhar)
+        try:
+            self.storage_service.remover_arquivo(
+                caminho_storage=documento.caminho_storage,
+                bucket=documento.bucket,
+            )
+        except Exception:
+            pass
+
+        # Remove do banco
+        sucesso = self.documento_repository.apagar(documento_id)
+
+        if not sucesso:
+            raise ValueError(f"Não foi possível excluir o documento {documento_id}")
+
+        return documento
+
+    def atualizar_status_documento(
+            self,
+            documento_id: str,
+            status_validacao: str,
+            observacao_validacao: Optional[str] = None
+    ) -> DocumentoInscricao:
+        """
+        Aprova ou rejeita um documento.
+        """
+        documento = self._buscar_documento_obrigatorio(documento_id)
+
+        if status_validacao not in ['pendente', 'aprovado', 'rejeitado']:
+            raise ValueError("Status deve ser 'pendente', 'aprovado' ou 'rejeitado'")
+
+        documento.status_validacao = status_validacao
+        documento.observacao_validacao = observacao_validacao
+
+        return self.documento_repository.editar(documento)
 
     def apagar_documento(self, documento_id: str) -> bool:
         documento = self.documento_repository.buscar_por_id(documento_id)
@@ -139,15 +181,15 @@ class ServicoDocumentoInscricao:
         return f"inscricoes/{inscricao_id_normalizado}/{nome_arquivo_normalizado}"
 
     def _criar_documento_pendente(
-        self,
-        inscricao_id: str,
-        tipo_documento: str,
-        nome_original: str,
-        nome_arquivo: str,
-        caminho_storage: str,
-        bucket: str,
-        mime_type: Optional[str],
-        tamanho_bytes: int,
+            self,
+            inscricao_id: str,
+            tipo_documento: str,
+            nome_original: str,
+            nome_arquivo: str,
+            caminho_storage: str,
+            bucket: str,
+            mime_type: Optional[str],
+            tamanho_bytes: int,
     ) -> DocumentoInscricao:
         documento = DocumentoInscricao(
             id=None,
@@ -165,9 +207,9 @@ class ServicoDocumentoInscricao:
         return documento
 
     def _tentar_remover_arquivo_enviado(
-        self,
-        caminho_storage: str,
-        bucket: str,
+            self,
+            caminho_storage: str,
+            bucket: str,
     ) -> None:
         try:
             self.storage_service.remover_arquivo(
@@ -186,23 +228,23 @@ class ServicoDocumentoInscricao:
 
         if isinstance(resposta, dict):
             return (
-                resposta.get("signedURL")
-                or resposta.get("signedUrl")
-                or resposta.get("signed_url")
+                    resposta.get("signedURL")
+                    or resposta.get("signedUrl")
+                    or resposta.get("signed_url")
             )
 
         if hasattr(resposta, "get"):
             return (
-                resposta.get("signedURL")
-                or resposta.get("signedUrl")
-                or resposta.get("signed_url")
+                    resposta.get("signedURL")
+                    or resposta.get("signedUrl")
+                    or resposta.get("signed_url")
             )
 
         if hasattr(resposta, "data") and isinstance(resposta.data, dict):
             return (
-                resposta.data.get("signedURL")
-                or resposta.data.get("signedUrl")
-                or resposta.data.get("signed_url")
+                    resposta.data.get("signedURL")
+                    or resposta.data.get("signedUrl")
+                    or resposta.data.get("signed_url")
             )
 
         return None

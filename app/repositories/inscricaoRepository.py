@@ -615,3 +615,296 @@ class InscricaoRepository:
             "status_id": inscricao.status.id,
             "created_at": str(inscricao.data_inscricao) if inscricao.data_inscricao else None
         }
+
+    def listar_por_etapa(self, etapa_id: str) -> List[dict]:
+        """Lista todas as inscrições de uma etapa específica."""
+        result = (
+            self.db.table(self.table)
+            .select("""
+                id,
+                termo_assinado,
+                data_inscricao,
+                catequizando:catequizando_id (
+                    id,
+                    nome
+                ),
+                responsavel:responsavel_id (
+                    id,
+                    nome
+                ),
+                etapa:etapa_id (
+                    id,
+                    nome
+                ),
+                status:status_id (
+                    id,
+                    codigo
+                ),
+                turma:turma_id (
+                    id,
+                    nome_sistema,
+                    nome_exibicao
+                )
+            """)
+            .eq("etapa_id", etapa_id)
+            .order("data_inscricao", desc=True)
+            .execute()
+        )
+
+        data = self._extrair_lista(result)
+
+        inscricoes = []
+        for item in data:
+            inscricoes.append({
+                "id": item["id"],
+                "catequizando_nome": item["catequizando"]["nome"] if item.get("catequizando") else None,
+                "responsavel_nome": item["responsavel"]["nome"] if item.get("responsavel") else None,
+                "etapa_id": item["etapa"]["id"] if item.get("etapa") else None,
+                "etapa_nome": item["etapa"]["nome"] if item.get("etapa") else None,
+                "status_id": item["status"]["id"] if item.get("status") else None,
+                "status_codigo": item["status"]["codigo"] if item.get("status") else None,
+                "turma_id": item["turma"]["id"] if item.get("turma") else None,
+                "turma_nome": item["turma"]["nome_exibicao"] if item.get("turma") else None,
+                "termo_assinado": item.get("termo_assinado", False),
+                "created_at": item.get("data_inscricao")
+            })
+
+        return inscricoes
+
+    def listar_por_status(self, status_codigo: str) -> List[dict]:
+        """Lista todas as inscrições com um status específico."""
+        # Primeiro busca o ID do status
+        result_status = (
+            self.db.table("status_inscricao")
+            .select("id")
+            .eq("codigo", status_codigo)
+            .limit(1)
+            .execute()
+        )
+
+        data_status = self._extrair_lista(result_status)
+        if not data_status or len(data_status) == 0:
+            return []
+
+        status_id = data_status[0]["id"]
+
+        # Busca inscrições com esse status
+        result = (
+            self.db.table(self.table)
+            .select("""
+                id,
+                termo_assinado,
+                data_inscricao,
+                catequizando:catequizando_id (
+                    id,
+                    nome
+                ),
+                responsavel:responsavel_id (
+                    id,
+                    nome
+                ),
+                etapa:etapa_id (
+                    id,
+                    nome
+                ),
+                status:status_id (
+                    id,
+                    codigo
+                ),
+                turma:turma_id (
+                    id,
+                    nome_sistema,
+                    nome_exibicao
+                )
+            """)
+            .eq("status_id", status_id)
+            .order("data_inscricao", desc=True)
+            .execute()
+        )
+
+        data = self._extrair_lista(result)
+
+        inscricoes = []
+        for item in data:
+            inscricoes.append({
+                "id": item["id"],
+                "catequizando_nome": item["catequizando"]["nome"] if item.get("catequizando") else None,
+                "responsavel_nome": item["responsavel"]["nome"] if item.get("responsavel") else None,
+                "etapa_id": item["etapa"]["id"] if item.get("etapa") else None,
+                "etapa_nome": item["etapa"]["nome"] if item.get("etapa") else None,
+                "status_id": item["status"]["id"] if item.get("status") else None,
+                "status_codigo": item["status"]["codigo"] if item.get("status") else None,
+                "turma_id": item["turma"]["id"] if item.get("turma") else None,
+                "turma_nome": item["turma"]["nome_exibicao"] if item.get("turma") else None,
+                "termo_assinado": item.get("termo_assinado", False),
+                "created_at": item.get("data_inscricao")
+            })
+
+        return inscricoes
+
+    def listar_pendentes_distribuicao(self) -> List[dict]:
+        """Lista todas as inscrições pendentes de distribuição em turma."""
+        return self.listar_por_status("pendente_distribuicao")
+
+    def contar_vagas_ocupadas_por_turma(self, turma_id: str) -> int:
+        """Conta quantas inscrições confirmadas existem em uma turma."""
+        # Busca status confirmada e lista de espera
+        result_status = (
+            self.db.table("status_inscricao")
+            .select("id")
+            .in_("codigo", ["confirmada", "lista_espera"])
+            .execute()
+        )
+
+        data_status = self._extrair_lista(result_status)
+        if not data_status:
+            return 0
+
+        status_ids = [s["id"] for s in data_status]
+
+        result = (
+            self.db.table(self.table)
+            .select("id", count="exact")
+            .eq("turma_id", turma_id)
+            .in_("status_id", status_ids)
+            .execute()
+        )
+
+        if result is None or not hasattr(result, "count") or result.count is None:
+            return 0
+
+        return result.count
+
+    def buscar_com_detalhes_completos(self, inscricao_id: str) -> Optional[dict]:
+        """Busca uma inscrição com todos os detalhes e relacionamentos."""
+        inscricao = self.buscar_por_id_com_override_enriquecido(inscricao_id)
+
+        if not inscricao:
+            return None
+
+        # Busca documentos da inscrição
+        documentos = []
+        try:
+            from app.repositories.documentoInscricaoRepository import DocumentoInscricaoRepository
+            repo_documentos = DocumentoInscricaoRepository()
+            documentos_db = repo_documentos.listar_por_inscricao(inscricao_id)
+            documentos = [
+                {
+                    "id": d.id,
+                    "tipo_documento": d.tipo_documento,
+                    "nome_original": d.nome_original,
+                    "caminho_storage": d.caminho_storage,
+                    "status_validacao": d.status_validacao,
+                    "created_at": str(d.created_at) if d.created_at else None
+                }
+                for d in documentos_db
+            ]
+        except:
+            pass
+
+        return {
+            "id": inscricao.id,
+            "catequizando": {
+                "id": inscricao.catequizando.id,
+                "nome": inscricao.catequizando.nome,
+                "data_nascimento": str(
+                    inscricao.catequizando.data_nascimento) if inscricao.catequizando.data_nascimento else None,
+                "observacoes": inscricao.catequizando.observacoes,
+                "endereco": inscricao.catequizando.endereco,
+                "telefone": inscricao.catequizando.telefone,
+                "email": inscricao.catequizando.email,
+                "necessidade_especial": inscricao.catequizando.necessidade_especial,
+                "descricao_necessidade_especial": inscricao.catequizando.descricao_necessidade_especial
+            },
+            "responsavel": {
+                "id": inscricao.responsavel.id,
+                "nome": inscricao.responsavel.nome,
+                "email": inscricao.responsavel.email,
+                "telefone": inscricao.responsavel.telefone
+            },
+            "etapa": {
+                "id": inscricao.etapa.id,
+                "nome": inscricao.etapa.nome,
+                "descricao": inscricao.etapa.descricao
+            },
+            "turma": {
+                "id": inscricao.turma.id,
+                "nome_sistema": inscricao.turma.nome_sistema,
+                "nome_exibicao": inscricao.turma.nome_exibicao
+            } if inscricao.turma else None,
+            "status": {
+                "id": inscricao.status.id,
+                "codigo": inscricao.status.codigo,
+                "descricao": inscricao.status.descricao
+            },
+            "termo_assinado": inscricao.termo_assinado,
+            "data_inscricao": str(inscricao.data_inscricao) if inscricao.data_inscricao else None,
+            "quer_mesma_turma_que_irmao": inscricao.quer_mesma_turma_que_irmao,
+            "referencia_irmao": inscricao.referencia_irmao,
+            "observacao_responsavel": inscricao.observacao_responsavel,
+            "override_idade": inscricao.override_idade,
+            "motivo_override": inscricao.motivo_override,
+            "usuario_override": {
+                "id": inscricao.usuario_override.id,
+                "nome": inscricao.usuario_override.nome,
+                "email": inscricao.usuario_override.email
+            } if inscricao.usuario_override else None,
+            "documentos": documentos
+        }
+
+    def atualizar_status(self, inscricao_id: str, status_id: int) -> Optional[Inscricao]:
+        """Atualiza o status de uma inscrição."""
+        inscricao = self.buscar_por_id(inscricao_id)
+
+        if not inscricao:
+            return None
+
+        # Busca o novo status
+        result = (
+            self.db.table("status_inscricao")
+            .select("*")
+            .eq("id", status_id)
+            .maybe_single()
+            .execute()
+        )
+
+        data = self._extrair_data_optional(result)
+        if not data:
+            raise ValueError(f"Status {status_id} não encontrado")
+
+        novo_status = StatusInscricao(
+            id=data["id"],
+            codigo=data["codigo"],
+            descricao=data["descricao"]
+        )
+
+        inscricao.definir_status(novo_status)
+        return self.editar(inscricao)
+
+    def atribuir_turma(self, inscricao_id: str, turma_id: str) -> Optional[Inscricao]:
+        """Atribui uma turma a uma inscrição."""
+        from app.repositories.turmaRepository import TurmaRepository
+
+        inscricao = self.buscar_por_id(inscricao_id)
+
+        if not inscricao:
+            return None
+
+        repo_turma = TurmaRepository()
+        turma = repo_turma.buscar_por_id(turma_id)
+
+        if not turma:
+            raise ValueError(f"Turma {turma_id} não encontrada")
+
+        inscricao.atribuir_turma(turma)
+        return self.editar(inscricao)
+
+    def remover_turma(self, inscricao_id: str) -> Optional[Inscricao]:
+        """Remove a turma de uma inscrição."""
+        inscricao = self.buscar_por_id(inscricao_id)
+
+        if not inscricao:
+            return None
+
+        inscricao.remover_turma()
+        return self.editar(inscricao)
