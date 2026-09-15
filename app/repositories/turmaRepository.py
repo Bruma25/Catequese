@@ -331,3 +331,92 @@ class TurmaRepository:
         if result is None or not hasattr(result, "data"):
             return None
         return result.data
+
+    def buscar_por_id_completo(self, turma_id: str) -> Optional[Turma]:
+        """Busca turma completa com todos os relacionamentos."""
+        result = (
+            self.db.table("turma")
+            .select("""
+                id,
+                nome_sistema,
+                nome_exibicao,
+                vagas_totais,
+                ativa,
+                ano_nasc_minimo,
+                ano_nasc_maximo,
+                etapa:etapa_id (
+                    id,
+                    nome,
+                    descricao,
+                    ano_nasc_minimo,
+                    ano_nasc_maximo
+                ),
+                local_encontro:local_encontro_id (
+                    id,
+                    codigo,
+                    nome_exibicao
+                ),
+                catequistas:turma_catequista (
+                    catequista:catequista_id (
+                        id,
+                        nome,
+                        email,
+                        telefone
+                    )
+                )
+            """)
+            .eq("id", turma_id)
+            .maybe_single()
+            .execute()
+        )
+
+        data = self._extrair_data_optional(result)
+        if not data:
+            return None
+
+        return self._montar_turma_completa(data)
+
+    def _montar_turma_completa(self, data: dict) -> Turma:
+        """Monta entidade Turma completa com relacionamentos."""
+        etapa = Etapa(
+            id=data["etapa"]["id"],
+            nome=data["etapa"]["nome"],
+            descricao=data["etapa"].get("descricao"),
+            ano_nasc_minimo=data["etapa"].get("ano_nasc_minimo"),
+            ano_nasc_maximo=data["etapa"].get("ano_nasc_maximo"),
+            sacramentos_requeridos=[],
+            sacramentos_proibidos=[]
+        )
+
+        local_encontro = None
+        if data.get("local_encontro"):
+            local_encontro = LocalEncontro(
+                id=data["local_encontro"]["id"],
+                codigo=data["local_encontro"]["codigo"],
+                nome_exibicao=data["local_encontro"]["nome_exibicao"]
+            )
+
+        catequistas = []
+        for item in data.get("catequistas", []):
+            catequista_data = item.get("catequista")
+            if catequista_data:
+                catequistas.append(Catequista(
+                    id=catequista_data["id"],
+                    nome=catequista_data["nome"],
+                    email=catequista_data.get("email"),
+                    telefone=catequista_data.get("telefone"),
+                    usuario=None
+                ))
+
+        return Turma(
+            id=data["id"],
+            etapa=etapa,
+            nome_sistema=data["nome_sistema"],
+            nome_exibicao=data.get("nome_exibicao"),
+            vagas_totais=data["vagas_totais"],
+            ativa=data.get("ativa", True),
+            local_encontro=local_encontro,
+            ano_nasc_minimo=data.get("ano_nasc_minimo"),
+            ano_nasc_maximo=data.get("ano_nasc_maximo"),
+            catequistas=catequistas
+        )

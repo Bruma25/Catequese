@@ -191,9 +191,9 @@ class InscricaoRepository:
         return result.count
 
     def buscar_dados_para_verificar_vagas(
-        self,
-        etapa_id: str,
-        catequizando: Catequizando,
+            self,
+            etapa_id: str,
+            catequizando: Catequizando,
     ) -> tuple[List[Turma], int]:
         """
         Retorna:
@@ -891,10 +891,16 @@ class InscricaoRepository:
             return None
 
         repo_turma = TurmaRepository()
-        turma = repo_turma.buscar_por_id(turma_id)
+
+        # Busca a turma completa (com local_encontro)
+        turma = repo_turma.buscar_por_id_completo(turma_id)
 
         if not turma:
             raise ValueError(f"Turma {turma_id} não encontrada")
+
+        # Valida se a turma pertence à mesma etapa da inscrição
+        if turma.etapa.id != inscricao.etapa.id:
+            raise ValueError("A turma deve pertencer à mesma etapa da inscrição")
 
         inscricao.atribuir_turma(turma)
         return self.editar(inscricao)

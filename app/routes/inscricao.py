@@ -1193,6 +1193,29 @@ def listar_documentos(inscricao_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao listar documentos: {str(e)}")
 
+
+@router.get("/inscricoes/pendentes-distribuicao", response_model=List[InscricaoResponse])
+def listar_pendentes_distribuicao():
+    """Lista todas as inscrições pendentes de distribuição em turma."""
+    try:
+        repo = InscricaoRepository()
+        inscricoes = repo.listar_pendentes_distribuicao()
+
+        return [
+            InscricaoResponse(
+                id=i["id"],
+                catequizando_nome=i["catequizando_nome"],
+                etapa_id=i["etapa_id"],
+                status_id=i["status_id"],
+                responsavel_nome=i["responsavel_nome"],
+                created_at=i.get("created_at")
+            )
+            for i in inscricoes
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao listar pendentes de distribuição: {str(e)}")
+
+
 @router.get("/inscricoes/etapa/{etapa_id}", response_model=List[InscricaoResponse])
 def listar_inscricoes_por_etapa(etapa_id: str):
     """Lista todas as inscrições de uma etapa específica."""
@@ -1235,28 +1258,6 @@ def listar_inscricoes_por_status(status_codigo: str):
         ]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao listar inscrições por status: {str(e)}")
-
-
-@router.get("/inscricoes/pendentes-distribuicao", response_model=List[InscricaoResponse])
-def listar_pendentes_distribuicao():
-    """Lista todas as inscrições pendentes de distribuição em turma."""
-    try:
-        repo = InscricaoRepository()
-        inscricoes = repo.listar_pendentes_distribuicao()
-
-        return [
-            InscricaoResponse(
-                id=i["id"],
-                catequizando_nome=i["catequizando_nome"],
-                etapa_id=i["etapa_id"],
-                status_id=i["status_id"],
-                responsavel_nome=i["responsavel_nome"],
-                created_at=i.get("created_at")
-            )
-            for i in inscricoes
-        ]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao listar pendentes de distribuição: {str(e)}")
 
 
 @router.get("/inscricoes/{inscricao_id}/completa")
