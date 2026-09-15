@@ -1,8 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import logo from '../assets/logo.png'
-import papel from '../assets/role.png'
-import menu from '../assets/menu.png'
+import Header from '../components/Header/Header'
 import { listarEtapas, criarEtapa, editarEtapa, excluirEtapa, listarSacramentos, buscarEtapa } from '../services/api'
 import './GestaoEtapasPage.css'
 
@@ -192,35 +190,14 @@ function GestaoEtapasPage() {
     }
   }
 
-  const handlePerfilClick = () => {
-    alert('Menu de perfis (será implementado depois)')
-  }
-
-  const handleMenuClick = () => {
-    alert('Menu de navegação (será implementado depois)')
-  }
-
   if (loading) {
     return <div className="loading-container">Carregando...</div>
   }
 
   return (
     <div className="gestao-container">
-      {/* Cabeçalho */}
-      <header className="gestao-header">
-        <div className="header-left">
-          <img src={logo} alt="Logo" className="header-logo" />
-          <h1 className="header-title">Catequese Divino Espírito Santo</h1>
-        </div>
-        <div className="header-right">
-          <button onClick={handlePerfilClick} className="icon-button">
-            <img src={papel} alt="Perfil" className="header-icon" />
-          </button>
-          <button onClick={handleMenuClick} className="icon-button">
-            <img src={menu} alt="Menu" className="header-icon" />
-          </button>
-        </div>
-      </header>
+      {/* Cabeçalho Reutilizável */}
+      <Header titulo="Catequese Divino Espírito Santo" />
 
       {/* Conteúdo Principal */}
       <main className="gestao-content">

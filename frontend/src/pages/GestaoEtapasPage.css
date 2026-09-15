@@ -5,62 +5,6 @@
   flex-direction: column;
 }
 
-/* Cabeçalho */
-.gestao-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 20px;
-  background-color: #f5f5f5;
-  border-bottom: 1px solid #e0e0e0;
-  gap: 15px;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 1;
-}
-
-.header-logo {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.header-title {
-  font-family: 'Goudy Old Style, Georgia, serif';
-  font-size: 16px;
-  color: #b3b2b4;
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.header-right {
-  display: flex;
-  gap: 15px;
-}
-
-.icon-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.header-icon {
-  width: 35px;
-  height: 35px;
-  object-fit: contain;
-}
-
 /* Conteúdo Principal */
 .gestao-content {
   flex: 1;
@@ -149,7 +93,7 @@
 .etapa-idade {
   font-size: 14px;
   color: #888;
-  margin: 0 0 5px 0;
+  margin: 0 0 10px 0;
   font-style: italic;
 }
 
@@ -157,6 +101,12 @@
   font-size: 13px;
   color: #aaa;
   margin: 0;
+}
+
+.etapa-sacramentos {
+  font-size: 13px;
+  color: #666;
+  margin: 5px 0 0 0;
 }
 
 .etapa-actions {
@@ -315,15 +265,6 @@
 
 /* Responsivo */
 @media (max-width: 480px) {
-  .header-title {
-    font-size: 14px;
-  }
-
-  .header-logo {
-    width: 40px;
-    height: 40px;
-  }
-
   .gestao-content {
     padding: 20px 15px;
   }
@@ -365,13 +306,6 @@
   .gestao-content {
     padding: 40px 30px;
   }
-}
-
-/* Sacramentos no card */
-.etapa-sacramentos {
-  font-size: 13px;
-  color: #666;
-  margin: 5px 0 0 0;
 }
 
 /* Container de sacramentos no modal */
