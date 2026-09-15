@@ -1107,6 +1107,96 @@ def listar_inscricoes():
         raise HTTPException(status_code=500, detail=f"Erro ao listar inscrições: {str(e)}")
 
 
+@router.get(
+    "/inscricoes/pendentes-distribuicao",
+    response_model=List[InscricaoResponse],
+)
+def listar_pendentes_distribuicao():
+    """Lista inscrições pendentes de distribuição em turma."""
+    try:
+        repo = InscricaoRepository()
+        inscricoes = repo.listar_pendentes_distribuicao()
+
+        return [
+            InscricaoResponse(
+                id=item["id"],
+                catequizando_nome=item["catequizando_nome"],
+                etapa_id=item["etapa_id"],
+                status_id=item["status_id"],
+                responsavel_nome=item["responsavel_nome"],
+                created_at=item.get("created_at"),
+            )
+            for item in inscricoes
+        ]
+
+    except Exception as erro:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao listar pendentes de distribuição: {erro}",
+        )
+
+
+@router.get("/inscricoes/etapa/{etapa_id}", response_model=List[InscricaoResponse])
+def listar_inscricoes_por_etapa(etapa_id: str):
+    """Lista todas as inscrições de uma etapa específica."""
+    try:
+        repo = InscricaoRepository()
+        inscricoes = repo.listar_por_etapa(etapa_id)
+
+        return [
+            InscricaoResponse(
+                id=i["id"],
+                catequizando_nome=i["catequizando_nome"],
+                etapa_id=i["etapa_id"],
+                status_id=i["status_id"],
+                responsavel_nome=i["responsavel_nome"],
+                created_at=i.get("created_at")
+            )
+            for i in inscricoes
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao listar inscrições por etapa: {str(e)}")
+
+
+@router.get("/inscricoes/status/{status_codigo}", response_model=List[InscricaoResponse])
+def listar_inscricoes_por_status(status_codigo: str):
+    """Lista todas as inscrições com um status específico."""
+    try:
+        repo = InscricaoRepository()
+        inscricoes = repo.listar_por_status(status_codigo)
+
+        return [
+            InscricaoResponse(
+                id=i["id"],
+                catequizando_nome=i["catequizando_nome"],
+                etapa_id=i["etapa_id"],
+                status_id=i["status_id"],
+                responsavel_nome=i["responsavel_nome"],
+                created_at=i.get("created_at")
+            )
+            for i in inscricoes
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao listar inscrições por status: {str(e)}")
+
+
+@router.get("/inscricoes/{inscricao_id}/completa")
+def buscar_inscricao_completa(inscricao_id: str):
+    """Busca uma inscrição com todos os detalhes e relacionamentos."""
+    try:
+        repo = InscricaoRepository()
+        inscricao = repo.buscar_com_detalhes_completos(inscricao_id)
+
+        if not inscricao:
+            raise HTTPException(status_code=404, detail="Inscrição não encontrada")
+
+        return inscricao
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao buscar inscrição completa: {str(e)}")
+
+
 @router.get("/inscricoes/{inscricao_id}", response_model=InscricaoResponse)
 def buscar_inscricao(inscricao_id: str):
     """Busca uma inscrição específica pelo ID."""
@@ -1192,89 +1282,6 @@ def listar_documentos(inscricao_id: str):
         ]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao listar documentos: {str(e)}")
-
-
-@router.get("/inscricoes/pendentes-distribuicao", response_model=List[InscricaoResponse])
-def listar_pendentes_distribuicao():
-    """Lista todas as inscrições pendentes de distribuição em turma."""
-    try:
-        repo = InscricaoRepository()
-        inscricoes = repo.listar_pendentes_distribuicao()
-
-        return [
-            InscricaoResponse(
-                id=i["id"],
-                catequizando_nome=i["catequizando_nome"],
-                etapa_id=i["etapa_id"],
-                status_id=i["status_id"],
-                responsavel_nome=i["responsavel_nome"],
-                created_at=i.get("created_at")
-            )
-            for i in inscricoes
-        ]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao listar pendentes de distribuição: {str(e)}")
-
-
-@router.get("/inscricoes/etapa/{etapa_id}", response_model=List[InscricaoResponse])
-def listar_inscricoes_por_etapa(etapa_id: str):
-    """Lista todas as inscrições de uma etapa específica."""
-    try:
-        repo = InscricaoRepository()
-        inscricoes = repo.listar_por_etapa(etapa_id)
-
-        return [
-            InscricaoResponse(
-                id=i["id"],
-                catequizando_nome=i["catequizando_nome"],
-                etapa_id=i["etapa_id"],
-                status_id=i["status_id"],
-                responsavel_nome=i["responsavel_nome"],
-                created_at=i.get("created_at")
-            )
-            for i in inscricoes
-        ]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao listar inscrições por etapa: {str(e)}")
-
-
-@router.get("/inscricoes/status/{status_codigo}", response_model=List[InscricaoResponse])
-def listar_inscricoes_por_status(status_codigo: str):
-    """Lista todas as inscrições com um status específico."""
-    try:
-        repo = InscricaoRepository()
-        inscricoes = repo.listar_por_status(status_codigo)
-
-        return [
-            InscricaoResponse(
-                id=i["id"],
-                catequizando_nome=i["catequizando_nome"],
-                etapa_id=i["etapa_id"],
-                status_id=i["status_id"],
-                responsavel_nome=i["responsavel_nome"],
-                created_at=i.get("created_at")
-            )
-            for i in inscricoes
-        ]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao listar inscrições por status: {str(e)}")
-
-
-@router.get("/inscricoes/{inscricao_id}/completa")
-def buscar_inscricao_completa(inscricao_id: str):
-    """Busca uma inscrição com todos os detalhes e relacionamentos."""
-    try:
-        repo = InscricaoRepository()
-        inscricao = repo.buscar_com_detalhes_completos(inscricao_id)
-
-        if not inscricao:
-            raise HTTPException(status_code=404, detail="Inscrição não encontrada")
-
-        return inscricao
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao buscar inscrição completa: {str(e)}")
 
 
 @router.put("/inscricoes/{inscricao_id}/status")
@@ -1399,3 +1406,4 @@ def atualizar_status_documento(documento_id: str, status_validacao: str, observa
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao atualizar status do documento: {str(e)}")
+
