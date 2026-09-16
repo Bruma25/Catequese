@@ -46,7 +46,7 @@ class InscricaoResponse(BaseModel):
     status_id: int
     responsavel_nome: str
     created_at: Optional[str] = None
-    turma_id: Optional[str] = None
+    turma_id: Optional[str] = None  # ✅ ADICIONADO
 
 
 class EtapaResponse(BaseModel):
@@ -1075,8 +1075,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
             local_encontro_id=inscricao_data.local_encontro_id,
         )
 
-        inscricao.assinar_termo()
-
         inscricao_salva = repo_inscricao.salvar(inscricao)
 
         return InscricaoResponse(
@@ -1085,7 +1083,8 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
             etapa_id=inscricao_salva.etapa.id,
             status_id=inscricao_salva.status.id,
             responsavel_nome=inscricao_salva.responsavel.nome,
-            created_at=str(inscricao_salva.data_inscricao) if inscricao_salva.data_inscricao else None
+            created_at=str(inscricao_salva.data_inscricao) if inscricao_salva.data_inscricao else None,
+            turma_id=str(inscricao_salva.turma.id) if inscricao_salva.turma else None  # ✅ ADICIONADO
         )
 
     except HTTPException:
@@ -1109,7 +1108,7 @@ def listar_inscricoes():
                 status_id=i["status_id"],
                 responsavel_nome=i["responsavel_nome"],
                 created_at=i.get("created_at"),
-                turma_id=i.get("turma_id")
+                turma_id=i.get("turma_id")  # ✅ ADICIONADO
             )
             for i in inscricoes
         ]
@@ -1223,7 +1222,8 @@ def buscar_inscricao(inscricao_id: str):
             etapa_id=inscricao.etapa.id,
             status_id=inscricao.status.id,
             responsavel_nome=inscricao.responsavel.nome,
-            created_at=str(inscricao.data_inscricao) if inscricao.data_inscricao else None
+            created_at=str(inscricao.data_inscricao) if inscricao.data_inscricao else None,
+            turma_id=str(inscricao.turma.id) if inscricao.turma else None  # ✅ ADICIONADO
         )
     except HTTPException:
         raise
@@ -1287,7 +1287,7 @@ def listar_documentos(inscricao_id: str):
                 "storage_path": d.caminho_storage,
                 "uploaded_at": str(d.created_at) if d.created_at else None,
                 "status_validacao": d.status_validacao,
-                "observacao_validacao": d.observacao_validacao
+                "observacao_validacao": d.observacao_validacao  # ✅ ADICIONADO
             }
             for d in documentos
         ]
