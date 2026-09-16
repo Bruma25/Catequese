@@ -21,6 +21,7 @@ function GestaoTurmasPage() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editandoTurma, setEditandoTurma] = useState(null)
+  const [filtroEtapa, setFiltroEtapa] = useState('')  // ✅ ADICIONADO
   const [formData, setFormData] = useState({
     etapa_id: '',
     nome_sistema: '',
@@ -59,6 +60,12 @@ function GestaoTurmasPage() {
       setLoading(false)
     }
   }
+
+  // ✅ Filtrar turmas por etapa
+  const turmasFiltradas = turmas.filter(turma => {
+    if (!filtroEtapa) return true
+    return turma.etapa_id === filtroEtapa
+  })
 
   const handleOpenModal = (turma = null) => {
     if (turma) {
@@ -194,12 +201,35 @@ function GestaoTurmasPage() {
           </button>
         </div>
 
+        {/* ✅ Filtro por Etapa */}
+        <div className="filtros-container">
+          <div className="filtro-group">
+            <label className="filtro-label">Filtrar por Etapa:</label>
+            <select
+              value={filtroEtapa}
+              onChange={(e) => setFiltroEtapa(e.target.value)}
+              className="filtro-select"
+            >
+              <option value="">Todas as etapas</option>
+              {etapas.map(etapa => (
+                <option key={etapa.id} value={etapa.id}>
+                  {etapa.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {/* Lista de Turmas */}
         <div className="turmas-list">
-          {turmas.length === 0 ? (
-            <p className="sem-turmas">Nenhuma turma cadastrada</p>
+          {turmasFiltradas.length === 0 ? (
+            <p className="sem-turmas">
+              {filtroEtapa
+                ? 'Nenhuma turma encontrada para esta etapa'
+                : 'Nenhuma turma cadastrada'}
+            </p>
           ) : (
-            turmas.map(turma => (
+            turmasFiltradas.map(turma => (
               <div key={turma.id} className="turma-card">
                 <div className="turma-info">
                   <h3 className="turma-nome">{turma.nome_exibicao || turma.nome_sistema}</h3>
