@@ -83,6 +83,7 @@ class ServicoInscricao:
         turmas: List[Turma],
         total_inscricoes_etapa: int,
         referencia_irmao: Optional[str] = None,
+        quer_mesma_turma_que_irmao: bool = False,
         observacao_responsavel: Optional[str] = None,
         local_encontro_id: Optional[str] = None,
     ) -> Inscricao:
@@ -129,6 +130,9 @@ class ServicoInscricao:
             responsavel=responsavel,
             etapa=etapa,
             status=status_inicial,
+            referencia_irmao=referencia_irmao,
+            quer_mesma_turma_que_irmao=quer_mesma_turma_que_irmao,
+            observacao_responsavel=observacao_responsavel,
             local_encontro_id=local_encontro_id,
         )
 
