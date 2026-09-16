@@ -1284,7 +1284,8 @@ def listar_documentos(inscricao_id: str):
                 "tipo_documento": d.tipo_documento,
                 "storage_path": d.caminho_storage,
                 "uploaded_at": str(d.created_at) if d.created_at else None,
-                "status_validacao": d.status_validacao
+                "status_validacao": d.status_validacao,
+                "observacao_validacao": d.observacao_validacao
             }
             for d in documentos
         ]

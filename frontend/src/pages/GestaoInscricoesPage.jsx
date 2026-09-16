@@ -171,25 +171,18 @@ function GestaoInscricoesPage() {
   }
 
   // Aprovar documento
-  const handleAprovarDocumento = async (documentoId) => { console.log('🔵 Tentando aprovar documento:', documentoId)
+  const handleAprovarDocumento = async (documentoId) => {
+    console.log('🔵 Tentando aprovar documento:', documentoId)
 
     try {
       const resultado = await atualizarStatusDocumento(documentoId, 'aprovado')
       console.log('✅ Resultado:', resultado)
       alert('Documento aprovado!')
-      // Recarrega documentos
       if (inscricaoSelecionada?.id) {
         handleAbrirDocumentos(inscricaoSelecionada.id)
       }
-      // await atualizarStatusDocumento(documentoId, 'aprovado')
-      // alert('Documento aprovado!')
-      // // Recarrega documentos
-      // if (inscricaoSelecionada?.id) {
-      //   handleAbrirDocumentos(inscricaoSelecionada.id)
-      // }
     } catch (error) {
       console.error('Erro ao aprovar documento:', error)
-      // alert('Erro ao aprovar documento.')
       console.error('Erro completo:', JSON.stringify(error, null, 2))
 
       let mensagemErro = 'Erro ao aprovar documento'
@@ -216,22 +209,14 @@ function GestaoInscricoesPage() {
     console.log('🔵 Tentando rejeitar documento:', documentoId, 'Obs:', observacao)
 
     try {
-      // await atualizarStatusDocumento(documentoId, 'rejeitado', observacao || null)
-      // alert('Documento rejeitado!')
-      // // Recarrega documentos
-      // if (inscricaoSelecionada?.id) {
-      //   handleAbrirDocumentos(inscricaoSelecionada.id)
-        const resultado = await atualizarStatusDocumento(documentoId, 'rejeitado', observacao || null)
-        console.log('✅ Resultado:', resultado)
-        alert('Documento rejeitado!')
-        // Recarrega documentos
-        if (inscricaoSelecionada?.id) {
-          handleAbrirDocumentos(inscricaoSelecionada.id)
+      const resultado = await atualizarStatusDocumento(documentoId, 'rejeitado', observacao || null)
+      console.log('✅ Resultado:', resultado)
+      alert('Documento rejeitado!')
+      if (inscricaoSelecionada?.id) {
+        handleAbrirDocumentos(inscricaoSelecionada.id)
       }
     } catch (error) {
-      // console.error('Erro ao rejeitar documento:', error)
-      // alert('Erro ao rejeitar documento.')
-      console.error('❌ Erro ao rejeitar documento:', error)
+      console.error('Erro ao rejeitar documento:', error)
       console.error('Erro completo:', JSON.stringify(error, null, 2))
 
       let mensagemErro = 'Erro ao rejeitar documento'
@@ -344,7 +329,8 @@ function GestaoInscricoesPage() {
                     Detalhes
                   </button>
 
-                  {inscricao.status_id === 1 && (
+                  {/* ✅ Botão aparece para TODOS os status (não só status 1) */}
+                  {!inscricao.turma_id && (
                     <button
                       className="atribuir-turma-button"
                       onClick={() => handleAbrirModalTurma(inscricao)}
@@ -353,7 +339,7 @@ function GestaoInscricoesPage() {
                     </button>
                   )}
 
-                  {(inscricao.status_id === 2 || inscricao.status_id === 5) && (
+                  {inscricao.turma_id && (
                     <button
                       className="remover-turma-button"
                       onClick={() => handleRemoverTurma(inscricao.id)}
@@ -396,7 +382,36 @@ function GestaoInscricoesPage() {
                 <p><strong>Status:</strong> {statusMap[inscricaoSelecionada.status?.id]?.label || 'N/A'}</p>
                 <p><strong>Data:</strong> {inscricaoSelecionada.data_inscricao ? new Date(inscricaoSelecionada.data_inscricao).toLocaleDateString('pt-BR') : 'N/A'}</p>
                 <p><strong>Turma:</strong> {inscricaoSelecionada.turma?.nome_exibicao || 'Não atribuída'}</p>
+                {/* ✅ Termo assinado */}
+                <p><strong>Termo:</strong> {inscricaoSelecionada.termo_assinado ? '✅ Assinado' : '❌ Não assinado'}</p>
               </div>
+
+              {/* ✅ Irmãos na Catequese */}
+              {inscricaoSelecionada.referencia_irmao && (
+                <div className="detalhes-section">
+                  <h4 className="detalhes-subtitulo">Irmãos na Catequese</h4>
+                  <p><strong>Irmão(s):</strong> {inscricaoSelecionada.referencia_irmao}</p>
+                  {inscricaoSelecionada.quer_mesma_turma_que_irmao && (
+                    <p><strong>Preferência:</strong> <span className="badge-info">Mesma turma</span></p>
+                  )}
+                </div>
+              )}
+
+              {/* ✅ Local de Preferência */}
+              {inscricaoSelecionada.local_encontro_id && (
+                <div className="detalhes-section">
+                  <h4 className="detalhes-subtitulo">Local de Preferência</h4>
+                  <p><strong>Local:</strong> {inscricaoSelecionada.local_encontro_nome}</p>
+                </div>
+              )}
+
+              {/* ✅ Observações do Responsável */}
+              {inscricaoSelecionada.observacao_responsavel && (
+                <div className="detalhes-section full-width">
+                  <h4 className="detalhes-subtitulo">Observações do Responsável</h4>
+                  <p className="observacao-texto">{inscricaoSelecionada.observacao_responsavel}</p>
+                </div>
+              )}
 
               {inscricaoSelecionada.documentos && inscricaoSelecionada.documentos.length > 0 && (
                 <div className="detalhes-section full-width">
@@ -493,16 +508,16 @@ function GestaoInscricoesPage() {
                 <p className="sem-documentos">Nenhum documento enviado</p>
               ) : (
                 documentos.map(doc => {
-                  // Debug
+
                   console.log('📄 Documento:', doc)
-                  console.log('Status:', doc.status_validacao, 'Tipo:', typeof doc.status_validacao)
+                  console.log('Status:', doc.status_validacao)
+                  console.log('Observação:', doc.observacao_validacao)
+                  console.log('Tipo observação:', typeof doc.observacao_validacao)
 
-                  // Normaliza o status para comparação
+                  // ✅ Normaliza o status para comparação
                   const statusNormalizado = (doc.status_validacao || '').toLowerCase().trim()
+                  // ✅ Só mostra botões se estiver pendente
                   const mostrarBotoes = statusNormalizado === 'pendente'
-
-                  console.log('Status normalizado:', statusNormalizado)
-                  console.log('Mostrar botões:', mostrarBotoes)
 
                   return (
                     <div key={doc.id} className="documento-item">
@@ -512,6 +527,12 @@ function GestaoInscricoesPage() {
                         <p className="documento-data">
                           Enviado em: {doc.uploaded_at || doc.created_at ? new Date(doc.uploaded_at || doc.created_at).toLocaleDateString('pt-BR') : 'N/A'}
                         </p>
+                        {/* ✅ Motivo da rejeição (só aparece se rejeitado) */}
+                        {doc.status_validacao === 'rejeitado' && doc.observacao_validacao && (
+                          <p className="documento-observacao-rejeicao">
+                            <strong>Motivo da rejeição:</strong> {doc.observacao_validacao}
+                          </p>
+                        )}
                       </div>
                       <div className="documento-status">
                         <span className={`status-badge ${doc.status_validacao}`}>
@@ -519,7 +540,8 @@ function GestaoInscricoesPage() {
                         </span>
                       </div>
                       <div className="documento-actions">
-                         {/* Mostra botões sempre */}
+                        {/* ✅ Botões só aparecem se estiver pendente */}
+                        {mostrarBotoes && (
                           <>
                             <button
                               className="aprovar-button"
@@ -534,6 +556,7 @@ function GestaoInscricoesPage() {
                               Rejeitar
                             </button>
                           </>
+                        )}
                       </div>
                     </div>
                   )
