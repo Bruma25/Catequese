@@ -176,8 +176,8 @@ def listar_etapas():
                 nome=e["nome"],
                 ano_nascimento_min=e["ano_nascimento_min"],
                 ano_nascimento_max=e["ano_nascimento_max"],
-                sacramentos_requeridos=e["sacramentos_requeridos"],
-                sacramentos_proibidos=e["sacramentos_proibidos"]
+                sacramentos_requeridos=e.get("sacramentos_requeridos", []),
+                sacramentos_proibidos=e.get("sacramentos_proibidos", [])
             )
             for e in etapas
         ]
