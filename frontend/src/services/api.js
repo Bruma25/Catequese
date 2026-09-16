@@ -119,3 +119,95 @@ export async function listarLocaisEncontro() {
 export async function listarCatequistas() {
   return request('/api/v1/catequistas')
 }
+
+// Inscrições - Gestão
+export async function buscarInscricaoCompleta(id) {
+  return request(`/api/v1/inscricoes/${id}/completa`)
+}
+
+export async function listarInscricoesPorEtapa(etapaId) {
+  return request(`/api/v1/inscricoes/etapa/${etapaId}`)
+}
+
+export async function listarInscricoesPorStatus(statusCodigo) {
+  return request(`/api/v1/inscricoes/status/${statusCodigo}`)
+}
+
+export async function listarPendentesDistribuicao() {
+  return request('/api/v1/inscricoes/pendentes-distribuicao')
+}
+
+export async function atualizarStatusInscricao(inscricaoId, statusId) {
+  return request(`/api/v1/inscricoes/${inscricaoId}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({ status_id: statusId })
+  })
+}
+
+export async function atribuirTurmaInscricao(inscricaoId, turmaId) {
+  return request(`/api/v1/inscricoes/${inscricaoId}/turma?turma_id=${turmaId}`, {
+    method: 'PUT'
+  })
+}
+
+export async function removerTurmaInscricao(inscricaoId) {
+  return request(`/api/v1/inscricoes/${inscricaoId}/turma`, {
+    method: 'DELETE'
+  })
+}
+
+export async function listarDocumentosInscricao(inscricaoId) {
+  return request(`/api/v1/inscricoes/${inscricaoId}/documentos`)
+}
+
+export async function atualizarStatusDocumento(documentoId, statusValidacao, observacaoValidacao = null) {
+  const url = observacaoValidacao
+      ? `/api/v1/documentos/${documentoId}/status?status_validacao=${statusValidacao}&observacao_validacao=${encodeURIComponent(observacaoValidacao)}`
+      : `/api/v1/documentos/${documentoId}/status?status_validacao=${statusValidacao}`
+
+  return request(url, {
+    method: 'PUT'
+  })
+}
+
+export async function excluirDocumento(documentoId) {
+  return request(`/api/v1/documentos/${documentoId}`, {
+    method: 'DELETE'
+  })
+}
+
+export async function contarVagasOcupadas(turmaId) {
+  return request(`/api/v1/turmas/${turmaId}/vagas-ocupadas`)
+}
+
+export async function uploadDocumento(inscricaoId, file, tipoDocumento) {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('tipo_documento', tipoDocumento)
+
+  const url = `${import.meta.env.VITE_API_URL}/api/v1/inscricoes/${inscricaoId}/documentos`
+
+  console.log('📤 Upload documento:', {
+    url,
+    tipoDocumento,
+    fileName: file.name,
+    fileSize: file.size
+  })
+
+  const response = await fetch(url, {
+    method: 'POST',
+    body: formData
+    // NÃO passar headers - o navegador define automaticamente
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    console.error('❌ Erro no upload:', errorData)
+    throw new Error(errorData.detail || `Erro ${response.status}: ${response.statusText}`)
+  }
+
+  const result = await response.json()
+  console.log('✅ Upload sucesso:', result)
+
+  return result
+}

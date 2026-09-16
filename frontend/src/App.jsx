@@ -6,6 +6,7 @@ import EtapaPage from './pages/EtapaPage'
 import FichaInscricaoPage from './pages/FichaInscricaoPage'
 import GestaoEtapasPage from './pages/GestaoEtapasPage'
 import GestaoTurmasPage from './pages/GestaoTurmasPage'
+import GestaoInscricoesPage from './pages/GestaoInscricoesPage'
 import './App.css'
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
         <Route path="/inscricao" element={<FichaInscricaoPage />} />
         <Route path="/gestao-etapas" element={<GestaoEtapasPage />} />
         <Route path="/gestao-turmas" element={<GestaoTurmasPage />} />
+        <Route path="/gestao-inscricoes" element={<GestaoInscricoesPage />} />
       </Routes>
     </Router>
   )

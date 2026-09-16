@@ -25,6 +25,7 @@ class DocumentoInscricao:
         "comprovante_eucaristia",
         "comprovante_crisma",
         "comprovante_outro_sacramento",
+        "comprovante_residencia",
         "outro",
     }
 

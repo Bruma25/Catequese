@@ -1261,7 +1261,6 @@ def upload_documento(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao upload documento: {str(e)}")
 
-
 @router.get("/inscricoes/{inscricao_id}/documentos")
 def listar_documentos(inscricao_id: str):
     """Lista todos os documentos de uma inscrição."""
@@ -1276,7 +1275,8 @@ def listar_documentos(inscricao_id: str):
                 "file_name": d.nome_original,
                 "tipo_documento": d.tipo_documento,
                 "storage_path": d.caminho_storage,
-                "uploaded_at": str(d.created_at) if d.created_at else None
+                "uploaded_at": str(d.created_at) if d.created_at else None,
+                "status_validacao": d.status_validacao
             }
             for d in documentos
         ]
@@ -1406,4 +1406,3 @@ def atualizar_status_documento(documento_id: str, status_validacao: str, observa
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao atualizar status do documento: {str(e)}")
-

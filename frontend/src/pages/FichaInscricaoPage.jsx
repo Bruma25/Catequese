@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Header from '../components/Header/Header'
-import { criarInscricao } from '../services/api'
+import { criarInscricao, uploadDocumento, listarSacramentos, listarLocaisEncontro } from '../services/api'
 import './FichaInscricaoPage.css'
 
 function FichaInscricaoPage() {
@@ -9,6 +9,9 @@ function FichaInscricaoPage() {
   const [loading, setLoading] = useState(false)
   const [etapaSelecionada, setEtapaSelecionada] = useState(null)
   const [sacramentosCatequizando, setSacramentosCatequizando] = useState([])
+  const [sacramentos, setSacramentos] = useState([])
+  const [locaisEncontro, setLocaisEncontro] = useState([])
+  const [inscricaoId, setInscricaoId] = useState(null)
 
   // Dados do catequizando
   const [formData, setFormData] = useState({
@@ -22,6 +25,12 @@ function FichaInscricaoPage() {
     batizado: '',
     dataBatismo: '',
     localBatismo: '',
+    eucaristia: '',
+    dataEucaristia: '',
+    localEucaristia: '',
+    crisma: '',
+    dataCrisma: '',
+    localCrisma: '',
     responsavelProprio: '',
     tipoResponsavel: '',
     nomePai: '',
@@ -36,35 +45,67 @@ function FichaInscricaoPage() {
     necessidadeEspecial: '',
     descricaoNecessidade: '',
     termoCompromisso: false,
-    autorizacaoCompromisso: false
+    autorizacaoCompromisso: false,
+    local_encontro_id: ''
   })
 
-  // Carregar dados da página anterior e rolar para o topo
+  // Documentos
+  const [documentos, setDocumentos] = useState({
+    identidade: null,
+    batismo: null,
+    eucaristia: null,
+    crisma: null,
+    identidade_responsavel: null,
+    comprovante_residencia: null
+  })
+
+  // Carregar dados da página anterior e sacramentos
   useEffect(() => {
-    // Rolar para o topo da página
     window.scrollTo(0, 0)
 
-    const inscricaoData = localStorage.getItem('inscricao_data')
-    if (inscricaoData) {
-      const { dataNascimento, sacramentos, etapaSelecionada } = JSON.parse(inscricaoData)
-      setEtapaSelecionada(etapaSelecionada)
+    async function loadData() {
+      const inscricaoData = localStorage.getItem('inscricao_data')
+      if (inscricaoData) {
+        const { dataNascimento, sacramentos, etapaSelecionada } = JSON.parse(inscricaoData)
+        setEtapaSelecionada(etapaSelecionada)
+        setSacramentosCatequizando(sacramentos || [])
 
-      // Calcular idade
-      if (dataNascimento) {
-        const hoje = new Date()
-        const nasc = new Date(dataNascimento)
-        const idade = hoje.getFullYear() - nasc.getFullYear()
-        setFormData(prev => ({
-          ...prev,
-          dataNascimento: dataNascimento,
-          idade: idade.toString(),
-          batizado: sacramentos?.includes(1) ? 'sim' : 'nao'
-        }))
+        if (dataNascimento) {
+          const hoje = new Date()
+          const nasc = new Date(dataNascimento)
+          const idade = hoje.getFullYear() - nasc.getFullYear()
+          setFormData(prev => ({
+            ...prev,
+            dataNascimento: dataNascimento,
+            idade: idade.toString(),
+            batizado: sacramentos?.includes(1) ? 'sim' : 'nao',
+            eucaristia: sacramentos?.includes(2) ? 'sim' : 'nao',
+            crisma: sacramentos?.includes(3) ? 'sim' : 'nao'
+          }))
+        }
+      } else {
+        alert('Nenhuma etapa selecionada. Redirecionando...')
+        navigate('/etapas')
       }
-    } else {
-      alert('Nenhuma etapa selecionada. Redirecionando...')
-      navigate('/etapas')
+
+      // Buscar sacramentos
+      try {
+        const sacramentosData = await listarSacramentos()
+        setSacramentos(sacramentosData)
+      } catch (error) {
+        console.error('Erro ao buscar sacramentos:', error)
+      }
+
+      // Buscar locais de encontro
+      try {
+        const locaisData = await listarLocaisEncontro()
+        setLocaisEncontro(locaisData)
+      } catch (error) {
+        console.error('Erro ao buscar locais de encontro:', error)
+      }
     }
+
+    loadData()
   }, [navigate])
 
   const handleChange = (e) => {
@@ -72,6 +113,13 @@ function FichaInscricaoPage() {
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
+    }))
+  }
+
+  const handleDocumentoChange = (tipo, file) => {
+    setDocumentos(prev => ({
+      ...prev,
+      [tipo]: file
     }))
   }
 
@@ -93,6 +141,68 @@ function FichaInscricaoPage() {
     }
   }
 
+  // Upload de documentos
+  const uploadDocumentos = async (inscricaoId) => {
+    const documentosParaEnviar = []
+
+    if (documentos.identidade) {
+      documentosParaEnviar.push({
+        file: documentos.identidade,
+        tipo: 'identidade'
+      })
+    }
+
+    if (documentos.batismo && formData.batizado === 'sim') {
+      documentosParaEnviar.push({
+        file: documentos.batismo,
+        tipo: 'comprovante_batismo'
+      })
+    }
+
+    if (documentos.eucaristia && formData.eucaristia === 'sim') {
+      documentosParaEnviar.push({
+        file: documentos.eucaristia,
+        tipo: 'comprovante_eucaristia'
+      })
+    }
+
+    if (documentos.crisma && formData.crisma === 'sim') {
+      documentosParaEnviar.push({
+        file: documentos.crisma,
+        tipo: 'comprovante_crisma'
+      })
+    }
+
+    if (documentos.identidade_responsavel && formData.responsavelProprio === 'nao') {
+      documentosParaEnviar.push({
+        file: documentos.identidade_responsavel,
+        tipo: 'identidade'
+      })
+    }
+
+    if (documentos.comprovante_residencia) {
+      documentosParaEnviar.push({
+        file: documentos.comprovante_residencia,
+        tipo: 'comprovante_residencia'
+      })
+    }
+
+    console.log('📎 Documentos para enviar:', documentosParaEnviar)
+
+    // Envia cada documento
+    for (const doc of documentosParaEnviar) {
+      try {
+        console.log(`📤 Enviando documento ${doc.tipo}...`)
+        const resultado = await uploadDocumento(inscricaoId, doc.file, doc.tipo)
+        console.log(`✅ Documento ${doc.tipo} enviado com sucesso!`, resultado)
+      } catch (error) {
+        console.error(`❌ Erro ao enviar documento ${doc.tipo}:`, error)
+        console.error('Erro completo:', JSON.stringify(error, null, 2))
+        // Não falha a inscrição se o documento falhar
+      }
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
 
@@ -104,7 +214,6 @@ function FichaInscricaoPage() {
     setLoading(true)
 
     try {
-      // Mapear tipoResponsavel para responsavel_vinculo
       const mapeamentoVinculo = {
         'pai': 1,
         'mae': 2,
@@ -114,7 +223,7 @@ function FichaInscricaoPage() {
       const dadosInscricao = {
         catequizando_nome: formData.nomeCompleto,
         catequizando_data_nascimento: formData.dataNascimento,
-        catequizando_sacramentos: JSON.parse(localStorage.getItem('inscricao_data'))?.sacramentos || [],
+        catequizando_sacramentos: sacramentosCatequizando || [],
         etapa_id: etapaSelecionada.id,
         responsavel_nome: getNomeResponsavel(),
         responsavel_email: formData.emailMae || formData.emailPai || formData.emailOutro || formData.email || null,
@@ -128,10 +237,18 @@ function FichaInscricaoPage() {
 
       console.log('✅ Inscrição criada:', inscricaoCriada)
 
+      setInscricaoId(inscricaoCriada.id)
+
+      // Upload de documentos (opcional)
+      if (inscricaoCriada.id && Object.values(documentos).some(d => d !== null)) {
+        console.log('📎 Enviando documentos...')
+        await uploadDocumentos(inscricaoCriada.id)
+      }
+
       // Verificar status
-      if (inscricaoCriada.status_id === 3) {
+      if (inscricaoCriada.status_id === 2 || inscricaoCriada.status_id === 3) {
         alert('Inscrição confirmada com vaga!')
-      } else if (inscricaoCriada.status_id === 4) {
+      } else if (inscricaoCriada.status_id === 5) {
         alert('Inscrição em lista de espera devido à falta de vagas.')
       } else {
         alert('Inscrição realizada com sucesso!')
@@ -158,10 +275,8 @@ function FichaInscricaoPage() {
 
   return (
     <div className="ficha-container">
-      {/* Cabeçalho Reutilizável */}
       <Header titulo="Catequese Divino Espírito Santo" />
 
-      {/* Conteúdo Principal */}
       <main className="ficha-content">
         <form onSubmit={handleSubmit}>
           {/* Dados do Catequizando */}
@@ -311,6 +426,122 @@ function FichaInscricaoPage() {
                     <p className="form-hint">
                       Normalmente o nome da diocese está no carimbo que consta na lembrança de batismo.
                     </p>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Primeira Eucaristia */}
+            <div className="form-group">
+              <label className="form-label">Já recebeu a Primeira Eucaristia? *</label>
+              <div className="radio-group">
+                <label className="radio-label">
+                  <input
+                    type="radio"
+                    name="eucaristia"
+                    value="sim"
+                    checked={formData.eucaristia === 'sim'}
+                    onChange={handleChange}
+                    required
+                  />
+                  <span>Sim</span>
+                </label>
+                <label className="radio-label">
+                  <input
+                    type="radio"
+                    name="eucaristia"
+                    value="nao"
+                    checked={formData.eucaristia === 'nao'}
+                    onChange={handleChange}
+                    required
+                  />
+                  <span>Não</span>
+                </label>
+              </div>
+            </div>
+
+            {formData.eucaristia === 'sim' && (
+              <>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Data da Primeira Eucaristia:</label>
+                    <input
+                      type="date"
+                      name="dataEucaristia"
+                      value={formData.dataEucaristia}
+                      onChange={handleChange}
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Local da Primeira Eucaristia:</label>
+                    <input
+                      type="text"
+                      name="localEucaristia"
+                      value={formData.localEucaristia}
+                      onChange={handleChange}
+                      className="form-input"
+                      placeholder="Paróquia – Diocese/Arquidiocese"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Crisma */}
+            <div className="form-group">
+              <label className="form-label">Já recebeu o Sacramento da Crisma? *</label>
+              <div className="radio-group">
+                <label className="radio-label">
+                  <input
+                    type="radio"
+                    name="crisma"
+                    value="sim"
+                    checked={formData.crisma === 'sim'}
+                    onChange={handleChange}
+                    required
+                  />
+                  <span>Sim</span>
+                </label>
+                <label className="radio-label">
+                  <input
+                    type="radio"
+                    name="crisma"
+                    value="nao"
+                    checked={formData.crisma === 'nao'}
+                    onChange={handleChange}
+                    required
+                  />
+                  <span>Não</span>
+                </label>
+              </div>
+            </div>
+
+            {formData.crisma === 'sim' && (
+              <>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Data da Crisma:</label>
+                    <input
+                      type="date"
+                      name="dataCrisma"
+                      value={formData.dataCrisma}
+                      onChange={handleChange}
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Local da Crisma:</label>
+                    <input
+                      type="text"
+                      name="localCrisma"
+                      value={formData.localCrisma}
+                      onChange={handleChange}
+                      className="form-input"
+                      placeholder="Paróquia – Diocese/Arquidiocese"
+                    />
                   </div>
                 </div>
               </>
@@ -504,6 +735,120 @@ function FichaInscricaoPage() {
             )}
           </section>
 
+          {/* Preferência de Local */}
+          <section className="ficha-section">
+            <h2 className="section-title">Preferência de Local</h2>
+            <p className="form-hint" style={{ marginBottom: '20px' }}>
+              * Esta é uma consulta de preferência que está sujeita a vagas nas turmas oferecidas no local.
+            </p>
+
+            <div className="form-group">
+              <label className="form-label">Onde prefere que seja a catequese?</label>
+              <select
+                name="local_encontro_id"
+                value={formData.local_encontro_id}
+                onChange={handleChange}
+                className="form-input"
+              >
+                <option value="">Selecione um local (opcional)</option>
+                {locaisEncontro.map(local => (
+                  <option key={local.id} value={local.id}>
+                    {local.nome_exibicao}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </section>
+
+          {/* Documentos (OPCIONAL) */}
+          <section className="ficha-section">
+            <h2 className="section-title">Documentos (Opcional)</h2>
+            <p className="form-hint" style={{ marginBottom: '20px' }}>
+              * Você poderá enviar os documentos depois também.
+            </p>
+            <p className="form-hint" style={{ marginBottom: '20px', color: '#f39c12' }}>
+              ⚠️ Se o sacramento foi recebido em nossa igreja, não é necessário enviar o documento agora.
+              Caso necessário, a catequista solicitará posteriormente.
+            </p>
+
+            <div className="form-group">
+              <label className="form-label">Identidade do Catequizando ou Certidão de Nascimento:</label>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => handleDocumentoChange('identidade', e.target.files[0])}
+                className="form-input"
+              />
+            </div>
+
+            {formData.batizado === 'sim' && (
+              <div className="form-group">
+                <label className="form-label">Certidão/Lembrança de Batismo:</label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => handleDocumentoChange('batismo', e.target.files[0])}
+                  className="form-input"
+                />
+                <p className="form-hint">
+                  Se batizado nesta paróquia, não é necessário enviar.
+                </p>
+              </div>
+            )}
+
+            {formData.eucaristia === 'sim' && (
+              <div className="form-group">
+                <label className="form-label">Lembrança de Primeira Eucaristia:</label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => handleDocumentoChange('eucaristia', e.target.files[0])}
+                  className="form-input"
+                />
+                <p className="form-hint">
+                  Se eucaristia nesta paróquia, não é necessário enviar.
+                </p>
+              </div>
+            )}
+
+            {formData.crisma === 'sim' && (
+              <div className="form-group">
+                <label className="form-label">Lembrança de Crisma:</label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => handleDocumentoChange('crisma', e.target.files[0])}
+                  className="form-input"
+                />
+                <p className="form-hint">
+                  Se crisma nesta paróquia, não é necessário enviar.
+                </p>
+              </div>
+            )}
+
+            {formData.responsavelProprio === 'nao' && (
+              <div className="form-group">
+                <label className="form-label">Identidade do Responsável:</label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => handleDocumentoChange('identidade_responsavel', e.target.files[0])}
+                  className="form-input"
+                />
+              </div>
+            )}
+
+            <div className="form-group">
+              <label className="form-label">Comprovante de Residência:</label>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => handleDocumentoChange('comprovante_residencia', e.target.files[0])}
+                className="form-input"
+              />
+            </div>
+          </section>
+
           {/* Informações Adicionais */}
           <section className="ficha-section">
             <h2 className="section-title">Informações Adicionais</h2>
@@ -554,7 +899,6 @@ function FichaInscricaoPage() {
           <section className="ficha-section termo-section">
             <h2 className="section-title">Autorização e Compromisso</h2>
 
-            {/* Autorização */}
             <div className="termo-texto autorizacao-texto">
               <p>
                 Eu, <strong>{getNomeResponsavel()}</strong>, responsável pelo catequizando{' '}
@@ -601,7 +945,6 @@ function FichaInscricaoPage() {
               </div>
             </div>
 
-            {/* Termo de Compromisso */}
             <div className="termo-texto termo-compromisso-texto">
               <h3 className="termo-subtitulo">TERMO DE COMPROMISSO DA FAMÍLIA</h3>
 
@@ -640,7 +983,6 @@ function FichaInscricaoPage() {
               </p>
             </div>
 
-            {/* Checkbox de Aceite */}
             <div className="form-group checkbox-termo">
               <label className="checkbox-label">
                 <input
@@ -655,7 +997,6 @@ function FichaInscricaoPage() {
             </div>
           </section>
 
-          {/* Botão Enviar */}
           <button
             type="submit"
             className="enviar-button"

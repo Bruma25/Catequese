@@ -1,0 +1,472 @@
+.gestao-container {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+}
+
+.gestao-content {
+  flex: 1;
+  padding: 30px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.gestao-header-content {
+  margin-bottom: 30px;
+}
+
+.page-title {
+  font-family: 'Goudy Old Style, Georgia, serif';
+  font-size: 24px;
+  color: #b3b2b4;
+  margin: 0;
+}
+
+/* Filtros */
+.filtros-container {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.filtro-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+}
+
+.filtro-label {
+  font-size: 14px;
+  color: #555;
+  font-weight: 500;
+}
+
+.filtro-select {
+  padding: 10px 15px;
+  font-size: 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: white;
+  cursor: pointer;
+}
+
+.filtro-select:focus {
+  outline: none;
+  border-color: #b3b2b4;
+}
+
+/* Lista de Inscrições */
+.inscricoes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.sem-inscricoes {
+  text-align: center;
+  color: #888;
+  font-size: 16px;
+  padding: 40px;
+  background-color: white;
+  border-radius: 12px;
+}
+
+.inscricao-card {
+  background-color: white;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.inscricao-info {
+  flex: 1;
+}
+
+.inscricao-nome {
+  font-family: 'Goudy Old Style, Georgia, serif';
+  font-size: 18px;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.inscricao-responsavel,
+.inscricao-etapa,
+.inscricao-status {
+  font-size: 14px;
+  color: #666;
+  margin: 4px 0;
+}
+
+.status-pendente {
+  color: #f39c12;
+  font-weight: 600;
+}
+
+.status-confirmada,
+.status-distribuida {
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.status-espera {
+  color: #3498db;
+  font-weight: 600;
+}
+
+.status-cancelada {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.inscricao-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.detalhes-button,
+.atribuir-turma-button,
+.remover-turma-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.detalhes-button {
+  background-color: #b3b2b4;
+  color: white;
+}
+
+.detalhes-button:hover {
+  background-color: #9a999b;
+}
+
+.atribuir-turma-button {
+  background-color: #4a90d9;
+  color: white;
+}
+
+.atribuir-turma-button:hover {
+  background-color: #3a7bc8;
+}
+
+.remover-turma-button {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.remover-turma-button:hover {
+  background-color: #c0392b;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 12px;
+  padding: 30px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-grande {
+  max-width: 800px;
+}
+
+.modal-title {
+  font-family: 'Goudy Old Style, Georgia, serif';
+  font-size: 22px;
+  color: #b3b2b4;
+  margin: 0 0 25px 0;
+  text-align: center;
+}
+
+/* Detalhes Grid */
+.detalhes-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.detalhes-section {
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.detalhes-section.full-width {
+  grid-column: 1 / -1;
+}
+
+.detalhes-subtitulo {
+  font-family: 'Goudy Old Style, Georgia, serif';
+  font-size: 16px;
+  color: #b3b2b4;
+  margin: 0 0 15px 0;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 10px;
+}
+
+.detalhes-section p {
+  font-size: 14px;
+  color: #555;
+  margin: 8px 0;
+}
+
+/* Documentos Mini Lista */
+.documentos-mini-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.documento-mini-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: white;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+/* Lista de Documentos */
+.documentos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.sem-documentos {
+  text-align: center;
+  color: #888;
+  font-size: 14px;
+  padding: 20px;
+}
+
+.documento-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  gap: 15px;
+}
+
+.documento-info {
+  flex: 1;
+}
+
+.documento-tipo {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 5px 0;
+  text-transform: capitalize;
+}
+
+.documento-nome {
+  font-size: 13px;
+  color: #666;
+  margin: 0 0 5px 0;
+}
+
+.documento-data {
+  font-size: 12px;
+  color: #888;
+  margin: 0;
+}
+
+.documento-status {
+  min-width: 100px;
+  text-align: center;
+}
+
+.documento-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-badge.pendente {
+  background-color: #f39c12;
+  color: white;
+}
+
+.status-badge.aprovado {
+  background-color: #27ae60;
+  color: white;
+}
+
+.status-badge.rejeitado {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.aprovar-button,
+.rejeitar-button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.aprovar-button {
+  background-color: #27ae60;
+  color: white;
+}
+
+.aprovar-button:hover {
+  background-color: #229954;
+}
+
+.rejeitar-button {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.rejeitar-button:hover {
+  background-color: #c0392b;
+}
+
+.ver-documentos-button {
+  background-color: #4a90d9;
+  color: white;
+}
+
+/* Modal Actions */
+.modal-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 25px;
+}
+
+.cancelar-button,
+.salvar-button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.cancelar-button {
+  background-color: #e0e0e0;
+  color: #666;
+}
+
+.cancelar-button:hover {
+  background-color: #d0d0d0;
+}
+
+.salvar-button {
+  background-color: #b3b2b4;
+  color: white;
+}
+
+.salvar-button:hover {
+  background-color: #9a999b;
+}
+
+.salvar-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Loading */
+.loading-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 18px;
+  color: #666;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .gestao-content {
+    padding: 20px 15px;
+  }
+
+  .filtros-container {
+    flex-direction: column;
+  }
+
+  .filtro-group {
+    min-width: 100%;
+  }
+
+  .inscricao-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .inscricao-actions {
+    justify-content: stretch;
+  }
+
+  .detalhes-button,
+  .atribuir-turma-button,
+  .remover-turma-button {
+    flex: 1;
+  }
+
+  .detalhes-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .documento-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .documento-status,
+  .documento-actions {
+    justify-content: center;
+    margin-top: 10px;
+  }
+}
