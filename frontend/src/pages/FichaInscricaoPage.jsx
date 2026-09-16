@@ -44,7 +44,6 @@ function FichaInscricaoPage() {
     necessidadeEspecial: '',
     descricaoNecessidade: '',
     termoCompromisso: false,
-    autorizacaoCompromisso: false,
     local_encontro_id: '',
     temIrmao: 'nao',
     referenciaIrmao: '',
@@ -205,7 +204,7 @@ function FichaInscricaoPage() {
     e.preventDefault()
 
     if (!formData.termoCompromisso || formData.autorizacaoCompromisso !== 'concordo') {
-      alert('Por favor, aceite o termo de compromisso e a autorização')
+      alert('Por favor, aceite o termo de compromisso')
       return
     }
 
@@ -1008,105 +1007,68 @@ function FichaInscricaoPage() {
             </div>
           </section>
 
-          {/* Autorização e Termo de Compromisso */}
+          {/* Termo de Compromisso Unificado */}
           <section className="ficha-section termo-section">
-            <h2 className="section-title">Autorização e Compromisso</h2>
+            <h2 className="section-title">Termo de Compromisso</h2>
 
-            <div className="termo-texto autorizacao-texto">
-              <p>
-                Eu, <strong>{getNomeResponsavel()}</strong>, responsável pelo catequizando{' '}
-                <strong>{formData.nomeCompleto || '_______________'}</strong>, autorizo a sua
-                participação nas atividades da catequese e comprometo-me a acompanhar o seu
-                desenvolvimento espiritual, garantindo a sua presença nos encontros e celebrações.
-                Além disso, participar das reuniões e encontros de catequese em família.
-              </p>
-
-              <p>
-                Também tenho ciência de que o catequizando que for catecúmeno, ou seja, que ainda
-                não foi batizado, deverá receber o batismo este ano, visto que é imprescindível
-                ter este sacramento da Iniciação Cristã, para que receba a Catequese adequada ao
-                desenvolvimento na fé cristã católica, bem como para que possa receber o sacramento
-                da Eucaristia. <em>(O sacramento do Batismo é obrigatório para se receber os demais sacramentos).</em>
-              </p>
-
-              <div className="termo-aceite">
-                <p>Concordo e me comprometo com o acima descrito:</p>
-                <div className="radio-group">
-                  <label className="radio-label">
-                    <input
-                      type="radio"
-                      name="autorizacaoCompromisso"
-                      value="concordo"
-                      checked={formData.autorizacaoCompromisso === 'concordo'}
-                      onChange={handleChange}
-                      required
-                    />
-                    <span>Concordo</span>
-                  </label>
-                  <label className="radio-label">
-                    <input
-                      type="radio"
-                      name="autorizacaoCompromisso"
-                      value="discordo"
-                      checked={formData.autorizacaoCompromisso === 'discordo'}
-                      onChange={handleChange}
-                      required
-                    />
-                    <span>Discordo</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div className="termo-texto termo-compromisso-texto">
-              <h3 className="termo-subtitulo">TERMO DE COMPROMISSO DA FAMÍLIA</h3>
-
+            <div className="termo-texto">
               <p>
                 Eu, <strong>{getNomeResponsavel()}</strong>, ao inscrever{' '}
                 <strong>{formData.nomeCompleto || '_______________'}</strong> para a catequese de{' '}
                 <strong>{etapaSelecionada?.nome || '_______________'}</strong> na paróquia{' '}
-                <strong>Divino Espírito Santo</strong>, recebi as informações importantes para o
-                bom desenvolvimento do processo da Iniciação à Vida Cristã e comprometo-me a
-                respeitar os seguintes requisitos da formação:
+                <strong>Divino Espírito Santo</strong>, comprometo-me a acompanhar seu desenvolvimento
+                espiritual e a respeitar os seguintes requisitos da formação:
               </p>
 
               <ol className="termo-lista">
                 <li>Os encontros da catequese são semanais e têm duração de uma hora e meia;</li>
                 <li>Para os encontros é necessário que o catequizando tenha a Bíblia;</li>
-                <li>Quando o catequizando faltar, deverá recuperar o encontro em horário combinado
-                    com o catequista: observe-se um limite de até 3 faltas em um ano (na segunda a
-                    família é notificada, na terceira é chamada para conversar e na quarta será
-                    comunicada que a criança será convidada a parar o processo, podendo recomeçar
-                    no ano seguinte);</li>
+                <li>
+                  Quando o catequizando faltar, deverá recuperar o encontro em horário combinado com o catequista:
+                  observe-se um limite de até 3 faltas em um ano (na segunda a família é notificada, na terceira
+                  é chamada para conversar e na quarta será comunicada que a criança será convidada a parar o
+                  processo, podendo recomeçar no ano seguinte);
+                </li>
                 <li>Em caso de doença e apresentação de atestado médico será proposta uma recuperação especial;</li>
-                <li>Os familiares serão chamados para alguns encontros com o catequista, é fundamental
-                    que algum responsável participe das reuniões;</li>
-                <li>Algumas vezes o catequista ligará para sua casa, ou enviará e-mail para fazer
-                    algum comunicado, ele fará em nome da Igreja, temos certeza que será bem acolhido;</li>
-                <li>Ao longo do ano ocorrerão celebrações na Igreja em que o catequizando deverá
-                    participar para passar às etapas seguintes de sua formação. A presença nessas
-                    celebrações é imprescindível: duas faltas nestas celebrações interrompem o processo;</li>
+                <li>Os familiares serão chamados para alguns encontros com o catequista, é fundamental que algum responsável participe das reuniões;</li>
+                <li>Algumas vezes o catequista ligará para sua casa, ou enviará e-mail para fazer algum comunicado, ele fará em nome da Igreja, temos certeza que será bem acolhido;</li>
+                <li>
+                  Ao longo do ano ocorrerão celebrações na Igreja em que o catequizando deverá participar para
+                  passar às etapas seguintes de sua formação. A presença nessas celebrações é imprescindível:
+                  duas faltas nestas celebrações interrompem o processo;
+                </li>
                 <li>Os catequizandos são convidados a participarem das celebrações da comunidade;</li>
                 <li>Recebi, no ato da inscrição, as datas e horários dos compromissos deste Ano Catequético.</li>
               </ol>
 
               <p className="termo-observacao">
-                *Haverá preparação para o Batismo especialmente para as crianças, adolescentes,
-                jovens e adultos da catequese, num calendário que será confirmado pelos catequistas.
+                <strong>Importante:</strong> O sacramento do Batismo é obrigatório para se receber os demais sacramentos.
+                Caso o catequizando ainda não seja batizado, deverá receber o batismo este ano, sendo imprescindível
+                para o desenvolvimento na fé cristã católica e para receber a Eucaristia. Haverá preparação para o
+                Batismo especialmente para as crianças, adolescentes, jovens e adultos da catequese, num calendário
+                que será confirmado pelos catequistas.
               </p>
-            </div>
 
-            <div className="form-group checkbox-termo">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="termoCompromisso"
-                  checked={formData.termoCompromisso}
-                  onChange={handleChange}
-                  required
-                />
-                <span>Estou ciente e de acordo com o termo de compromisso *</span>
-              </label>
+              <div className="termo-aceite">
+                <p>
+                  <strong>Declaro que li, compreendi e estou ciente de todo o conteúdo acima,</strong>
+                  autorizo a participação do catequizando nas atividades da catequese e comprometo-me
+                  a apoiar sua participação nos encontros e celebrações.
+                </p>
+
+                <div className="form-group checkbox-termo">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      name="termoCompromisso"
+                      checked={formData.termoCompromisso}
+                      onChange={handleChange}
+                      required
+                    />
+                    <span>Li, compreendi e estou ciente do termo de compromisso *</span>
+                  </label>
+                </div>
+              </div>
             </div>
           </section>
 

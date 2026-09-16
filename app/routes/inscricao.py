@@ -1074,6 +1074,8 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
             local_encontro_id=inscricao_data.local_encontro_id,
         )
 
+        inscricao.assinar_termo()
+
         inscricao_salva = repo_inscricao.salvar(inscricao)
 
         return InscricaoResponse(
