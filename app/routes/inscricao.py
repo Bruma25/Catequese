@@ -33,7 +33,7 @@ class InscricaoCreate(BaseModel):
     responsavel_email: Optional[str] = None
     responsavel_telefone: str
     responsavel_vinculo: int
-    local_encontro_id: Optional[str] = None
+    local_encontro_id: Optional[int] = None
 
 
 class InscricaoResponse(BaseModel):
