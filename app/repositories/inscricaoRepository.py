@@ -582,7 +582,7 @@ class InscricaoRepository:
                 ano_nasc_minimo,
                 ano_nasc_maximo,
                 sacramentos_requeridos:etapa_sacramento_requerido (sacramento_id),
-                sacramentos_proibidos:etapa_sacramento_proibido (sacramento)
+                sacramentos_proibidos:etapa_sacramento_proibido (sacramento_id)
             """)
             .order("nome")
             .execute()
@@ -598,7 +598,7 @@ class InscricaoRepository:
             ]
 
             sacramentos_proibidos_ids = [
-                sp["sacramento"]
+                sp["sacramento_id"]
                 for sp in item.get("sacramentos_proibidos", [])
             ]
 
