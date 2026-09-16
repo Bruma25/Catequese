@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Header from '../components/Header/Header'
-import { criarInscricao, uploadDocumento, listarSacramentos, listarLocaisEncontro } from '../services/api'
+import { criarInscricao, uploadDocumento } from '../services/api'
 import './FichaInscricaoPage.css'
 
 function FichaInscricaoPage() {
@@ -9,7 +9,6 @@ function FichaInscricaoPage() {
   const [loading, setLoading] = useState(false)
   const [etapaSelecionada, setEtapaSelecionada] = useState(null)
   const [sacramentosCatequizando, setSacramentosCatequizando] = useState([])
-  const [sacramentos, setSacramentos] = useState([])
   const [locaisEncontro, setLocaisEncontro] = useState([])
   const [inscricaoId, setInscricaoId] = useState(null)
 
@@ -46,7 +45,10 @@ function FichaInscricaoPage() {
     descricaoNecessidade: '',
     termoCompromisso: false,
     autorizacaoCompromisso: false,
-    local_encontro_id: ''
+    local_encontro_id: '',
+    temIrmao: 'nao',
+    referenciaIrmao: '',
+    querMesmaTurmaQueIrmao: 'nao'
   })
 
   // Documentos
@@ -74,13 +76,16 @@ function FichaInscricaoPage() {
           const hoje = new Date()
           const nasc = new Date(dataNascimento)
           const idade = hoje.getFullYear() - nasc.getFullYear()
+          const maiorDeIdade = idade >= 18
+
           setFormData(prev => ({
             ...prev,
             dataNascimento: dataNascimento,
             idade: idade.toString(),
             batizado: sacramentos?.includes(1) ? 'sim' : 'nao',
             eucaristia: sacramentos?.includes(2) ? 'sim' : 'nao',
-            crisma: sacramentos?.includes(3) ? 'sim' : 'nao'
+            crisma: sacramentos?.includes(3) ? 'sim' : 'nao',
+            responsavelProprio: maiorDeIdade ? 'sim' : 'nao'  // ✅ Auto-preencher
           }))
         }
       } else {
@@ -88,17 +93,10 @@ function FichaInscricaoPage() {
         navigate('/etapas')
       }
 
-      // Buscar sacramentos
-      try {
-        const sacramentosData = await listarSacramentos()
-        setSacramentos(sacramentosData)
-      } catch (error) {
-        console.error('Erro ao buscar sacramentos:', error)
-      }
-
       // Buscar locais de encontro
       try {
-        const locaisData = await listarLocaisEncontro()
+        const locaisData = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/locais-encontro`)
+          .then(res => res.json())
         setLocaisEncontro(locaisData)
       } catch (error) {
         console.error('Erro ao buscar locais de encontro:', error)
@@ -110,6 +108,7 @@ function FichaInscricaoPage() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
+    console.log('📝 Mudança:', { name, value, type, checked })
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -193,12 +192,10 @@ function FichaInscricaoPage() {
     for (const doc of documentosParaEnviar) {
       try {
         console.log(`📤 Enviando documento ${doc.tipo}...`)
-        const resultado = await uploadDocumento(inscricaoId, doc.file, doc.tipo)
-        console.log(`✅ Documento ${doc.tipo} enviado com sucesso!`, resultado)
+        await uploadDocumento(inscricaoId, doc.file, doc.tipo)
+        console.log(`✅ Documento ${doc.tipo} enviado com sucesso!`)
       } catch (error) {
         console.error(`❌ Erro ao enviar documento ${doc.tipo}:`, error)
-        console.error('Erro completo:', JSON.stringify(error, null, 2))
-        // Não falha a inscrição se o documento falhar
       }
     }
   }
@@ -229,7 +226,9 @@ function FichaInscricaoPage() {
         responsavel_email: formData.emailMae || formData.emailPai || formData.emailOutro || formData.email || null,
         responsavel_telefone: formData.telefoneMae || formData.telefonePai || formData.telefoneOutro || formData.telefone1 || null,
         responsavel_vinculo: mapeamentoVinculo[formData.tipoResponsavel] || 3,
-        local_encontro_id: formData.local_encontro_id || null
+        local_encontro_id: formData.local_encontro_id ? parseInt(formData.local_encontro_id) : null,
+        referencia_irmao: formData.temIrmao === 'sim' ? formData.referenciaIrmao : null,
+        quer_mesma_turma_que_irmao: formData.temIrmao === 'sim' && formData.querMesmaTurmaQueIrmao === 'sim'
       }
 
       console.log('📤 Enviando inscrição:', dadosInscricao)
@@ -273,6 +272,8 @@ function FichaInscricaoPage() {
   if (!etapaSelecionada) {
     return <div className="loading-container">Carregando...</div>
   }
+
+  const maiorDeIdade = parseInt(formData.idade) >= 18
 
   return (
     <div className="ficha-container">
@@ -549,37 +550,127 @@ function FichaInscricaoPage() {
             )}
           </section>
 
-          {/* Dados dos Responsáveis */}
+          {/* Irmãos na Catequese */}
           <section className="ficha-section">
-            <h2 className="section-title">Dados dos Responsáveis</h2>
+            <h2 className="section-title">Irmãos na Catequese</h2>
 
             <div className="form-group">
-              <label className="form-label">O responsável é o próprio catequizando? *</label>
+              <label className="form-label">
+                O catequizando tem irmão(s) que também fará(ão) catequese nesta etapa?
+              </label>
               <div className="radio-group">
                 <label className="radio-label">
                   <input
                     type="radio"
-                    name="responsavelProprio"
+                    name="temIrmao"
                     value="sim"
-                    checked={formData.responsavelProprio === 'sim'}
+                    checked={formData.temIrmao === 'sim'}
                     onChange={handleChange}
-                    required
                   />
                   <span>Sim</span>
                 </label>
                 <label className="radio-label">
                   <input
                     type="radio"
-                    name="responsavelProprio"
+                    name="temIrmao"
                     value="nao"
-                    checked={formData.responsavelProprio === 'nao'}
+                    checked={formData.temIrmao === 'nao'}
                     onChange={handleChange}
-                    required
                   />
                   <span>Não</span>
                 </label>
               </div>
             </div>
+
+            {formData.temIrmao === 'sim' && (
+              <>
+                <div className="form-group">
+                  <label className="form-label">Nome do(s) irmão(s):</label>
+                  <input
+                    type="text"
+                    name="referenciaIrmao"
+                    value={formData.referenciaIrmao}
+                    onChange={handleChange}
+                    className="form-input"
+                    placeholder="Nome completo do irmão"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">
+                    Deseja que os irmãos fiquem na mesma turma?
+                  </label>
+                  <div className="radio-group">
+                    <label className="radio-label">
+                      <input
+                        type="radio"
+                        name="querMesmaTurmaQueIrmao"
+                        value="sim"
+                        checked={formData.querMesmaTurmaQueIrmao === 'sim'}
+                        onChange={handleChange}
+                      />
+                      <span>Sim</span>
+                    </label>
+                    <label className="radio-label">
+                      <input
+                        type="radio"
+                        name="querMesmaTurmaQueIrmao"
+                        value="nao"
+                        checked={formData.querMesmaTurmaQueIrmao === 'nao'}
+                        onChange={handleChange}
+                      />
+                      <span>Não</span>
+                    </label>
+                  </div>
+                </div>
+              </>
+            )}
+          </section>
+
+          {/* Dados dos Responsáveis */}
+          <section className="ficha-section">
+            <h2 className="section-title">Dados dos Responsáveis</h2>
+
+            {/* Só mostrar se for maior de idade */}
+            {maiorDeIdade && (
+              <div className="form-group">
+                <label className="form-label">O responsável é o próprio catequizando? *</label>
+                <div className="radio-group">
+                  <label className="radio-label">
+                    <input
+                      type="radio"
+                      name="responsavelProprio"
+                      value="sim"
+                      checked={formData.responsavelProprio === 'sim'}
+                      onChange={handleChange}
+                      required
+                    />
+                    <span>Sim</span>
+                  </label>
+                  <label className="radio-label">
+                    <input
+                      type="radio"
+                      name="responsavelProprio"
+                      value="nao"
+                      checked={formData.responsavelProprio === 'nao'}
+                      onChange={handleChange}
+                      required
+                    />
+                    <span>Não</span>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Se for menor, já assume que não é o próprio responsável */}
+            {!maiorDeIdade && (
+              <input
+                type="hidden"
+                name="responsavelProprio"
+                value="nao"
+                readOnly
+              />
+            )}
 
             {formData.responsavelProprio === 'nao' && (
               <>
