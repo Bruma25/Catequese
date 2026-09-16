@@ -51,6 +51,9 @@ function GestaoInscricoesPage() {
         listarTurmas()
       ])
 
+      console.log('📋 Inscrições:', inscricoesData)
+      console.log('📋 Primeira inscrição:', inscricoesData[0])
+
       setInscricoes(inscricoesData)
       setEtapas(etapasData)
       setTurmas(turmasData)
@@ -306,50 +309,58 @@ function GestaoInscricoesPage() {
           {inscricoesFiltradas.length === 0 ? (
             <p className="sem-inscricoes">Nenhuma inscrição encontrada</p>
           ) : (
-            inscricoesFiltradas.map(inscricao => (
-              <div key={inscricao.id} className="inscricao-card">
-                <div className="inscricao-info">
-                  <h3 className="inscricao-nome">{inscricao.catequizando_nome}</h3>
-                  <p className="inscricao-responsavel">
-                    Responsável: {inscricao.responsavel_nome}
-                  </p>
-                  <p className="inscricao-etapa">
-                    Etapa: {etapas.find(e => e.id === inscricao.etapa_id)?.nome || 'N/A'}
-                  </p>
-                  <p className={`inscricao-status ${statusMap[inscricao.status_id]?.class || ''}`}>
-                    Status: {statusMap[inscricao.status_id]?.label || 'Desconhecido'}
-                  </p>
-                </div>
+            inscricoesFiltradas.map(inscricao => {
+              // ✅ Debug: verificar se tem turma
+              const temTurma = inscricao.turma_id || (inscricao.turma && inscricao.turma.id)
 
-                <div className="inscricao-actions">
-                  <button
-                    className="detalhes-button"
-                    onClick={() => handleAbrirDetalhes(inscricao.id)}
-                  >
-                    Detalhes
-                  </button>
+              console.log('📋 Inscrição:', inscricao.catequizando_nome, 'Turma:', temTurma)
 
-                  {/* ✅ Botão aparece para TODOS os status (não só status 1) */}
-                  {!inscricao.turma_id && (
+              return (
+                <div key={inscricao.id} className="inscricao-card">
+                  <div className="inscricao-info">
+                    <h3 className="inscricao-nome">{inscricao.catequizando_nome}</h3>
+                    <p className="inscricao-responsavel">
+                      Responsável: {inscricao.responsavel_nome}
+                    </p>
+                    <p className="inscricao-etapa">
+                      Etapa: {etapas.find(e => e.id === inscricao.etapa_id)?.nome || 'N/A'}
+                    </p>
+                    <p className={`inscricao-status ${statusMap[inscricao.status_id]?.class || ''}`}>
+                      Status: {statusMap[inscricao.status_id]?.label || 'Desconhecido'}
+                    </p>
+                  </div>
+
+                  <div className="inscricao-actions">
                     <button
-                      className="atribuir-turma-button"
-                      onClick={() => handleAbrirModalTurma(inscricao)}
+                      className="detalhes-button"
+                      onClick={() => handleAbrirDetalhes(inscricao.id)}
                     >
-                      Atribuir Turma
+                      Detalhes
                     </button>
-                  )}
 
-                  {inscricao.turma_id && (
-                    <button
-                      className="remover-turma-button"
-                      onClick={() => handleRemoverTurma(inscricao.id)}
-                    >
-                      Remover Turma
-                    </button>
-                  )}
+                    {/* ✅ Botão aparece se NÃO tem turma */}
+                    {!temTurma && (
+                      <button
+                        className="atribuir-turma-button"
+                        onClick={() => handleAbrirModalTurma(inscricao)}
+                      >
+                        Atribuir Turma
+                      </button>
+                    )}
+
+                    {/* ✅ Botão aparece se TEM turma */}
+                    {inscricao.turma_id && (
+                      <button
+                        className="remover-turma-button"
+                        onClick={() => handleRemoverTurma(inscricao.id)}
+                      >
+                        Remover Turma
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))
+              )
+            })
           )}
         </div>
       </main>
@@ -508,12 +519,6 @@ function GestaoInscricoesPage() {
                 <p className="sem-documentos">Nenhum documento enviado</p>
               ) : (
                 documentos.map(doc => {
-
-                  console.log('📄 Documento:', doc)
-                  console.log('Status:', doc.status_validacao)
-                  console.log('Observação:', doc.observacao_validacao)
-                  console.log('Tipo observação:', typeof doc.observacao_validacao)
-
                   // ✅ Normaliza o status para comparação
                   const statusNormalizado = (doc.status_validacao || '').toLowerCase().trim()
                   // ✅ Só mostra botões se estiver pendente

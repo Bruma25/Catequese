@@ -46,6 +46,7 @@ class InscricaoResponse(BaseModel):
     status_id: int
     responsavel_nome: str
     created_at: Optional[str] = None
+    turma_id: Optional[str] = None
 
 
 class EtapaResponse(BaseModel):
@@ -1107,7 +1108,8 @@ def listar_inscricoes():
                 etapa_id=i["etapa_id"],
                 status_id=i["status_id"],
                 responsavel_nome=i["responsavel_nome"],
-                created_at=i.get("created_at")
+                created_at=i.get("created_at"),
+                turma_id=i.get("turma_id")
             )
             for i in inscricoes
         ]
