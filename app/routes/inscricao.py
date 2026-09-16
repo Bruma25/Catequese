@@ -36,6 +36,7 @@ class InscricaoCreate(BaseModel):
     local_encontro_id: Optional[int] = None
     referencia_irmao: Optional[str] = None
     quer_mesma_turma_que_irmao: bool = False
+    observacao_responsavel: Optional[str] = None
 
 
 class InscricaoResponse(BaseModel):
@@ -1069,7 +1070,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
             total_inscricoes_etapa=total_inscricoes,
             referencia_irmao=inscricao_data.referencia_irmao,
             quer_mesma_turma_que_irmao=inscricao_data.quer_mesma_turma_que_irmao,
-            observacao_responsavel=None,
+            observacao_responsavel=inscricao_data.observacao_responsavel,
             local_encontro_id=inscricao_data.local_encontro_id,
         )
 

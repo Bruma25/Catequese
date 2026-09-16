@@ -48,7 +48,8 @@ function FichaInscricaoPage() {
     local_encontro_id: '',
     temIrmao: 'nao',
     referenciaIrmao: '',
-    querMesmaTurmaQueIrmao: 'nao'
+    querMesmaTurmaQueIrmao: 'nao',
+    observacaoResponsavel: ''
   })
 
   // Documentos
@@ -228,7 +229,8 @@ function FichaInscricaoPage() {
         responsavel_vinculo: mapeamentoVinculo[formData.tipoResponsavel] || 3,
         local_encontro_id: formData.local_encontro_id ? parseInt(formData.local_encontro_id) : null,
         referencia_irmao: formData.temIrmao === 'sim' ? formData.referenciaIrmao : null,
-        quer_mesma_turma_que_irmao: formData.temIrmao === 'sim' && formData.querMesmaTurmaQueIrmao === 'sim'
+        quer_mesma_turma_que_irmao: formData.temIrmao === 'sim' && formData.querMesmaTurmaQueIrmao === 'sim',
+        observacao_responsavel: formData.observacaoResponsavel || null
       }
 
       console.log('📤 Enviando inscrição:', dadosInscricao)
@@ -675,7 +677,7 @@ function FichaInscricaoPage() {
             {formData.responsavelProprio === 'nao' && (
               <>
                 <div className="form-group">
-                  <label className="form-label">Qual responsável está inscrevendo? *</label>
+                  <label className="form-label">Qual é o grau de parentesco entre o responsável pela inscrição e o catequizando? *</label>
                   <div className="radio-group">
                     <label className="radio-label">
                       <input
@@ -852,11 +854,11 @@ function FichaInscricaoPage() {
             </div>
           </section>
 
-          {/* Documentos (OPCIONAL) */}
+          {/* Documentos */}
           <section className="ficha-section">
-            <h2 className="section-title">Documentos (Opcional)</h2>
+            <h2 className="section-title">Documentos</h2>
             <p className="form-hint" style={{ marginBottom: '20px' }}>
-              * Você poderá enviar os documentos depois também.
+              * Caso você não tenha algum dos documentos necessários no momento da inscrição, não se preocupe! A documentação poderá ser entregue posteriormente, assim que estiver disponível. Pedimos apenas que providencie e encaminhe os documentos o quanto antes.
             </p>
             <p className="form-hint" style={{ marginBottom: '20px', color: '#f39c12' }}>
               ⚠️ Se o sacramento foi recebido em nossa igreja, não é necessário enviar o documento agora.
@@ -985,6 +987,25 @@ function FichaInscricaoPage() {
                 />
               </div>
             )}
+          </section>
+
+          {/* Outras observações */}
+          <section className="ficha-section">
+            <h2 className="section-title">Outras observações</h2>
+
+            <div className="form-group">
+              <label className="form-label">
+                Deseja fazer alguma observação adicional? (opcional)
+              </label>
+              <textarea
+                name="observacaoResponsavel"
+                value={formData.observacaoResponsavel}
+                onChange={handleChange}
+                className="form-textarea"
+                rows="4"
+                placeholder="Escreva aqui qualquer observação que considere importante..."
+              />
+            </div>
           </section>
 
           {/* Autorização e Termo de Compromisso */}
