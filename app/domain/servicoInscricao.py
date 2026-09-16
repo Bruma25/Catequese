@@ -84,6 +84,7 @@ class ServicoInscricao:
         total_inscricoes_etapa: int,
         referencia_irmao: Optional[str] = None,
         observacao_responsavel: Optional[str] = None,
+        local_encontro_id: Optional[str] = None,
     ) -> Inscricao:
         """
         Cria uma inscrição em uma etapa, validando:
@@ -128,6 +129,7 @@ class ServicoInscricao:
             responsavel=responsavel,
             etapa=etapa,
             status=status_inicial,
+            local_encontro_id=local_encontro_id,
         )
 
         inscricao.registrar_observacao_responsavel(observacao_responsavel)

@@ -33,6 +33,7 @@ class InscricaoCreate(BaseModel):
     responsavel_email: Optional[str] = None
     responsavel_telefone: str
     responsavel_vinculo: int
+    local_encontro_id: Optional[str] = None
 
 
 class InscricaoResponse(BaseModel):
@@ -1066,6 +1067,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
             total_inscricoes_etapa=total_inscricoes,
             referencia_irmao=None,
             observacao_responsavel=None,
+            local_encontro_id=inscricao_data.local_encontro_id,
         )
 
         inscricao_salva = repo_inscricao.salvar(inscricao)

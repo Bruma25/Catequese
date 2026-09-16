@@ -216,6 +216,7 @@ class InscricaoRepository:
                 quer_mesma_turma_que_irmao,
                 referencia_irmao,
                 observacao_responsavel,
+                local_encontro_id,
                 override_idade,
                 motivo_override,
                 catequizando:catequizando_id (
@@ -301,6 +302,7 @@ class InscricaoRepository:
             "quer_mesma_turma_que_irmao": inscricao.quer_mesma_turma_que_irmao,
             "referencia_irmao": inscricao.referencia_irmao,
             "observacao_responsavel": inscricao.observacao_responsavel,
+            "local_encontro_id": inscricao.local_encontro_id,
             "override_idade": inscricao.override_idade,
             "motivo_override": inscricao.motivo_override,
             "usuario_override_id": inscricao.usuario_override.id if inscricao.usuario_override else None,
@@ -355,6 +357,7 @@ class InscricaoRepository:
             quer_mesma_turma_que_irmao=data.get("quer_mesma_turma_que_irmao", False),
             referencia_irmao=data.get("referencia_irmao"),
             observacao_responsavel=data.get("observacao_responsavel"),
+            local_encontro_id=data.get("local_encontro_id"),
             override_idade=data.get("override_idade", False),
             motivo_override=data.get("motivo_override"),
             usuario_override=usuario_override,
@@ -845,6 +848,7 @@ class InscricaoRepository:
             "quer_mesma_turma_que_irmao": inscricao.quer_mesma_turma_que_irmao,
             "referencia_irmao": inscricao.referencia_irmao,
             "observacao_responsavel": inscricao.observacao_responsavel,
+            "local_encontro_id": inscricao.local_encontro_id,
             "override_idade": inscricao.override_idade,
             "motivo_override": inscricao.motivo_override,
             "usuario_override": {

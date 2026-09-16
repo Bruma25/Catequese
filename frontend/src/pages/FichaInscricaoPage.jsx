@@ -229,6 +229,7 @@ function FichaInscricaoPage() {
         responsavel_email: formData.emailMae || formData.emailPai || formData.emailOutro || formData.email || null,
         responsavel_telefone: formData.telefoneMae || formData.telefonePai || formData.telefoneOutro || formData.telefone1 || null,
         responsavel_vinculo: mapeamentoVinculo[formData.tipoResponsavel] || 3
+        local_encontro_id: formData.local_encontro_id || null
       }
 
       console.log('📤 Enviando inscrição:', dadosInscricao)
