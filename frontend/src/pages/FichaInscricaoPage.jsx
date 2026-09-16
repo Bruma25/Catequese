@@ -108,12 +108,23 @@ function FichaInscricaoPage() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
+
     console.log('📝 Mudança:', { name, value, type, checked })
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }))
-  }
+
+  //   setFormData(prev => ({
+  //     ...prev,
+  //     [name]: type === 'checkbox' ? checked : value
+  //   }))
+  // }
+        setFormData(prev => {
+        const novo = {
+          ...prev,
+          [name]: type === 'checkbox' ? checked : value
+        }
+        console.log('📝 Novo formData:', novo)
+        return novo
+      })
+    }
 
   const handleDocumentoChange = (tipo, file) => {
     setDocumentos(prev => ({
@@ -203,7 +214,10 @@ function FichaInscricaoPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (!formData.termoCompromisso || formData.autorizacaoCompromisso !== 'concordo') {
+    console.log('✅ termoCompromisso:', formData.termoCompromisso)
+    console.log('🔍 formData completo:', formData)
+
+    if (!formData.termoCompromisso) {
       alert('Por favor, aceite o termo de compromisso')
       return
     }
