@@ -534,7 +534,7 @@ class InscricaoRepository:
                 id,
                 termo_assinado,
                 data_inscricao,
-                turma_id,  # ✅ ADICIONADO
+                turma_id,
                 catequizando:catequizando_id (
                     id,
                     nome
@@ -565,7 +565,7 @@ class InscricaoRepository:
                 "responsavel_nome": item["responsavel"]["nome"] if item.get("responsavel") else None,
                 "etapa_id": item["etapa"]["id"] if item.get("etapa") else None,
                 "status_id": item["status"]["id"] if item.get("status") else None,
-                "turma_id": item.get("turma_id"),  # ✅ ADICIONADO
+                "turma_id": item.get("turma_id"),
                 "created_at": item.get("data_inscricao")
             })
 
