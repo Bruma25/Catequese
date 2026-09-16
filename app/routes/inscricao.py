@@ -51,10 +51,12 @@ class InscricaoResponse(BaseModel):
 
 class EtapaResponse(BaseModel):
     id: str
-    nome: str
+    nome:
+    descricao: Optional[str] = None
     ano_nascimento_min: Optional[int] = None
     ano_nascimento_max: Optional[int] = None
     sacramentos_requeridos: List[int]
+    sacramentos_proibidos: List[int] = []
 
 
 class EtapaCreate(BaseModel):
@@ -174,6 +176,7 @@ def listar_etapas():
             EtapaResponse(
                 id=e["id"],
                 nome=e["nome"],
+                descricao=e.get("descricao"),
                 ano_nascimento_min=e["ano_nascimento_min"],
                 ano_nascimento_max=e["ano_nascimento_max"],
                 sacramentos_requeridos=e.get("sacramentos_requeridos", []),
