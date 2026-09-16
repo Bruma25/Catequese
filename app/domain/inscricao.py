@@ -199,6 +199,9 @@ class Inscricao:
         if not turma.aceita_catequizando(self.catequizando):
             return False
 
+        if not turma.aceita_catequizando_sem_restricao_etaria(self.catequizando):
+            return False
+
         return True
 
     def pode_ser_distribuida_para_com_override_idade(self, turma: "Turma") -> bool:

@@ -11,10 +11,10 @@ from app.domain.usuario import Usuario
 
 class ServicoInscricao:
     def __init__(
-        self,
-        status_pendente_distribuicao: StatusInscricao,
-        status_confirmada: Optional[StatusInscricao] = None,
-        status_lista_espera: Optional[StatusInscricao] = None,
+            self,
+            status_pendente_distribuicao: StatusInscricao,
+            status_confirmada: Optional[StatusInscricao] = None,
+            status_lista_espera: Optional[StatusInscricao] = None,
     ):
         if status_pendente_distribuicao is None:
             raise ValueError("O status pendente de distribuição é obrigatório.")
@@ -24,9 +24,9 @@ class ServicoInscricao:
         self.status_lista_espera = status_lista_espera
 
     def sugerir_etapas_para_catequizando(
-        self,
-        catequizando: Catequizando,
-        etapas: List[Etapa]
+            self,
+            catequizando: Catequizando,
+            etapas: List[Etapa]
     ) -> List[Etapa]:
         """
         Retorna apenas as etapas em que o catequizando pode entrar.
@@ -43,11 +43,11 @@ class ServicoInscricao:
         ]
 
     def verificar_vagas_antes_da_inscricao(
-        self,
-        etapa: Etapa,
-        catequizando: Catequizando,
-        turmas: List[Turma],
-        total_inscricoes_etapa: int,
+            self,
+            etapa: Etapa,
+            catequizando: Catequizando,
+            turmas: List[Turma],
+            total_inscricoes_etapa: int,
     ) -> bool:
         """
         Retorna True se ainda há vaga potencial para o catequizando
@@ -66,8 +66,8 @@ class ServicoInscricao:
             turma
             for turma in turmas
             if turma is not None
-            and turma.esta_ativa()
-            and turma.pode_catequizando_entrar(catequizando)
+               and turma.esta_ativa()
+               and turma.pode_catequizando_entrar(catequizando)
         ]
 
         total_vagas = sum(turma.vagas_totais for turma in turmas_elegiveis)
@@ -75,24 +75,26 @@ class ServicoInscricao:
         return total_inscricoes_etapa < total_vagas
 
     def criar_inscricao(
-        self,
-        id_inscricao: str,
-        catequizando: Catequizando,
-        responsavel: Responsavel,
-        etapa: Etapa,
-        turmas: List[Turma],
-        total_inscricoes_etapa: int,
-        referencia_irmao: Optional[str] = None,
-        quer_mesma_turma_que_irmao: bool = False,
-        observacao_responsavel: Optional[str] = None,
-        local_encontro_id: Optional[str] = None,
+            self,
+            id_inscricao: str,
+            catequizando: Catequizando,
+            responsavel: Responsavel,
+            etapa: Etapa,
+            turmas: List[Turma],
+            total_inscricoes_etapa: int,
+            referencia_irmao: Optional[str] = None,
+            quer_mesma_turma_que_irmao: bool = False,
+            observacao_responsavel: Optional[str] = None,
+            local_encontro_id: Optional[int] = None,
     ) -> Inscricao:
         """
         Cria uma inscrição em uma etapa, validando:
         - se o responsável pode responder pelo catequizando;
-        - se o catequizando atende aos requisitos gerais da etapa;
-        - se ainda há vaga potencial na etapa, definindo o status inicial
-          como confirmada ou lista de espera.
+        - se o catequizando atende aos requisitos gerais da etapa.
+
+        A inscrição SEMPRE começa como 'pendente_distribuicao'.
+        O status final (confirmada ou lista de espera) será definido
+        apenas quando a turma for atribuída.
         """
         if catequizando is None:
             raise ValueError("O catequizando da inscrição é obrigatório.")
@@ -109,6 +111,9 @@ class ServicoInscricao:
         if not etapa.aceita_catequizando(catequizando):
             raise ValueError("O catequizando não atende aos requisitos da etapa.")
 
+        # ✅ Inscricao SEMPRE começa como pendente_distribuicao
+        # A verificação de vagas é feita apenas para informação,
+        # mas não define o status inicial
         ainda_ha_vaga = self.verificar_vagas_antes_da_inscricao(
             etapa=etapa,
             catequizando=catequizando,
@@ -116,13 +121,8 @@ class ServicoInscricao:
             total_inscricoes_etapa=total_inscricoes_etapa,
         )
 
-        status_inicial = (
-            self.status_confirmada
-            if ainda_ha_vaga and self.status_confirmada is not None
-            else self.status_lista_espera
-            if not ainda_ha_vaga and self.status_lista_espera is not None
-            else self.status_pendente_distribuicao
-        )
+        # ✅ Status inicial é SEMPRE pendente_distribuicao
+        status_inicial = self.status_pendente_distribuicao
 
         inscricao = Inscricao(
             id=id_inscricao,
@@ -141,16 +141,19 @@ class ServicoInscricao:
         if referencia_irmao is not None:
             inscricao.marcar_preferencia_irmao(referencia_irmao)
 
+        # ✅ Marcar termo como assinado (já foi aceito no frontend)
+        inscricao.assinar_termo()
+
         return inscricao
 
     def distribuir_inscricao_em_turma(
-        self,
-        inscricao: Inscricao,
-        turma: Turma,
-        numero_confirmadas: int,
-        usuario_override: Optional[Usuario] = None,
-        motivo_override: Optional[str] = None,
-        exigir_termo_assinado: bool = False,
+            self,
+            inscricao: Inscricao,
+            turma: Turma,
+            numero_confirmadas: int,
+            usuario_override: Optional[Usuario] = None,
+            motivo_override: Optional[str] = None,
+            exigir_termo_assinado: bool = False,
     ) -> None:
         """
         Distribui a inscrição em uma turma:
@@ -158,6 +161,10 @@ class ServicoInscricao:
         - a turma continua rígida em suas regras próprias;
         - a única exceção permitida é a faixa etária específica da turma,
           mediante autorização e motivo.
+
+        Define o status final como:
+        - 'confirmada' se houver vaga
+        - 'lista_espera' se não houver vaga
         """
         if inscricao is None:
             raise ValueError("A inscrição a distribuir é obrigatória.")
@@ -198,6 +205,7 @@ class ServicoInscricao:
 
         inscricao.atribuir_turma(turma)
 
+        # ✅ Define status final baseado em vagas
         if turma.tem_vaga(numero_confirmadas):
             inscricao.confirmar()
         else:
