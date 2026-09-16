@@ -51,7 +51,7 @@ class InscricaoResponse(BaseModel):
 
 class EtapaResponse(BaseModel):
     id: str
-    nome:
+    nome:str
     descricao: Optional[str] = None
     ano_nascimento_min: Optional[int] = None
     ano_nascimento_max: Optional[int] = None
