@@ -1,5 +1,8 @@
 import { useNavigate } from 'react-router-dom'
-import { User, LogIn } from 'lucide-react'
+import { useState } from 'react'
+import { LogIn } from 'lucide-react'
+import { login } from '../services/authService'
+import Header from '../components/Header/Header'
 import './LoginPage.css'
 import logo from "../assets/logo.png"
 import email from "../assets/email.png"
@@ -8,41 +11,68 @@ import perfil from "../assets/perfil.png"
 
 function LoginPage() {
   const navigate = useNavigate()
+  const [emailInput, setEmailInput] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleEntrar = () => {
-    // TODO: Implementar login real
-    navigate('/home')
+  const handleEntrar = async () => {
+    if (!emailInput || !password) {
+      setError('Preencha email e senha')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const { user, session } = await login(emailInput, password)
+
+      localStorage.setItem('user', JSON.stringify({
+        id: user.id,
+        email: user.email,
+      }))
+
+      navigate('/home')
+    } catch (err) {
+      setError(err.message || 'Erro ao fazer login')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleCriarConta = () => {
-    // TODO: Implementar criação de conta
     alert('Funcionalidade de criar conta será implementada em breve!')
   }
 
   return (
     <div className="login-container">
-      <div className="login-content">
-        {/* Cabeçalho com logo e texto */}
-        <div className="login-header">
-          <div className="login-logo">
-            <img src={logo} alt="Catequese" />
-          </div>
-          <h1 className="login-text">Catequese Divino Espírito Santo</h1>
-        </div>
+      {/* Cabeçalho Reutilizável */}
+      <Header titulo="Catequese Divino Espírito Santo" />
 
+      <div className="login-content">
         {/* Ícone de perfil */}
         <div className="profile-icon">
-          <img src={perfil} alt="Perfil" className="profile-icon-img" style={{width: '120px', height: '120px',}} />
+          <img src={perfil} alt="Perfil" className="profile-icon-img" style={{width: '120px', height: '120px'}} />
         </div>
 
         {/* Campos de formulário */}
         <div className="login-form">
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
+
           <div className="input-group">
             <img src={email} alt="Email" className="input-icon" />
             <input
               type="email"
               placeholder="Email"
               className="login-input"
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+              disabled={loading}
             />
           </div>
 
@@ -52,6 +82,10 @@ function LoginPage() {
               type="password"
               placeholder="Senha"
               className="login-input"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleEntrar()}
+              disabled={loading}
             />
           </div>
 
@@ -60,14 +94,16 @@ function LoginPage() {
             <button
               className="btn-entrar"
               onClick={handleEntrar}
+              disabled={loading}
             >
               <LogIn size={18} color="white" />
-              Entrar
+              {loading ? 'Entrando...' : 'Entrar'}
             </button>
 
             <button
               className="btn-criar-conta"
               onClick={handleCriarConta}
+              disabled={loading}
             >
               Criar conta
             </button>

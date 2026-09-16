@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { useAuth } from './hooks/useAuth'
 import SplashScreen from './pages/SplashScreen'
 import LoginPage from './pages/LoginPage'
 import HomePage from './pages/HomePage'
@@ -10,6 +11,16 @@ import GestaoInscricoesPage from './pages/GestaoInscricoesPage'
 import './App.css'
 
 function App() {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return <div>Carregando...</div>
+  }
+
+  if (!user) {
+    return <LoginPage />
+  }
+
   return (
     <Router basename="/Catequese">  {/* ← Adicione isso */}
       <Routes>
