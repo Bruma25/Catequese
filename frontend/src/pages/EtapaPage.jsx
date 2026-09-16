@@ -51,12 +51,25 @@ function EtapaPage() {
     }
 
     const etapasElegiveis = etapas.filter(etapa => {
-      // Verifica idade
-      const idadeOk = anoNasc >= etapa.ano_nascimento_min && anoNasc <= etapa.ano_nascimento_max
+      // ✅ Verifica idade
+      const idadeOk = (
+        (!etapa.ano_nascimento_min || anoNasc >= etapa.ano_nascimento_min) &&
+        (!etapa.ano_nascimento_max || anoNasc <= etapa.ano_nascimento_max)
+      )
 
-      // TODO: Adicionar lógica de sacramentos quando a API retornar sacramentos_requeridos
+      // ✅ Verifica sacramentos requeridos (deve ter TODOS)
+      const temSacramentosRequeridos = !etapa.sacramentos_requeridos || etapa.sacramentos_requeridos.length === 0 ||
+        etapa.sacramentos_requeridos.every(
+          sacramentoRequerido => sacramentosSelecionados.includes(sacramentoRequerido)
+        )
 
-      return idadeOk
+      // ✅ Verifica sacramentos proibidos (não pode ter NENHUM)
+      const naoTemSacramentosProibidos = !etapa.sacramentos_proibidos || etapa.sacramentos_proibidos.length === 0 ||
+        !etapa.sacramentos_proibidos.some(
+          sacramentoProibido => sacramentosSelecionados.includes(sacramentoProibido)
+        )
+
+      return idadeOk && temSacramentosRequeridos && naoTemSacramentosProibidos
     })
 
     setEtapasFiltradas(etapasElegiveis)
