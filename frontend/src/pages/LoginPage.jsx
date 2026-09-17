@@ -5,7 +5,7 @@ import { login } from '../services/authService'
 import './LoginPage.css'
 import logo from "../assets/logo.png"
 import email from "../assets/email.png"
-import password from "../assets/password.png"
+import senha from "../assets/password.png"
 import perfil from "../assets/perfil.png"
 
 function LoginPage() {
@@ -79,7 +79,7 @@ function LoginPage() {
           </div>
 
           <div className="input-group">
-            <img src={password} alt="Senha" className="input-icon" />
+            <img src={senha} alt="Senha" className="input-icon" />
             <input
               type="password"
               placeholder="Senha"

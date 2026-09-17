@@ -3,7 +3,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #CECCD1 0%, #8B888C 100%);
   padding: 20px;
 }
 
@@ -41,8 +41,8 @@
 }
 
 .profile-icon-img {
-  border-radius: 50%;
-  border: 4px solid #667eea;
+/*  border-radius: 50%;
+  border: 4px solid #667eea;*/
 }
 
 /* Formulário */
@@ -86,7 +86,7 @@
 }
 
 .btn-entrar {
-  background: #667eea;
+  background: #B2ADB3;
   color: white;
   border: none;
   padding: 14px 20px;
@@ -102,7 +102,7 @@
 }
 
 .btn-entrar:hover {
-  background: #5568d3;
+  background: #8B888C;
 }
 
 .btn-entrar:disabled {
@@ -112,8 +112,8 @@
 
 .btn-criar-conta {
   background: transparent;
-  color: #667eea;
-  border: 2px solid #667eea;
+  color: #B2ADB3;
+  border: 2px solid #B2ADB3;
   padding: 12px 20px;
   border-radius: 10px;
   font-size: 14px;
@@ -123,7 +123,7 @@
 }
 
 .btn-criar-conta:hover {
-  background: #667eea;
+  background: #B2ADB3;
   color: white;
 }
 
@@ -143,7 +143,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #CECCD1 0%, #8B888C 100%);
 }
 
 .loading-spinner {
