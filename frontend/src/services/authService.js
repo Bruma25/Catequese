@@ -1,6 +1,8 @@
 // src/services/authService.js
 import { supabase } from './supabaseClient'
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+
 export async function login(email, password) {
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -45,18 +47,74 @@ export async function getCurrentUser() {
 }
 
 export async function getUserPapeis(usuarioId) {
-  const { data, error } = await supabase
-    .from('usuario_papel')
-    .select(`
-      papel_id,
-      tipo_papel_usuario (
-        id,
-        codigo,
-        descricao
-      )
-    `)
-    .eq('usuario_id', usuarioId)
+  try {
+    const response = await fetch(`${API_URL}/usuarios/${usuarioId}/papeis`)
 
-  if (error) throw error
-  return data
+    if (!response.ok) {
+      throw new Error(`Erro ${response.status}: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    console.log('✅ Papéis do backend:', data)
+    return data
+  } catch (error) {
+    console.error('❌ Erro ao buscar papéis:', error)
+    throw error
+  }
+}
+
+export async function getUsuario(usuarioId) {
+  try {
+    const response = await fetch(`${API_URL}/usuarios/${usuarioId}`)
+
+    if (!response.ok) {
+      throw new Error(`Erro ${response.status}: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error('❌ Erro ao buscar usuário:', error)
+    throw error
+  }
+}
+
+export async function listarUsuarios() {
+  try {
+    const response = await fetch(`${API_URL}/usuarios`)
+
+    if (!response.ok) {
+      throw new Error(`Erro ${response.status}: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error('❌ Erro ao listar usuários:', error)
+    throw error
+  }
+}
+
+export async function atualizarPapeisUsuario(usuarioId, papeisIds) {
+  try {
+    const response = await fetch(`${API_URL}/usuarios/${usuarioId}/papeis`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        papeis_ids: papeisIds
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`Erro ${response.status}: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error('❌ Erro ao atualizar papéis:', error)
+    throw error
+  }
 }
