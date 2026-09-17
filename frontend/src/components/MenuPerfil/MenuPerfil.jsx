@@ -1,25 +1,36 @@
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../hooks/useAuth'
 import './MenuPerfil.css'
 
 function MenuPerfil({ onClose, position = 'right' }) {
   const navigate = useNavigate()
+  const { papeis, logout } = useAuth()
 
-  // Mock de perfis (depois vem do backend/auth)
-  const perfis = [
-    { id: 1, nome: 'Coordenador Geral', papel: 'coordenador_geral' },
-    { id: 2, nome: 'Responsável', papel: 'responsavel' }
-  ]
+  // Mapear códigos para nomes amigáveis
+  const nomePapel = {
+    'responsavel': 'Responsável',
+    'catequista': 'Catequista',
+    'coordenador_etapa': 'Coordenador de Etapa',
+    'coordenador_geral': 'Coordenador Geral'
+  }
 
-  const handleSelecionarPerfil = (perfil) => {
-    console.log('Perfil selecionado:', perfil)
-    // TODO: Implementar troca de perfil
+  const handleSelecionarPerfil = (papel) => {
+    console.log('Perfil selecionado:', papel.codigo)
+    // Salvar perfil ativo no localStorage
+    localStorage.setItem('perfil_ativo', papel.codigo)
+    // Disparar evento para atualizar MenuNavegacao
+    window.dispatchEvent(new CustomEvent('perfil_mudou', { detail: papel.codigo }))
     onClose()
   }
 
-  const handleSair = () => {
-    console.log('Sair')
-    // TODO: Implementar logout
-    navigate('/login')
+  const handleSair = async () => {
+    try {
+      await logout()
+      localStorage.removeItem('perfil_ativo')
+      navigate('/')  // Volta para SplashScreen
+    } catch (err) {
+      console.error('Erro ao sair:', err)
+    }
   }
 
   return (
@@ -28,13 +39,13 @@ function MenuPerfil({ onClose, position = 'right' }) {
         <h3 className="menu-perfil-title">Meus Perfis</h3>
 
         <ul className="menu-perfil-list">
-          {perfis.map(perfil => (
-            <li key={perfil.id}>
+          {papeis.map(papel => (
+            <li key={papel.id}>
               <button
                 className="menu-perfil-item"
-                onClick={() => handleSelecionarPerfil(perfil)}
+                onClick={() => handleSelecionarPerfil(papel)}
               >
-                {perfil.nome}
+                {nomePapel[papel.codigo] || papel.descricao}
               </button>
             </li>
           ))}
