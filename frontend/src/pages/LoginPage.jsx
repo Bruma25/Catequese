@@ -2,7 +2,6 @@ import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { LogIn } from 'lucide-react'
 import { login } from '../services/authService'
-import Header from '../components/Header/Header'
 import './LoginPage.css'
 import logo from "../assets/logo.png"
 import email from "../assets/email.png"
@@ -47,10 +46,13 @@ function LoginPage() {
 
   return (
     <div className="login-container">
-      {/* Cabeçalho Reutilizável */}
-      <Header titulo="Catequese Divino Espírito Santo" />
-
       <div className="login-content">
+        {/* Logo Maior no Topo */}
+        <div className="login-logo-large">
+          <img src={logo} alt="Catequese" style={{ width: '150px', height: '150px' }} />
+          <h1 className="login-text">Catequese Divino Espírito Santo</h1>
+        </div>
+
         {/* Ícone de perfil */}
         <div className="profile-icon">
           <img src={perfil} alt="Perfil" className="profile-icon-img" style={{width: '120px', height: '120px'}} />

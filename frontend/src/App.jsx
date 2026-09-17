@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+// src/App.jsx
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import SplashScreen from './pages/SplashScreen'
 import LoginPage from './pages/LoginPage'
@@ -10,30 +11,113 @@ import GestaoTurmasPage from './pages/GestaoTurmasPage'
 import GestaoInscricoesPage from './pages/GestaoInscricoesPage'
 import './App.css'
 
-function App() {
+// Componente para rotas protegidas
+function RotaProtegida({ children }) {
   const { user, loading } = useAuth()
 
   if (loading) {
-    return <div>Carregando...</div>
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner">Carregando...</div>
+      </div>
+    )
   }
 
   if (!user) {
-    return <LoginPage />
+    return <Navigate to="/login" replace />
   }
 
+  return children
+}
+
+// Componente para rotas públicas
+function RotaPublica({ children }) {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner">Carregando...</div>
+      </div>
+    )
+  }
+
+  if (user) {
+    return <Navigate to="/home" replace />
+  }
+
+  return children
+}
+
+function App() {
+  const { user } = useAuth()
+
   return (
-    <Router basename="/Catequese">  {/* ← Adicione isso */}
-      <Routes>
-        <Route path="/" element={<SplashScreen />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/home" element={<HomePage />} />
-        <Route path="/etapas" element={<EtapaPage />} />
-        <Route path="/inscricao" element={<FichaInscricaoPage />} />
-        <Route path="/gestao-etapas" element={<GestaoEtapasPage />} />
-        <Route path="/gestao-turmas" element={<GestaoTurmasPage />} />
-        <Route path="/gestao-inscricoes" element={<GestaoInscricoesPage />} />
-      </Routes>
-    </Router>
+    <Routes>
+      {/* Rotas públicas */}
+      <Route path="/" element={<SplashScreen />} />
+      <Route
+        path="/login"
+        element={
+          <RotaPublica>
+            <LoginPage />
+          </RotaPublica>
+        }
+      />
+
+      {/* Rotas protegidas */}
+      <Route
+        path="/home"
+        element={
+          <RotaProtegida>
+            <HomePage />
+          </RotaProtegida>
+        }
+      />
+      <Route
+        path="/etapas"
+        element={
+          <RotaProtegida>
+            <EtapaPage />
+          </RotaProtegida>
+        }
+      />
+      <Route
+        path="/inscricao"
+        element={
+          <RotaProtegida>
+            <FichaInscricaoPage />
+          </RotaProtegida>
+        }
+      />
+      <Route
+        path="/gestao-etapas"
+        element={
+          <RotaProtegida>
+            <GestaoEtapasPage />
+          </RotaProtegida>
+        }
+      />
+      <Route
+        path="/gestao-turmas"
+        element={
+          <RotaProtegida>
+            <GestaoTurmasPage />
+          </RotaProtegida>
+        }
+      />
+      <Route
+        path="/gestao-inscricoes"
+        element={
+          <RotaProtegida>
+            <GestaoInscricoesPage />
+          </RotaProtegida>
+        }
+      />
+
+      {/* Rota padrão */}
+      <Route path="*" element={<Navigate to={user ? "/home" : "/login"} replace />} />
+    </Routes>
   )
 }
 

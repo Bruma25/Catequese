@@ -1,160 +1,152 @@
 .login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   min-height: 100vh;
-  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 20px;
 }
 
 .login-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 30px;
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
   width: 100%;
   max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
 }
 
-.login-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 15px;
+/* Logo Maior no Topo */
+.login-logo-large {
+  margin-bottom: 30px;
 }
 
-.login-logo {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  overflow: hidden;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.login-logo img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.login-logo-large img {
+  margin-bottom: 15px;
 }
 
 .login-text {
-  font-family: 'Goudy Old Style', Georgia, serif;
-  color: rgb(179, 174, 180);
   font-size: 20px;
-  text-align: center;
-  text-shadow: 0 0 8px rgb(253, 251, 229);
+  color: #333;
+  font-weight: 600;
   margin: 0;
 }
 
-/* ... (mantenha o resto do CSS igual) ... */
-
+/* Ícone de perfil */
 .profile-icon {
-  margin-top: 10px;
+  margin: 20px auto 30px;
   display: flex;
   justify-content: center;
-  align-items: center;
 }
 
 .profile-icon-img {
-  width: 64px;
-  height: 64px;
-  object-fit: contain;
+  border-radius: 50%;
+  border: 4px solid #667eea;
+}
+
+/* Formulário */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .input-group {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
-  background-color: #f5f5f5;
-  padding: 12px 16px;
-  border-radius: 25px;
-  border: 1px solid #e0e0e0;
+  background: #f5f5f5;
+  border-radius: 10px;
+  padding: 5px 15px;
 }
 
 .input-icon {
   width: 20px;
   height: 20px;
-  object-fit: contain;
-  flex-shrink: 0;
+  margin-right: 10px;
+  opacity: 0.7;
 }
 
 .login-input {
   flex: 1;
   border: none;
   background: transparent;
-  outline: none;
+  padding: 12px 0;
   font-size: 16px;
-  color: #333;
+  outline: none;
 }
 
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  width: 100%;
-}
-
-.login-input::placeholder {
-  color: #999;
-}
-
+/* Botões */
 .login-buttons {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   margin-top: 10px;
 }
 
-.btn-entrar,
-.btn-criar-conta {
+.btn-entrar {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 14px 20px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 14px 24px;
-  border: none;
-  border-radius: 25px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn-entrar {
-  background-color: rgb(179, 174, 180);
-  color: white;
+  transition: background 0.3s;
 }
 
 .btn-entrar:hover {
-  background-color: rgb(159, 154, 160);
-  transform: translateY(-2px);
+  background: #5568d3;
+}
+
+.btn-entrar:disabled {
+  background: #ccc;
+  cursor: not-allowed;
 }
 
 .btn-criar-conta {
-  background-color: rgb(253, 251, 229);
-  color: rgb(179, 174, 180);
-  border: 2px solid rgb(179, 174, 180);
+  background: transparent;
+  color: #667eea;
+  border: 2px solid #667eea;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
 }
 
 .btn-criar-conta:hover {
-  background-color: rgb(243, 241, 219);
-  transform: translateY(-2px);
+  background: #667eea;
+  color: white;
 }
 
-/* Responsivo para celular */
-@media (max-width: 480px) {
-  .login-logo {
-    width: 80px;
-    height: 80px;
-  }
+/* Mensagem de erro */
+.error-message {
+  background: #fee;
+  color: #c00;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  border: 1px solid #fcc;
+}
 
-  .login-text {
-    font-size: 18px;
-  }
+/* Loading */
+.loading-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
 
-  .input-group {
-    padding: 10px 14px;
-  }
+.loading-spinner {
+  color: white;
+  font-size: 18px;
 }
