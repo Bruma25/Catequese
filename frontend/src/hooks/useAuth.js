@@ -11,16 +11,22 @@ export function useAuth() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
+        console.log('📋 SESSION USER ID:', session.user.id)
+        console.log('📋 SESSION USER EMAIL:', session.user.email)
         setUser(session.user)
         carregarPapeis(session.user.id)
       } else {
+        console.log('⚠️ Sem sessão')
         setLoading(false)
       }
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('📋 AUTH STATE CHANGE:', event)
         if (session?.user) {
+          console.log('📋 AUTH CHANGE USER ID:', session.user.id)
+          console.log('📋 AUTH CHANGE USER EMAIL:', session.user.email)
           setUser(session.user)
           await carregarPapeis(session.user.id)
         } else {
