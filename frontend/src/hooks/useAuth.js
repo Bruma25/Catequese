@@ -9,7 +9,6 @@ export function useAuth() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Verificar sessão atual
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user)
@@ -19,7 +18,6 @@ export function useAuth() {
       }
     })
 
-    // Ouvir mudanças na autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session?.user) {
@@ -38,10 +36,15 @@ export function useAuth() {
 
   async function carregarPapeis(usuarioId) {
     try {
+      console.log('📋 Carregando papéis para:', usuarioId)
+
       const papeisData = await getUserPapeis(usuarioId)
-      setPapeis(papeisData.map(p => p.tipo_papel_usuario))
+
+      console.log('✅ Papéis carregados:', papeisData)
+      setPapeis(papeisData)
     } catch (err) {
-      console.error('Erro ao carregar papéis:', err)
+      console.error('❌ Erro ao carregar papéis:', err)
+      setPapeis([])
     } finally {
       setLoading(false)
     }
@@ -49,7 +52,7 @@ export function useAuth() {
 
   async function logout() {
     await supabase.auth.signOut()
-    localStorage.removeItem('user')
+    localStorage.removeItem('perfil_ativo')
     setUser(null)
     setPapeis([])
   }
