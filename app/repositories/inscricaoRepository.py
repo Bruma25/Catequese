@@ -788,6 +788,23 @@ class InscricaoRepository:
 
         return result.count
 
+    def contar_inscricoes_por_turma(self, turma_id: str) -> int:
+        """
+        Conta quantas inscrições (qualquer status) existem para uma turma específica.
+        Usado para mostrar vagas ocupadas no frontend.
+        """
+        result = (
+            self.db.table(self.table)
+            .select("id", count="exact")
+            .eq("turma_id", turma_id)
+            .execute()
+        )
+
+        if result is None or not hasattr(result, "count") or result.count is None:
+            return 0
+
+        return result.count
+
     def buscar_com_detalhes_completos(self, inscricao_id: str) -> Optional[dict]:
         """Busca uma inscrição com todos os detalhes e relacionamentos."""
         inscricao = self.buscar_por_id_com_override_enriquecido(inscricao_id)

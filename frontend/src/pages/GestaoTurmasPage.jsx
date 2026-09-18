@@ -1,3 +1,4 @@
+// ../frontend/src/pages/GestaoTurmasPage.jsx
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Header from '../components/Header/Header'
@@ -8,7 +9,8 @@ import {
   excluirTurma,
   listarEtapas,
   listarLocaisEncontro,
-  listarCatequistas
+  listarCatequistas,
+  contarInscricoesPorTurma
 } from '../services/api'
 import './GestaoTurmasPage.css'
 
@@ -18,10 +20,11 @@ function GestaoTurmasPage() {
   const [etapas, setEtapas] = useState([])
   const [locaisEncontro, setLocaisEncontro] = useState([])
   const [catequistas, setCatequistas] = useState([])
+  const [inscricoesPorTurma, setInscricoesPorTurma] = useState({})
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editandoTurma, setEditandoTurma] = useState(null)
-  const [filtroEtapa, setFiltroEtapa] = useState('')  // ✅ ADICIONADO
+  const [filtroEtapa, setFiltroEtapa] = useState('')
   const [formData, setFormData] = useState({
     etapa_id: '',
     nome_sistema: '',
@@ -53,6 +56,20 @@ function GestaoTurmasPage() {
       setEtapas(etapasData)
       setLocaisEncontro(locaisData)
       setCatequistas(catequistasData)
+
+      // ✅ Buscar quantidade de inscrições por turma
+      const inscricoes = await Promise.all(
+        turmasData.map(async (turma) => {
+          const count = await contarInscricoesPorTurma(turma.id)
+          return { turmaId: turma.id, count }
+        })
+      )
+
+      const inscricoesMap = {}
+      inscricoes.forEach(({ turmaId, count }) => {
+        inscricoesMap[turmaId] = count
+      })
+      setInscricoesPorTurma(inscricoesMap)
     } catch (error) {
       console.error('Erro ao buscar dados:', error)
       alert('Erro ao carregar dados. Tente novamente.')
@@ -179,7 +196,26 @@ function GestaoTurmasPage() {
       fetchData()
     } catch (error) {
       console.error('Erro ao excluir turma:', error)
-      alert(`Erro: ${error.message}`)
+
+      // Verificar erro de foreign key (inscrições vinculadas)
+      const errorMsg = error.message || ''
+      const errorCode = error.code || ''
+      const errorDetail = error.detail || ''
+
+      if (
+        errorCode === '23503' ||
+        errorMsg.includes('foreign key') ||
+        errorMsg.includes('violates foreign key') ||
+        errorDetail.includes('still referenced from table')
+      ) {
+        alert(
+          '⚠️ Não é possível excluir esta turma.\n\n' +
+          '📋 Motivo: Existem catequizandos inscritos nela.\n\n' +
+          '✅ Solução: Exclua as inscrições dos catequizandos desta turma primeiro.'
+        )
+      } else {
+        alert('❌ Erro ao excluir turma: ' + (error.message || 'Tente novamente.'))
+      }
     }
   }
 
@@ -229,34 +265,41 @@ function GestaoTurmasPage() {
                 : 'Nenhuma turma cadastrada'}
             </p>
           ) : (
-            turmasFiltradas.map(turma => (
-              <div key={turma.id} className="turma-card">
-                <div className="turma-info">
-                  <h3 className="turma-nome">{turma.nome_exibicao || turma.nome_sistema}</h3>
-                  <p className="turma-etapa">
-                    Etapa: {etapas.find(e => e.id === turma.etapa_id)?.nome || 'N/A'}
-                  </p>
-                  <p className="turma-vagas">Vagas: {turma.vagas_totais}</p>
-                  <p className={`turma-status ${turma.ativa ? 'ativa' : 'inativa'}`}>
-                    Status: {turma.ativa ? 'Ativa' : 'Inativa'}
-                  </p>
+            turmasFiltradas.map(turma => {
+              const vagasOcupadas = inscricoesPorTurma[turma.id] || 0
+              const vagasTotais = turma.vagas_totais
+
+              return (
+                <div key={turma.id} className="turma-card">
+                  <div className="turma-info">
+                    <h3 className="turma-nome">{turma.nome_exibicao || turma.nome_sistema}</h3>
+                    <p className="turma-etapa">
+                      Etapa: {etapas.find(e => e.id === turma.etapa_id)?.nome || 'N/A'}
+                    </p>
+                    <p className="turma-vagas">
+                      Vagas: {vagasOcupadas}/{vagasTotais}
+                    </p>
+                    <p className={`turma-status ${turma.ativa ? 'ativa' : 'inativa'}`}>
+                      Status: {turma.ativa ? 'Ativa' : 'Inativa'}
+                    </p>
+                  </div>
+                  <div className="turma-actions">
+                    <button
+                      className="editar-button"
+                      onClick={() => handleOpenModal(turma)}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      className="excluir-button"
+                      onClick={() => handleExcluir(turma.id, turma.nome_exibicao || turma.nome_sistema)}
+                    >
+                      Excluir
+                    </button>
+                  </div>
                 </div>
-                <div className="turma-actions">
-                  <button
-                    className="editar-button"
-                    onClick={() => handleOpenModal(turma)}
-                  >
-                    Editar
-                  </button>
-                  <button
-                    className="excluir-button"
-                    onClick={() => handleExcluir(turma.id, turma.nome_exibicao || turma.nome_sistema)}
-                  >
-                    Excluir
-                  </button>
-                </div>
-              </div>
-            ))
+              )
+            })
           )}
         </div>
       </main>

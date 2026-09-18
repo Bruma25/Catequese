@@ -1,3 +1,4 @@
+// ../frontend/src/pages/GestaoEtapasPage.jsx
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Header from '../components/Header/Header'
@@ -186,7 +187,26 @@ function GestaoEtapasPage() {
       fetchData()
     } catch (error) {
       console.error('Erro ao excluir etapa:', error)
-      alert(`Erro: ${error.message}`)
+
+      // Verificar erro de foreign key (turmas vinculadas)
+      const errorMsg = error.message || ''
+      const errorCode = error.code || ''
+      const errorDetail = error.detail || ''
+
+      if (
+        errorCode === '23503' ||
+        errorMsg.includes('foreign key') ||
+        errorMsg.includes('violates foreign key') ||
+        errorDetail.includes('still referenced from table')
+      ) {
+        alert(
+          '⚠️ Não é possível excluir esta etapa.\n\n' +
+          '📋 Motivo: Existem turmas vinculadas a ela.\n\n' +
+          '✅ Solução: Exclua as turmas desta etapa primeiro.'
+        )
+      } else {
+        alert('❌ Erro ao excluir etapa: ' + (error.message || 'Tente novamente.'))
+      }
     }
   }
 

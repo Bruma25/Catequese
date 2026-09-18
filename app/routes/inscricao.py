@@ -46,7 +46,7 @@ class InscricaoResponse(BaseModel):
     status_id: int
     responsavel_nome: str
     created_at: Optional[str] = None
-    turma_id: Optional[str] = None  # ✅ ADICIONADO
+    turma_id: Optional[str] = None
 
 
 class EtapaResponse(BaseModel):
@@ -1379,6 +1379,16 @@ def contar_vagas_ocupadas(turma_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao contar vagas ocupadas: {str(e)}")
 
+@router.get("/inscricoes/contar-por-turma/{turma_id}")
+def contar_inscricoes_por_turma(turma_id: str):
+    """Conta quantas inscrições (qualquer status) existem para uma turma específica."""
+    try:
+        repo = InscricaoRepository()
+        count = repo.contar_inscricoes_por_turma(turma_id)
+
+        return {"count": count}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao contar inscrições: {str(e)}")
 
 @router.delete("/documentos/{documento_id}")
 def excluir_documento(documento_id: str):

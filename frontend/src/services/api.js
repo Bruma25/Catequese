@@ -211,3 +211,14 @@ export async function uploadDocumento(inscricaoId, file, tipoDocumento) {
 
   return result
 }
+
+export async function contarInscricoesPorTurma(turmaId) {
+  const response = await fetch(`${API_URL}/inscricoes/contar-por-turma/${turmaId}`)
+
+  if (!response.ok) {
+    throw new Error('Erro ao contar inscrições')
+  }
+
+  const data = await response.json()
+  return data.count || 0
+}
