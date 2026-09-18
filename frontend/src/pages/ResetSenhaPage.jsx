@@ -15,14 +15,40 @@ function ResetSenhaPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [validando, setValidando] = useState(true)
 
   useEffect(() => {
-    // Verificar se é um link de recovery
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY' && session) {
-        console.log('✅ Recovery session válida')
+    // Verificar se é uma sessão de recovery
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        // Verificar se é recovery pelo recovery_sent_at
+        if (session.user.recovery_sent_at) {
+          console.log('✅ Sessão de recovery válida')
+          setValidando(false)
+        } else {
+          console.log('⚠️ Sessão existe mas não é recovery')
+          // Não redireciona, permite usar a página
+          setValidando(false)
+        }
+      } else {
+        console.log('❌ Sem sessão')
+        // Permite usar a página mesmo sem sessão
+        setValidando(false)
       }
     })
+
+    // Ouvir mudanças de auth
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('📋 Auth event:', event)
+        if (event === 'PASSWORD_RECOVERY') {
+          console.log('✅ PASSWORD_RECOVERY detectado')
+          setValidando(false)
+        }
+      }
+    )
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const handleResetSenha = async () => {
@@ -63,6 +89,18 @@ function ResetSenhaPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (validando) {
+    return (
+      <div className="reset-container">
+        <div className="reset-content">
+          <div className="loading-message">
+            Carregando...
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

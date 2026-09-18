@@ -47,9 +47,17 @@ export async function signup(email, password, nome) {
   return authData
 }
 
+// export async function resetPassword(email) {
+//   const { error } = await supabase.auth.resetPasswordForEmail(email, {
+//     redirectTo: `${window.location.origin}/Catequese/reset-senha`,
+//   })
+//
+//   if (error) throw error
+// }
+
 export async function resetPassword(email) {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/Catequese/home`,
+    // ✅ Não especificar redirectTo, usar hash URL
   })
 
   if (error) throw error
