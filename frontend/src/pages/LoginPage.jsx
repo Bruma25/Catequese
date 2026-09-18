@@ -1,11 +1,10 @@
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { LogIn } from 'lucide-react'
-import { login } from '../services/authService'
+import { LogIn, Mail, Lock } from 'lucide-react'
+import { login, signup, resetPassword } from '../services/authService'
+import ModalCriarConta from '../components/ModalCriarConta/ModalCriarConta'
 import './LoginPage.css'
 import logo from "../assets/logo.png"
-import email from "../assets/email.png"
-import senha from "../assets/password.png"
 import perfil from "../assets/perfil.png"
 
 function LoginPage() {
@@ -14,6 +13,8 @@ function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [modalAberto, setModalAberto] = useState(false)
 
   const handleEntrar = async () => {
     if (!emailInput || !password) {
@@ -40,8 +41,27 @@ function LoginPage() {
     }
   }
 
-  const handleCriarConta = () => {
-    alert('Funcionalidade de criar conta será implementada em breve!')
+  const handleCriarConta = async (email, senha, nome) => {
+    await signup(email, senha, nome)
+    setSuccess('Conta criada! Verifique seu email para confirmar.')
+    setError('')
+  }
+
+  const handleEsqueciSenha = async () => {
+    const email = prompt('Digite seu email para recuperar a senha:')
+
+    if (!email) {
+      alert('Email é obrigatório')
+      return
+    }
+
+    try {
+      await resetPassword(email)
+      alert('Email de recuperação enviado! Verifique sua caixa de entrada.')
+      setSuccess('Email de recuperação enviado!')
+    } catch (err) {
+      setError(err.message || 'Erro ao enviar email de recuperação')
+    }
   }
 
   return (
@@ -66,8 +86,14 @@ function LoginPage() {
             </div>
           )}
 
+          {success && (
+            <div className="success-message">
+              {success}
+            </div>
+          )}
+
           <div className="input-group">
-            <img src={email} alt="Email" className="input-icon" />
+            <Mail size={20} color="#667eea" />
             <input
               type="email"
               placeholder="Email"
@@ -79,7 +105,7 @@ function LoginPage() {
           </div>
 
           <div className="input-group">
-            <img src={senha} alt="Senha" className="input-icon" />
+            <Lock size={20} color="#667eea" />
             <input
               type="password"
               placeholder="Senha"
@@ -104,14 +130,30 @@ function LoginPage() {
 
             <button
               className="btn-criar-conta"
-              onClick={handleCriarConta}
+              onClick={() => setModalAberto(true)}
               disabled={loading}
             >
               Criar conta
             </button>
+
+            {/* Link Esqueci Minha Senha */}
+            <button
+              className="btn-esqueci-senha"
+              onClick={handleEsqueciSenha}
+              disabled={loading}
+            >
+              Esqueci minha senha
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Modal Criar Conta */}
+      <ModalCriarConta
+        isOpen={modalAberto}
+        onClose={() => setModalAberto(false)}
+        onCriarConta={handleCriarConta}
+      />
     </div>
   )
 }

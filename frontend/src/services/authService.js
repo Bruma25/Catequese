@@ -23,6 +23,11 @@ export async function signup(email, password, nome) {
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      data: {
+        nome: nome,
+      },
+    },
   })
 
   if (authError) throw authError
@@ -42,6 +47,14 @@ export async function signup(email, password, nome) {
   return authData
 }
 
+export async function resetPassword(email) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/Catequese/login`, // Redireciona para o login após reset
+  })
+
+  if (error) throw error
+}
+
 export async function getCurrentUser() {
   const { data: { user } } = await supabase.auth.getUser()
   return user
@@ -50,12 +63,34 @@ export async function getCurrentUser() {
 export async function getUserPapeis(usuarioId) {
   console.log('🔍 Buscando papéis para:', usuarioId)
 
+  if (USAR_BACKEND) {
+    try {
+      const response = await fetch(`${API_URL}/usuarios/${usuarioId}/papeis`)
+
+      if (!response.ok) {
+        throw new Error(`Erro ${response.status}: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      console.log('✅ Papéis do backend:', data)
+      return data
+    } catch (error) {
+      console.warn('⚠️ Backend falhou, usando Supabase direto:', error)
+    }
+  }
+
+  const { data: testData, error: testError } = await supabase
+    .from('usuario_papel')
+    .select('*')
+    .eq('usuario_id', usuarioId)
+
+  console.log('📋 Teste simples:', testData, 'Erro:', testError)
+
   const { data, error } = await supabase
     .from('usuario_papel')
     .select(`
-      usuario_id,
-      papel_id,
-      tipo_papel_usuario (
+      *,
+      tipo_papel_usuario:tipo_papel_usuario(
         id,
         codigo,
         descricao
@@ -70,13 +105,8 @@ export async function getUserPapeis(usuarioId) {
 
   console.log('📋 Dados brutos:', data)
 
-  if (!data || data.length === 0) {
-    console.warn('⚠️ Nenhum papel encontrado')
-    return []
-  }
-
   const papeis = data
-    .filter(item => item.tipo_papel_usuario)
+    .filter(item => item.tipo_papel_usuario !== null)
     .map(item => item.tipo_papel_usuario)
 
   console.log('✅ Papéis extraídos:', papeis)

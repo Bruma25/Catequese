@@ -148,3 +148,38 @@
   color: white;
   font-size: 18px;
 }
+
+/* LoginPage.css */
+
+.btn-esqueci-senha {
+  background: transparent;
+  color: #667eea;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-decoration: underline;
+}
+
+.btn-esqueci-senha:hover {
+  color: #5568d3;
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.btn-esqueci-senha:disabled {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+.success-message {
+  background: #efe;
+  color: #2a7;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  border: 1px solid #cfc;
+  margin-bottom: 15px;
+}
