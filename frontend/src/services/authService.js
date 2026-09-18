@@ -49,7 +49,7 @@ export async function signup(email, password, nome) {
 
 export async function resetPassword(email) {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/Catequese/login`, // Redireciona para o login após reset
+    redirectTo: `${window.location.origin}/Catequese/home`,
   })
 
   if (error) throw error

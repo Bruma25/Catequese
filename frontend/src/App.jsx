@@ -9,6 +9,7 @@ import FichaInscricaoPage from './pages/FichaInscricaoPage'
 import GestaoEtapasPage from './pages/GestaoEtapasPage'
 import GestaoTurmasPage from './pages/GestaoTurmasPage'
 import GestaoInscricoesPage from './pages/GestaoInscricoesPage'
+import ResetSenhaPage from './pages/ResetSenhaPage'
 import './App.css'
 
 // Componente para rotas protegidas
@@ -63,6 +64,14 @@ function App() {
             <LoginPage />
           </RotaPublica>
         }
+      />
+      <Route
+          path="/reset-senha"  // ✅ NOVA ROTA
+          element={
+            <RotaPublica>
+              <ResetSenhaPage />
+            </RotaPublica>
+          }
       />
 
       {/* Rotas protegidas */}
