@@ -14,9 +14,10 @@ function MenuNavegacao({ onClose, position = 'right' }) {
     { id: 2, nome: 'Inscrição', caminho: '/etapas', perfis: ['todos'] },
     { id: 3, nome: 'Gestão de Etapas', caminho: '/gestao-etapas', perfis: ['coordenador_geral'] },
     { id: 4, nome: 'Gestão de Turmas', caminho: '/gestao-turmas', perfis: ['coordenador_geral', 'coordenador_etapa'] },
-    { id: 5, nome: 'Inscrições', caminho: '/gestao-inscricoes', perfis: ['coordenador_geral', 'coordenador_etapa'] },
+    { id: 5, nome: 'Gestão de Inscrições', caminho: '/gestao-inscricoes', perfis: ['coordenador_geral', 'coordenador_etapa'] },
     { id: 6, nome: 'Minhas Turmas', caminho: '/minhas-turmas', perfis: ['catequista'] },
-    { id: 7, nome: 'Meus Catequizandos', caminho: '/meus-catequizandos', perfis: ['responsavel'] }
+    { id: 7, nome: 'Meus Catequizandos', caminho: '/meus-catequizandos', perfis: ['responsavel'] },
+    { id: 8, nome: 'Configuração da conta', caminho: '/configuracoes', perfis: ['todos'] }
   ]
 
   // Carregar perfil ativo do localStorage

@@ -1,6 +1,6 @@
 // src/pages/ResetSenhaPage.jsx
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, Lock } from 'lucide-react'
 import { supabase } from '../services/supabaseClient'
 import logo from "../assets/logo.png"
@@ -8,6 +8,7 @@ import './ResetSenhaPage.css'
 
 function ResetSenhaPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [senha, setSenha] = useState('')
   const [confirmarSenha, setConfirmarSenha] = useState('')
   const [mostrarSenha, setMostrarSenha] = useState(false)
@@ -15,35 +16,51 @@ function ResetSenhaPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [validando, setValidando] = useState(true)
+  const [token, setToken] = useState('')
+  const [email, setEmail] = useState('')
 
   useEffect(() => {
-    // Verificar se é uma sessão de recovery
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        // Verificar se é recovery pelo recovery_sent_at
-        if (session.user.recovery_sent_at) {
-          console.log('✅ Sessão de recovery válida')
-          setValidando(false)
+    // Extrair token e email do hash da URL
+    const hash = window.location.hash.substring(1) // Remove #
+    const params = new URLSearchParams(hash)
+
+    const accessToken = params.get('access_token')
+    const refreshToken = params.get('refresh_token')
+    const userEmail = params.get('email')
+
+    console.log('📋 Token:', accessToken ? 'Presente' : 'Ausente')
+    console.log('📋 Email:', userEmail)
+
+    if (accessToken) {
+      setToken(accessToken)
+      setEmail(userEmail || '')
+
+      // Configurar sessão manualmente
+      supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken || '',
+      }).then(({ error }) => {
+        if (error) {
+          console.error('❌ Erro ao setar sessão:', error)
         } else {
-          console.log('⚠️ Sessão existe mas não é recovery')
-          // Não redireciona, permite usar a página
-          setValidando(false)
+          console.log('✅ Sessão configurada com sucesso')
         }
-      } else {
-        console.log('❌ Sem sessão')
-        // Permite usar a página mesmo sem sessão
-        setValidando(false)
-      }
-    })
+      })
+    } else {
+      console.log('⚠️ Nenhum token encontrado na URL')
+    }
 
     // Ouvir mudanças de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('📋 Auth event:', event)
+
         if (event === 'PASSWORD_RECOVERY') {
           console.log('✅ PASSWORD_RECOVERY detectado')
-          setValidando(false)
+        }
+
+        if (event === 'SIGNED_IN' && session) {
+          console.log('✅ Usuário logado')
         }
       }
     )
@@ -73,6 +90,15 @@ function ResetSenhaPage() {
     setLoading(true)
 
     try {
+      // Primeiro, garantir que a sessão está configurada
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session) {
+        throw new Error('Sessão não encontrada. Por favor, clique no link do email novamente.')
+      }
+
+      console.log('📋 Sessão atual:', session)
+
       const { error } = await supabase.auth.updateUser({
         password: senha
       })
@@ -81,26 +107,18 @@ function ResetSenhaPage() {
 
       setSuccess('Senha atualizada com sucesso! Redirecionando...')
 
+      // Logout após sucesso
+      await supabase.auth.signOut()
+
       setTimeout(() => {
         navigate('/login')
       }, 2000)
     } catch (err) {
+      console.error('❌ Erro detalhado:', err)
       setError(err.message || 'Erro ao redefinir senha')
     } finally {
       setLoading(false)
     }
-  }
-
-  if (validando) {
-    return (
-      <div className="reset-container">
-        <div className="reset-content">
-          <div className="loading-message">
-            Carregando...
-          </div>
-        </div>
-      </div>
-    )
   }
 
   return (

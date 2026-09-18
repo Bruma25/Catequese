@@ -9,6 +9,7 @@ import FichaInscricaoPage from './pages/FichaInscricaoPage'
 import GestaoEtapasPage from './pages/GestaoEtapasPage'
 import GestaoTurmasPage from './pages/GestaoTurmasPage'
 import GestaoInscricoesPage from './pages/GestaoInscricoesPage'
+import ConfiguracoesPage from './pages/ConfiguracoesPage'
 import ResetSenhaPage from './pages/ResetSenhaPage'
 import './App.css'
 
@@ -66,7 +67,7 @@ function App() {
         }
       />
       <Route
-          path="/reset-senha"  // ✅ NOVA ROTA
+          path="/reset-senha"
           element={
             <RotaPublica>
               <ResetSenhaPage />
@@ -120,6 +121,14 @@ function App() {
         element={
           <RotaProtegida>
             <GestaoInscricoesPage />
+          </RotaProtegida>
+        }
+      />
+      <Route
+        path="/configuracoes"
+        element={
+          <RotaProtegida>
+            <ConfiguracoesPage />
           </RotaProtegida>
         }
       />
