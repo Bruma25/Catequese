@@ -163,15 +163,26 @@ class TurmaDetailResponse(BaseModel):
     ano_nasc_maximo: Optional[int] = None
     catequistas: List[CatequistaResponse] = []
 
+
 class CatequizandoUpdate(BaseModel):
     nome: Optional[str] = None
-    data_nascimento: Optional[date] = None
+    data_nascimento: Optional[date] = None  # ✅ Voltar para date
     observacoes: Optional[str] = None
     endereco: Optional[str] = None
     telefone: Optional[str] = None
     email: Optional[str] = None
     necessidade_especial: Optional[bool] = None
     descricao_necessidade_especial: Optional[str] = None
+
+    @validator('data_nascimento', pre=True)
+    def parse_data_nascimento(cls, value):
+        if value is None:
+            return None
+        if isinstance(value, date):
+            return value
+        if isinstance(value, str):
+            return datetime.strptime(value, '%Y-%m-%d').date()
+        return value
 
 # --- Endpoints ---
 
@@ -1441,6 +1452,7 @@ def atualizar_status_documento(documento_id: str, status_validacao: str, observa
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao atualizar status do documento: {str(e)}")
 
+
 @router.get("/{catequizando_id}")
 def buscar_catequizando(catequizando_id: str):
     """Busca dados de um catequizando específico."""
@@ -1483,10 +1495,7 @@ def editar_catequizando(catequizando_id: str, dados: CatequizandoUpdate):
         # Converter para dict e remover None
         update_data = {k: v for k, v in dados.dict().items() if v is not None}
 
-        # Converter string date para date object
-        if 'data_nascimento' in update_data and update_data['data_nascimento']:
-            update_data['data_nascimento'] = datetime.strptime(update_data['data_nascimento'], '%Y-%m-%d').date()
-
+        # ✅ Não precisa converter, o validator já fez isso
         # Editar parcialmente
         catequizando_atualizado = repo.editar_parcial(catequizando_id, update_data)
 
