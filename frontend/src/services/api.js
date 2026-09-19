@@ -30,10 +30,9 @@ async function request(endpoint, options = {}) {
 
 export async function contarInscricoesPorTurma(turmaId) {
   try {
-    const response = await fetch(`${API_URL}/inscricoes/contar-por-turma/${turmaId}`)
+    const response = await fetch(`${API_URL}api/v1/inscricoes/contar-por-turma/${turmaId}`)
 
     if (!response.ok) {
-      // Se der 404 ou outro erro, retorna 0 como fallback
       console.warn(`⚠️ Erro ao contar inscrições para turma ${turmaId}: ${response.status}`)
       return 0
     }
