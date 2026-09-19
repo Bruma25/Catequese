@@ -132,10 +132,18 @@ def criar_usuario(dados: UsuarioCreate):
         supabase = get_supabase()
         repo = UsuarioRepository()
 
-        # 1. Criar usuário no Supabase Auth
+        # 1. Verificar se email já existe
+        usuario_existente = repo.buscar_por_email(dados.email)
+        if usuario_existente:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Email '{dados.email}' já está em uso"
+            )
+
+        # 2. Criar usuário no Supabase Auth
         auth_result = supabase.auth.admin.create_user({
             "email": dados.email,
-            "password": "senha_temporaria_123",  # ← Usuário deve trocar no primeiro login
+            "password": "senha_temporaria_123",
             "email_confirm": True,
             "user_metadata": {
                 "nome": dados.nome
@@ -147,7 +155,42 @@ def criar_usuario(dados: UsuarioCreate):
 
         usuario_id = auth_result.user.id
 
-        # 2. Criar na tabela usuario
+        # 3. Verificar se já existe na tabela usuario
+        usuario_na_tabela = repo.buscar_por_id(usuario_id)
+
+        if usuario_na_tabela:
+            # Usuário já existe, apenas atualiza dados e papéis
+            update_data = {
+                "nome": dados.nome,
+                "email": dados.email
+            }
+
+            supabase.table("usuario").update(update_data).eq("id", usuario_id).execute()
+
+            # Atualizar papéis
+            supabase.table("usuario_papel").delete().eq("usuario_id", usuario_id).execute()
+
+            if dados.papeis_ids:
+                papeis_payload = [
+                    {"usuario_id": usuario_id, "papel_id": papel_id}
+                    for papel_id in dados.papeis_ids
+                ]
+                supabase.table("usuario_papel").insert(papeis_payload).execute()
+
+            # Buscar usuário atualizado
+            usuario = repo.buscar_por_id(usuario_id)
+
+            return UsuarioResponse(
+                id=usuario.id,
+                nome=usuario.nome,
+                email=usuario.email,
+                papeis=[
+                    {"id": p.id, "codigo": p.codigo, "descricao": p.descricao}
+                    for p in usuario.papeis
+                ]
+            )
+
+        # 4. Criar na tabela usuario (usuário novo)
         result = (
             supabase
             .table("usuario")
@@ -164,7 +207,7 @@ def criar_usuario(dados: UsuarioCreate):
             supabase.auth.admin.delete_user(usuario_id)
             raise HTTPException(status_code=500, detail="Não foi possível criar o usuário na tabela")
 
-        # 3. Atribuir papéis
+        # 5. Atribuir papéis
         if dados.papeis_ids:
             papeis_payload = [
                 {"usuario_id": usuario_id, "papel_id": papel_id}
@@ -173,7 +216,7 @@ def criar_usuario(dados: UsuarioCreate):
 
             supabase.table("usuario_papel").insert(papeis_payload).execute()
 
-        # 4. Buscar usuário criado
+        # 6. Buscar usuário criado
         usuario = repo.buscar_por_id(usuario_id)
 
         if not usuario:
@@ -184,12 +227,8 @@ def criar_usuario(dados: UsuarioCreate):
             nome=usuario.nome,
             email=usuario.email,
             papeis=[
-                {
-                    "id": papel.id,
-                    "codigo": papel.codigo,
-                    "descricao": papel.descricao
-                }
-                for papel in usuario.papeis
+                {"id": p.id, "codigo": p.codigo, "descricao": p.descricao}
+                for p in usuario.papeis
             ]
         )
 
