@@ -271,34 +271,6 @@ export async function atualizarPapeisUsuario(usuarioId, papeisIds) {
 }
 
 // Meus Catequizandos
-export async function buscarInscricaoCompleta(id) {
-  return request(`/api/v1/inscricoes/${id}/completa`)
-}
-
-export async function listarDocumentosInscricao(inscricaoId) {
-  return request(`/api/v1/inscricoes/${inscricaoId}/documentos`)
-}
-
-export async function uploadDocumento(inscricaoId, file, tipoDocumento) {
-  const formData = new FormData()
-  formData.append('file', file)
-  formData.append('tipo_documento', tipoDocumento)
-
-  const url = `${import.meta.env.VITE_API_URL}/api/v1/inscricoes/${inscricaoId}/documentos`
-
-  const response = await fetch(url, {
-    method: 'POST',
-    body: formData
-  })
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}))
-    throw new Error(errorData.detail || `Erro ${response.status}: ${response.statusText}`)
-  }
-
-  return response.json()
-}
-
 export async function atualizarDadosCatequizando(catequizandoId, dados) {
   return request(`/api/v1/catequizandos/${catequizandoId}`, {
     method: 'PUT',
