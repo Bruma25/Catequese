@@ -21,6 +21,7 @@ app.add_middleware(
 
 app.include_router(inscricao_router, prefix="/api/v1")
 app.include_router(usuario_router, prefix="/api/v1")
+app.include_router(catequizando_router, prefix="/api/v1")
 
 @app.get("/")
 def root():
