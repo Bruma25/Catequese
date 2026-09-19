@@ -38,6 +38,9 @@ function GestaoUsuariosPage() {
         listarPapeis()
       ])
 
+      console.log('📋 Usuários:', usuariosData)
+      console.log('📋 Papéis:', papeisData)
+
       setUsuarios(usuariosData)
       setPapeis(papeisData)
     } catch (error) {
@@ -48,10 +51,13 @@ function GestaoUsuariosPage() {
     }
   }
 
-  // Filtrar usuários por papel
+  // ✅ Filtro corrigido
   const usuariosFiltrados = usuarios.filter(usuario => {
     if (!filtroPapel) return true
-    return usuario.papeis?.some(papel => papel.id === filtroPapel)
+
+    return usuario.papeis?.some(papel => {
+      return String(papel.id) === String(filtroPapel)
+    })
   })
 
   const handleOpenModal = (usuario = null) => {
