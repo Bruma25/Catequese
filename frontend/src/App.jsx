@@ -12,6 +12,7 @@ import GestaoInscricoesPage from './pages/GestaoInscricoesPage'
 import ConfiguracoesPage from './pages/ConfiguracoesPage'
 import ResetSenhaPage from './pages/ResetSenhaPage'
 import GestaoUsuariosPage from './pages/GestaoUsuariosPage'
+import MeusCatequizandosPage from './pages/MeusCatequizandosPage'
 import './App.css'
 
 // Componente para rotas protegidas
@@ -138,6 +139,14 @@ function App() {
         element={
           <RotaProtegida>
             <GestaoUsuariosPage />
+          </RotaProtegida>
+        }
+      />
+      <Route
+        path="/meus-catequizandos"
+        element={
+          <RotaProtegida>
+            <MeusCatequizandosPage />
           </RotaProtegida>
         }
       />

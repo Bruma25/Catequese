@@ -1,0 +1,419 @@
+/* src/pages/MeusCatequizandosPage.css */
+
+.meus-catequizandos-container {
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+.meus-catequizandos-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.page-title {
+  font-size: 28px;
+  color: #333;
+  margin-bottom: 30px;
+}
+
+.sem-catequizandos {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.sem-catequizandos svg {
+  color: #ccc;
+  margin-bottom: 20px;
+}
+
+.sem-catequizandos p {
+  font-size: 18px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.nova-inscricao-button {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.nova-inscricao-button:hover {
+  background: #5568d3;
+}
+
+.catequizandos-list {
+  display: grid;
+  gap: 20px;
+}
+
+.catequizando-card {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.catequizando-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.catequizando-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.catequizando-info {
+  flex: 1;
+}
+
+.catequizando-nome {
+  font-size: 20px;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.catequizando-nascimento,
+.catequizando-necessidade {
+  font-size: 14px;
+  color: #666;
+  margin: 5px 0;
+}
+
+.catequizando-necessidade {
+  color: #e67e22;
+  font-style: italic;
+}
+
+.status-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-icon {
+  flex-shrink: 0;
+}
+
+.status-icon.confirmada {
+  color: #27ae60;
+}
+
+.status-icon.lista_espera {
+  color: #f39c12;
+}
+
+.status-icon.pendente {
+  color: #3498db;
+}
+
+.status-icon.cancelada {
+  color: #e74c3c;
+}
+
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-badge.confirmada {
+  background: #d5f5e3;
+  color: #27ae60;
+}
+
+.status-badge.lista_espera {
+  background: #fdebd0;
+  color: #f39c12;
+}
+
+.status-badge.pendente {
+  background: #d6eaf8;
+  color: #3498db;
+}
+
+.status-badge.cancelada {
+  background: #fadbd8;
+  color: #e74c3c;
+}
+
+.catequizando-detalhes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.detalhe-item {
+  font-size: 14px;
+  color: #555;
+}
+
+.detalhe-item strong {
+  color: #333;
+  margin-right: 8px;
+}
+
+.catequizando-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-documentos,
+.btn-editar,
+.btn-ver {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.3s;
+}
+
+.btn-documentos {
+  background: #667eea;
+  color: white;
+}
+
+.btn-documentos:hover {
+  background: #5568d3;
+}
+
+.btn-editar {
+  background: #f39c12;
+  color: white;
+}
+
+.btn-editar:hover {
+  background: #e67e22;
+}
+
+.btn-ver {
+  background: #ecf0f1;
+  color: #333;
+}
+
+.btn-ver:hover {
+  background: #bdc3c7;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  width: 100%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-title {
+  font-size: 20px;
+  color: #333;
+  margin-bottom: 25px;
+}
+
+.upload-section,
+.documentos-section {
+  margin-bottom: 25px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.upload-title,
+.documentos-title {
+  font-size: 16px;
+  color: #555;
+  margin-bottom: 15px;
+}
+
+.upload-form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.form-select {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.file-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.btn-upload {
+  background: #27ae60;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.3s;
+}
+
+.btn-upload:hover {
+  background: #229954;
+}
+
+.btn-upload:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.sem-documentos {
+  text-align: center;
+  color: #999;
+  padding: 30px;
+}
+
+.documentos-list {
+  display: grid;
+  gap: 15px;
+}
+
+.documento-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.documento-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.documento-info svg {
+  color: #667eea;
+  flex-shrink: 0;
+}
+
+.documento-nome {
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 5px 0;
+}
+
+.documento-tipo,
+.documento-data {
+  font-size: 13px;
+  color: #666;
+  margin: 3px 0;
+}
+
+.documento-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.status-aprovado,
+.status-rejeitado,
+.status-pendente {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status-aprovado {
+  color: #27ae60;
+}
+
+.status-rejeitado {
+  color: #e74c3c;
+}
+
+.status-pendente {
+  color: #f39c12;
+}
+
+.documento-observacao {
+  font-size: 12px;
+  color: #e74c3c;
+  font-style: italic;
+  margin-top: 5px;
+}
+
+.btn-fechar {
+  width: 100%;
+  padding: 12px;
+  background: #ecf0f1;
+  color: #333;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn-fechar:hover {
+  background: #bdc3c7;
+}

@@ -101,6 +101,30 @@ class CatequizandoRepository:
 
         return self._from_row(data)
 
+    # ✅ NOVO MÉTODO ADICIONADO
+    def editar_parcial(self, catequizando_id: str, dados: dict) -> Catequizando:
+        """
+        Edita apenas os campos fornecidos no dicionário dados.
+        Usado pelo endpoint PUT /catequizandos/{id}.
+        """
+        # Converter date para ISO format se necessário
+        if 'data_nascimento' in dados and dados['data_nascimento']:
+            if isinstance(dados['data_nascimento'], date):
+                dados['data_nascimento'] = dados['data_nascimento'].isoformat()
+
+        result = (
+            self.db.table(self.table)
+            .update(dados)
+            .eq("id", catequizando_id)
+            .execute()
+        )
+
+        data = result.data[0] if result and result.data else None
+        if not data:
+            raise ValueError("Não foi possível editar o catequizando.")
+
+        return self.buscar_por_id(catequizando_id)
+
     def apagar(self, catequizando_id: str) -> bool:
         self.apagar_historico_sacramental(catequizando_id)
         self.apagar_vinculos_responsaveis(catequizando_id)
