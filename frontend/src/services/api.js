@@ -229,3 +229,43 @@ export async function uploadDocumento(inscricaoId, file, tipoDocumento) {
 
   return result
 }
+
+// Usuários
+export async function listarUsuarios() {
+  return request('/api/v1/usuarios')
+}
+
+export async function buscarUsuario(id) {
+  return request(`/api/v1/usuarios/${id}`)
+}
+
+export async function criarUsuario(dados) {
+  return request('/api/v1/usuarios', {
+    method: 'POST',
+    body: JSON.stringify(dados)
+  })
+}
+
+export async function editarUsuario(id, dados) {
+  return request(`/api/v1/usuarios/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(dados)
+  })
+}
+
+export async function excluirUsuario(id) {
+  return request(`/api/v1/usuarios/${id}`, {
+    method: 'DELETE'
+  })
+}
+
+export async function listarPapeis() {
+  return request('/api/v1/tipos-papel')
+}
+
+export async function atualizarPapeisUsuario(usuarioId, papeisIds) {
+  return request(`/api/v1/usuarios/${usuarioId}/papeis`, {
+    method: 'PUT',
+    body: JSON.stringify({ papeis_ids: papeisIds })
+  })
+}

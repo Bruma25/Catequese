@@ -1,0 +1,300 @@
+/* src/pages/GestaoUsuariosPage.css */
+
+.gestao-container {
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+.gestao-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.gestao-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.page-title {
+  font-size: 28px;
+  color: #333;
+}
+
+.novo-usuario-button {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.3s;
+}
+
+.novo-usuario-button:hover {
+  background: #5568d3;
+}
+
+.filtros-container {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.filtro-group {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.filtro-label {
+  font-size: 14px;
+  color: #555;
+  font-weight: 600;
+}
+
+.filtro-select {
+  padding: 10px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.filtro-select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.usuarios-list {
+  display: grid;
+  gap: 20px;
+}
+
+.usuario-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.usuario-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.usuario-info {
+  flex: 1;
+}
+
+.usuario-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.usuario-icon {
+  color: #667eea;
+}
+
+.usuario-nome {
+  font-size: 18px;
+  color: #333;
+  margin: 0;
+}
+
+.usuario-email {
+  font-size: 14px;
+  color: #666;
+  margin: 5px 0;
+}
+
+.usuario-papeis {
+  font-size: 13px;
+  color: #555;
+  margin-top: 8px;
+}
+
+.usuario-papeis strong {
+  color: #333;
+}
+
+.usuario-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.editar-button,
+.excluir-button {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.3s;
+}
+
+.editar-button {
+  background: #667eea;
+  color: white;
+}
+
+.editar-button:hover {
+  background: #5568d3;
+}
+
+.excluir-button {
+  background: #fee;
+  color: #c00;
+}
+
+.excluir-button:hover {
+  background: #fcc;
+}
+
+.sem-usuarios {
+  text-align: center;
+  color: #666;
+  font-size: 16px;
+  padding: 40px;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-title {
+  font-size: 20px;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  color: #555;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.3s;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.papeis-container {
+  display: grid;
+  gap: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #555;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 25px;
+}
+
+.cancelar-button,
+.salvar-button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.3s;
+}
+
+.cancelar-button {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.cancelar-button:hover {
+  background: #e0e0e0;
+}
+
+.salvar-button {
+  background: #667eea;
+  color: white;
+}
+
+.salvar-button:hover {
+  background: #5568d3;
+}

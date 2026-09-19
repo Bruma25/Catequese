@@ -114,6 +114,45 @@ class UsuarioRepository:
 
         return self._montar_usuario(data)
 
+    def criar_com_papeis(self, usuario_id: str, nome: str, email: str, papeis_ids: list[int] = None) -> Usuario:
+        """
+        Cria um usuário e atribui papéis em uma única operação.
+        Usado pelo endpoint POST /usuarios.
+        """
+        supabase = self.db
+
+        # Criar usuário
+        result = (
+            supabase
+            .table(self.table)
+            .insert({
+                "id": usuario_id,
+                "nome": nome,
+                "email": email
+            })
+            .execute()
+        )
+
+        if not result.data:
+            raise ValueError("Não foi possível criar o usuário.")
+
+        # Atribuir papéis
+        if papeis_ids:
+            payload = [
+                {"usuario_id": usuario_id, "papel_id": papel_id}
+                for papel_id in papeis_ids
+            ]
+
+            supabase.table("usuario_papel").insert(payload).execute()
+
+        # Buscar usuário criado
+        usuario = self.buscar_por_id(usuario_id)
+
+        if not usuario:
+            raise ValueError("Usuário criado mas não pôde ser buscado.")
+
+        return usuario
+
     def definir_papeis(self, usuario: Usuario) -> Usuario:
         (
             self.db.table("usuario_papel")

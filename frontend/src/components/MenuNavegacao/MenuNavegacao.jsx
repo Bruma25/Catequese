@@ -12,12 +12,13 @@ function MenuNavegacao({ onClose, position = 'right' }) {
   const itensMenu = [
     { id: 1, nome: 'Home', caminho: '/home', perfis: ['todos'] },
     { id: 2, nome: 'Inscrição', caminho: '/etapas', perfis: ['todos'] },
-    { id: 3, nome: 'Gestão de Etapas', caminho: '/gestao-etapas', perfis: ['coordenador_geral'] },
-    { id: 4, nome: 'Gestão de Turmas', caminho: '/gestao-turmas', perfis: ['coordenador_geral', 'coordenador_etapa'] },
-    { id: 5, nome: 'Gestão de Inscrições', caminho: '/gestao-inscricoes', perfis: ['coordenador_geral', 'coordenador_etapa'] },
-    { id: 6, nome: 'Minhas Turmas', caminho: '/minhas-turmas', perfis: ['catequista'] },
-    { id: 7, nome: 'Meus Catequizandos', caminho: '/meus-catequizandos', perfis: ['responsavel'] },
-    { id: 8, nome: 'Configuração da conta', caminho: '/configuracoes', perfis: ['todos'] }
+    { id: 3, nome: 'Gestão de Usuários', caminho: '/gestao-usuarios', perfis: ['coordenador_geral'] },
+    { id: 4, nome: 'Gestão de Etapas', caminho: '/gestao-etapas', perfis: ['coordenador_geral'] },
+    { id: 5, nome: 'Gestão de Turmas', caminho: '/gestao-turmas', perfis: ['coordenador_geral', 'coordenador_etapa'] },
+    { id: 6, nome: 'Gestão de Inscrições', caminho: '/gestao-inscricoes', perfis: ['coordenador_geral', 'coordenador_etapa'] },
+    { id: 7, nome: 'Minhas Turmas', caminho: '/minhas-turmas', perfis: ['catequista'] },
+    { id: 8, nome: 'Meus Catequizandos', caminho: '/meus-catequizandos', perfis: ['responsavel'] },
+    { id: 9, nome: 'Configuração da conta', caminho: '/configuracoes', perfis: ['todos'] }
   ]
 
   // Carregar perfil ativo do localStorage

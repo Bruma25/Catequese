@@ -11,6 +11,7 @@ import GestaoTurmasPage from './pages/GestaoTurmasPage'
 import GestaoInscricoesPage from './pages/GestaoInscricoesPage'
 import ConfiguracoesPage from './pages/ConfiguracoesPage'
 import ResetSenhaPage from './pages/ResetSenhaPage'
+import GestaoUsuariosPage from './pages/GestaoUsuariosPage'
 import './App.css'
 
 // Componente para rotas protegidas
@@ -129,6 +130,14 @@ function App() {
         element={
           <RotaProtegida>
             <ConfiguracoesPage />
+          </RotaProtegida>
+        }
+      />
+      <Route
+        path="/gestao-usuarios"
+        element={
+          <RotaProtegida>
+            <GestaoUsuariosPage />
           </RotaProtegida>
         }
       />

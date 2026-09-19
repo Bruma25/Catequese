@@ -6,6 +6,7 @@ from app.repositories.usuarioRepository import UsuarioRepository
 from app.domain.usuario import Usuario
 from app.domain.tipoPapelUsuario import TipoPapelUsuario
 from app.infra.supabaseClient import get_supabase
+import uuid
 
 router = APIRouter()
 
@@ -34,6 +35,18 @@ class AtualizarPapeisRequest(BaseModel):
     papeis_ids: List[int]
 
 
+class UsuarioCreate(BaseModel):
+    nome: str
+    email: str
+    papeis_ids: List[int] = []
+
+
+class UsuarioUpdate(BaseModel):
+    nome: Optional[str] = None
+    email: Optional[str] = None
+    papeis_ids: Optional[List[int]] = None
+
+
 # --- Endpoints ---
 
 @router.get("/usuarios/me", response_model=UsuarioResponse)
@@ -50,6 +63,274 @@ def buscar_usuario_atual():
         email="teste@exemplo.com",
         papeis=[]
     )
+
+
+@router.get("/usuarios", response_model=List[UsuarioResponse])
+def listar_usuarios():
+    """
+    Lista todos os usuários com seus papéis.
+    Apenas coordenador geral pode usar este endpoint.
+    """
+    try:
+        repo = UsuarioRepository()
+        result = (
+            repo.db
+            .table("usuario")
+            .select("""
+                id,
+                nome,
+                email,
+                created_at,
+                updated_at,
+                usuario_papel(
+                    papel_id,
+                    tipo_papel_usuario(
+                        id,
+                        codigo,
+                        descricao
+                    )
+                )
+            """)
+            .order("nome")
+            .execute()
+        )
+
+        usuarios = []
+        for item in result.data:
+            papeis = []
+            for papel_item in item.get("usuario_papel", []):
+                papel_data = papel_item.get("tipo_papel_usuario")
+                if papel_data:
+                    papeis.append({
+                        "id": papel_data["id"],
+                        "codigo": papel_data["codigo"],
+                        "descricao": papel_data["descricao"]
+                    })
+
+            usuarios.append(
+                UsuarioResponse(
+                    id=item["id"],
+                    nome=item["nome"],
+                    email=item["email"],
+                    papeis=papeis
+                )
+            )
+
+        return usuarios
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao listar usuários: {str(e)}")
+
+
+@router.post("/usuarios", response_model=UsuarioResponse)
+def criar_usuario(dados: UsuarioCreate):
+    """
+    Cria um novo usuário com papéis opcionais.
+    Apenas coordenador geral pode usar este endpoint.
+    """
+    try:
+        supabase = get_supabase()
+
+        # Gerar ID único
+        usuario_id = str(uuid.uuid4())
+
+        # Criar usuário na tabela usuario
+        result = (
+            supabase
+            .table("usuario")
+            .insert({
+                "id": usuario_id,
+                "nome": dados.nome,
+                "email": dados.email
+            })
+            .execute()
+        )
+
+        if not result.data:
+            raise HTTPException(status_code=500, detail="Não foi possível criar o usuário")
+
+        # Atribuir papéis se houver
+        if dados.papeis_ids:
+            papeis_payload = [
+                {"usuario_id": usuario_id, "papel_id": papel_id}
+                for papel_id in dados.papeis_ids
+            ]
+
+            supabase.table("usuario_papel").insert(papeis_payload).execute()
+
+        # Buscar usuário criado com papéis
+        repo = UsuarioRepository()
+        usuario = repo.buscar_por_id(usuario_id)
+
+        if not usuario:
+            raise HTTPException(status_code=500, detail="Usuário criado mas não pôde ser buscado")
+
+        return UsuarioResponse(
+            id=usuario.id,
+            nome=usuario.nome,
+            email=usuario.email,
+            papeis=[
+                {
+                    "id": papel.id,
+                    "codigo": papel.codigo,
+                    "descricao": papel.descricao
+                }
+                for papel in usuario.papeis
+            ]
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao criar usuário: {str(e)}")
+
+
+@router.get("/usuarios/{usuario_id}", response_model=UsuarioResponse)
+def buscar_usuario(usuario_id: str):
+    """
+    Busca informações de um usuário específico.
+    Apenas coordenador geral pode usar este endpoint.
+    """
+    try:
+        repo = UsuarioRepository()
+        usuario = repo.buscar_por_id(usuario_id)
+
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
+        return UsuarioResponse(
+            id=usuario.id,
+            nome=usuario.nome,
+            email=usuario.email,
+            papeis=[
+                {
+                    "id": papel.id,
+                    "codigo": papel.codigo,
+                    "descricao": papel.descricao
+                }
+                for papel in usuario.papeis
+            ]
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao buscar usuário: {str(e)}")
+
+
+@router.put("/usuarios/{usuario_id}", response_model=UsuarioResponse)
+def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
+    """
+    Edita um usuário existente (nome, email e papéis).
+    Apenas coordenador geral pode usar este endpoint.
+    """
+    try:
+        supabase = get_supabase()
+        repo = UsuarioRepository()
+
+        # Verificar se usuário existe
+        usuario_existente = repo.buscar_por_id(usuario_id)
+        if not usuario_existente:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
+        # Atualizar dados básicos
+        update_data = {}
+        if dados.nome is not None:
+            update_data["nome"] = dados.nome
+        if dados.email is not None:
+            update_data["email"] = dados.email
+
+        if update_data:
+            (
+                supabase
+                .table("usuario")
+                .update(update_data)
+                .eq("id", usuario_id)
+                .execute()
+            )
+
+        # Atualizar papéis se fornecidos
+        if dados.papeis_ids is not None:
+            # Remover papéis antigos
+            (
+                supabase
+                .table("usuario_papel")
+                .delete()
+                .eq("usuario_id", usuario_id)
+                .execute()
+            )
+
+            # Adicionar novos papéis
+            if dados.papeis_ids:
+                papeis_payload = [
+                    {"usuario_id": usuario_id, "papel_id": papel_id}
+                    for papel_id in dados.papeis_ids
+                ]
+
+                supabase.table("usuario_papel").insert(papeis_payload).execute()
+
+        # Buscar usuário atualizado
+        usuario_atualizado = repo.buscar_por_id(usuario_id)
+
+        return UsuarioResponse(
+            id=usuario_atualizado.id,
+            nome=usuario_atualizado.nome,
+            email=usuario_atualizado.email,
+            papeis=[
+                {
+                    "id": papel.id,
+                    "codigo": papel.codigo,
+                    "descricao": papel.descricao
+                }
+                for papel in usuario_atualizado.papeis
+            ]
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao editar usuário: {str(e)}")
+
+
+@router.delete("/usuarios/{usuario_id}")
+def excluir_usuario(usuario_id: str):
+    """
+    Exclui um usuário e seus papéis associados.
+    Apenas coordenador geral pode usar este endpoint.
+    """
+    try:
+        supabase = get_supabase()
+        repo = UsuarioRepository()
+
+        # Verificar se usuário existe
+        usuario = repo.buscar_por_id(usuario_id)
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
+        # Remover papéis associados
+        (
+            supabase
+            .table("usuario_papel")
+            .delete()
+            .eq("usuario_id", usuario_id)
+            .execute()
+        )
+
+        # Excluir usuário
+        (
+            supabase
+            .table("usuario")
+            .delete()
+            .eq("id", usuario_id)
+            .execute()
+        )
+
+        return {"message": "Usuário excluído com sucesso"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao excluir usuário: {str(e)}")
 
 
 @router.get("/usuarios/{usuario_id}/papeis", response_model=List[PapelResponse])
@@ -139,88 +420,30 @@ def atualizar_papeis_usuario(usuario_id: str, dados: AtualizarPapeisRequest):
         raise HTTPException(status_code=500, detail=f"Erro ao atualizar papéis: {str(e)}")
 
 
-@router.get("/usuarios/{usuario_id}", response_model=UsuarioResponse)
-def buscar_usuario(usuario_id: str):
+@router.get("/tipos-papel", response_model=List[PapelResponse])
+def listar_papeis():
     """
-    Busca informações de um usuário específico.
-    Apenas coordenador geral pode usar este endpoint.
-    """
-    try:
-        repo = UsuarioRepository()
-        usuario = repo.buscar_por_id(usuario_id)
-
-        if not usuario:
-            raise HTTPException(status_code=404, detail="Usuário não encontrado")
-
-        return UsuarioResponse(
-            id=usuario.id,
-            nome=usuario.nome,
-            email=usuario.email,
-            papeis=[
-                {
-                    "id": papel.id,
-                    "codigo": papel.codigo,
-                    "descricao": papel.descricao
-                }
-                for papel in usuario.papeis
-            ]
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao buscar usuário: {str(e)}")
-
-
-@router.get("/usuarios", response_model=List[UsuarioResponse])
-def listar_usuarios():
-    """
-    Lista todos os usuários.
-    Apenas coordenador geral pode usar este endpoint.
+    Lista todos os tipos de papel disponíveis.
     """
     try:
-        repo = UsuarioRepository()
+        supabase = get_supabase()
+
         result = (
-            repo.db
-            .table("usuario")
-            .select("""
-                id,
-                nome,
-                email,
-                usuario_papel(
-                    papel_id,
-                    tipo_papel_usuario(
-                        id,
-                        codigo,
-                        descricao
-                    )
-                )
-            """)
+            supabase
+            .table("tipo_papel_usuario")
+            .select("id, codigo, descricao")
+            .order("descricao")
             .execute()
         )
 
-        usuarios = []
-        for item in result.data:
-            papeis = []
-            for papel_item in item.get("usuario_papel", []):
-                papel_data = papel_item.get("tipo_papel_usuario")
-                if papel_data:
-                    papeis.append({
-                        "id": papel_data["id"],
-                        "codigo": papel_data["codigo"],
-                        "descricao": papel_data["descricao"]
-                    })
-
-            usuarios.append(
-                UsuarioResponse(
-                    id=item["id"],
-                    nome=item["nome"],
-                    email=item["email"],
-                    papeis=papeis
-                )
+        return [
+            PapelResponse(
+                id=p["id"],
+                codigo=p["codigo"],
+                descricao=p["descricao"]
             )
-
-        return usuarios
+            for p in result.data
+        ]
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao listar usuários: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao listar papéis: {str(e)}")
