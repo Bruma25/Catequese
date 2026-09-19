@@ -28,9 +28,10 @@ async function request(endpoint, options = {}) {
   return response.json()
 }
 
+// ✅ CORRETO - Adiciona a barra entre API_URL e o caminho
 export async function contarInscricoesPorTurma(turmaId) {
   try {
-    const response = await fetch(`${API_URL}api/v1/inscricoes/contar-por-turma/${turmaId}`)
+    const response = await fetch(`${API_URL}/api/v1/inscricoes/contar-por-turma/${turmaId}`)
 
     if (!response.ok) {
       console.warn(`⚠️ Erro ao contar inscrições para turma ${turmaId}: ${response.status}`)
