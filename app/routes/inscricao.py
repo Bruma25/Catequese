@@ -888,6 +888,43 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
     try:
         supabase = get_supabase()
 
+        # 1. Buscar usuário logado (via Supabase Auth)
+        # Observação: Em produção, use dependência de autenticação
+        auth_header = supabase.auth.get_user()
+        usuario_id = auth_header.user.id if auth_header else None
+
+        if not usuario_id:
+            raise HTTPException(status_code=401, detail="Usuário não autenticado")
+
+        # 2. Buscar responsável existente pelo usuario_id
+        repo_responsavel = ResponsavelRepository()
+        responsavel_existente = repo_responsavel.buscar_por_usuario_id(usuario_id)
+
+        if responsavel_existente:
+            # Responsável já existe, reutilizar
+            responsavel_salvo = responsavel_existente
+
+            # Atualizar dados se necessário
+            if responsavel_salvo.nome != inscricao_data.responsavel_nome:
+                responsavel_salvo.nome = inscricao_data.responsavel_nome
+                responsavel_salvo.email = inscricao_data.responsavel_email
+                responsavel_salvo.telefone = inscricao_data.responsavel_telefone
+                repo_responsavel.editar(responsavel_salvo)
+        else:
+            # Criar novo responsável vinculado ao usuário
+            from app.domain.usuario import Usuario
+
+            responsavel_novo = Responsavel(
+                id=str(uuid.uuid4()),
+                nome=inscricao_data.responsavel_nome,
+                email=inscricao_data.responsavel_email,
+                telefone=inscricao_data.responsavel_telefone,
+                usuario=Usuario(id=usuario_id, nome="", email=""),  # ✅ Vincular ao usuário
+                vinculos=[],
+            )
+
+            responsavel_salvo = repo_responsavel.salvar(responsavel_novo)
+
         etapa_db = (
             supabase
             .table("etapa")
@@ -929,18 +966,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
             historico_sacramental=[],
         )
 
-        responsavel_novo = Responsavel(
-            id=str(uuid.uuid4()),
-            nome=inscricao_data.responsavel_nome,
-            email=inscricao_data.responsavel_email,
-            telefone=inscricao_data.responsavel_telefone,
-            usuario=None,
-            vinculos=[],
-        )
-
         repo_catequizando = CatequizandoRepository()
-        repo_responsavel = ResponsavelRepository()
-
         catequizando_salvo = repo_catequizando.salvar(catequizando_novo)
 
         for sacramento_id in inscricao_data.catequizando_sacramentos:
@@ -972,8 +998,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
                 catequizando_salvo.adicionar_historico_sacramental(historico)
 
         repo_catequizando.sincronizar_historico_sacramental(catequizando_salvo)
-
-        responsavel_salvo = repo_responsavel.salvar(responsavel_novo)
 
         tipo_vinculo_db = (
             supabase
@@ -1109,7 +1133,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
             status_id=inscricao_salva.status.id,
             responsavel_nome=inscricao_salva.responsavel.nome,
             created_at=str(inscricao_salva.data_inscricao) if inscricao_salva.data_inscricao else None,
-            turma_id=str(inscricao_salva.turma.id) if inscricao_salva.turma else None  # ✅ ADICIONADO
+            turma_id=str(inscricao_salva.turma.id) if inscricao_salva.turma else None
         )
 
     except HTTPException:

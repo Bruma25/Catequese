@@ -3,6 +3,7 @@ from typing import Optional
 
 from app.infra.supabaseClient import get_supabase
 from app.domain.responsavel import Responsavel
+from app.domain.usuario import Usuario
 
 
 class ResponsavelRepository:
@@ -15,6 +16,31 @@ class ResponsavelRepository:
             self.db.table(self.table)
             .select("*")
             .eq("id", responsavel_id)
+            .maybe_single()
+            .execute()
+        )
+
+        data = result.data if result else None
+        if not data:
+            return None
+
+        return self._from_row(data)
+
+    # ✅ NOVO MÉTODO ADICIONADO
+    def buscar_por_usuario_id(self, usuario_id: str) -> Optional[Responsavel]:
+        """
+        Busca responsável vinculado a um usuário específico.
+        """
+        result = (
+            self.db.table(self.table)
+            .select("""
+                id,
+                usuario_id,
+                nome,
+                email,
+                telefone
+            """)
+            .eq("usuario_id", usuario_id)
             .maybe_single()
             .execute()
         )
@@ -80,11 +106,20 @@ class ResponsavelRepository:
         return payload
 
     def _from_row(self, data: dict) -> Responsavel:
+        # ✅ Criar usuário se tiver usuario_id
+        usuario = None
+        if data.get("usuario_id"):
+            usuario = Usuario(
+                id=data["usuario_id"],
+                nome=data.get("nome", ""),
+                email=data.get("email", "")
+            )
+
         return Responsavel(
             id=data["id"],
             nome=data["nome"],
             email=data.get("email"),
             telefone=data.get("telefone"),
-            usuario=None,
+            usuario=usuario,
             vinculos=[],
         )

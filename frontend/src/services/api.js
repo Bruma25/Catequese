@@ -1,3 +1,5 @@
+import { supabase } from './supabaseClient'
+
 const API_URL = import.meta.env.VITE_API_URL
 
 async function request(endpoint, options = {}) {
@@ -28,7 +30,7 @@ async function request(endpoint, options = {}) {
   return response.json()
 }
 
-// ✅ CORRETO - Adiciona a barra entre API_URL e o caminho
+// Contar inscrições por turma
 export async function contarInscricoesPorTurma(turmaId) {
   try {
     const response = await fetch(`${API_URL}/api/v1/inscricoes/contar-por-turma/${turmaId}`)
@@ -43,6 +45,27 @@ export async function contarInscricoesPorTurma(turmaId) {
   } catch (error) {
     console.error('❌ Erro ao contar inscrições:', error)
     return 0  // Fallback para não quebrar a página
+  }
+}
+
+// Buscar responsável por usuário logado
+export async function buscarResponsavelPorUsuario() {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return null
+
+    const { data, error } = await supabase
+      .from('responsavel')
+      .select('*')
+      .eq('usuario_id', user.id)
+      .single()
+
+    if (error) return null
+    return data
+  } catch (error) {
+    console.error('❌ Erro ao buscar responsável:', error)
+    return null
   }
 }
 

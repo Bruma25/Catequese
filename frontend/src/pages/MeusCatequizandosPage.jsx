@@ -1,14 +1,15 @@
 // src/pages/MeusCatequizandosPage.jsx
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Header from '../components/Header/Header'
 import { supabase } from '../services/supabaseClient'
 import {
   buscarInscricaoCompleta,
   listarDocumentosInscricao,
   uploadDocumento,
-  atualizarStatusDocumento
+  atualizarStatusDocumento,
+  buscarResponsavelPorUsuario
 } from '../services/api'
+import Header from '../components/Header/Header'
 import { FileText, Upload, CheckCircle, XCircle, Clock, Edit, Eye } from 'lucide-react'
 import './MeusCatequizandosPage.css'
 
@@ -41,24 +42,27 @@ function MeusCatequizandosPage() {
 
       setUsuarioLogado(user)
 
-      // 2. Buscar responsável
-      const { data: responsavel } = await supabase
+      // 2. Buscar responsável (pode ter múltiplos)
+      const { data: responsaveis } = await supabase
         .from('responsavel')
         .select('*')
         .eq('usuario_id', user.id)
-        .single()
 
-      if (!responsavel) {
-        alert('Responsável não encontrado.')
+      if (!responsaveis || responsaveis.length === 0) {
+        // Mensagem mais amigável
+        alert('Nenhuma inscrição encontrada. Faça sua primeira inscrição!')
         navigate('/home')
         return
       }
 
-      // 3. Buscar vínculos do responsável
+      // Suportar múltiplos responsáveis
+      const responsavelIds = responsaveis.map(r => r.id)
+
+      // 3. Buscar vínculos de todos os responsáveis
       const { data: vinculos } = await supabase
         .from('catequizando_responsavel')
         .select('catequizando_id')
-        .eq('responsavel_id', responsavel.id)
+        .in('responsavel_id', responsavelIds)
 
       if (!vinculos || vinculos.length === 0) {
         setCatequizandos([])
