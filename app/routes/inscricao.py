@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional, List
 from datetime import date, datetime
 from pathlib import Path
@@ -174,7 +174,8 @@ class CatequizandoUpdate(BaseModel):
     necessidade_especial: Optional[bool] = None
     descricao_necessidade_especial: Optional[str] = None
 
-    @validator('data_nascimento', pre=True)
+    @field_validator('data_nascimento', mode='before')
+    @classmethod
     def parse_data_nascimento(cls, value):
         if value is None:
             return None
