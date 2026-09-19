@@ -28,6 +28,24 @@ async function request(endpoint, options = {}) {
   return response.json()
 }
 
+export async function contarInscricoesPorTurma(turmaId) {
+  try {
+    const response = await fetch(`${API_URL}/inscricoes/contar-por-turma/${turmaId}`)
+
+    if (!response.ok) {
+      // Se der 404 ou outro erro, retorna 0 como fallback
+      console.warn(`⚠️ Erro ao contar inscrições para turma ${turmaId}: ${response.status}`)
+      return 0
+    }
+
+    const data = await response.json()
+    return data.count || 0
+  } catch (error) {
+    console.error('❌ Erro ao contar inscrições:', error)
+    return 0  // Fallback para não quebrar a página
+  }
+}
+
 // Etapas
 export async function listarEtapas() {
   return request('/api/v1/etapas')
@@ -210,15 +228,4 @@ export async function uploadDocumento(inscricaoId, file, tipoDocumento) {
   console.log('✅ Upload sucesso:', result)
 
   return result
-}
-
-export async function contarInscricoesPorTurma(turmaId) {
-  const response = await fetch(`${API_URL}/inscricoes/contar-por-turma/${turmaId}`)
-
-  if (!response.ok) {
-    throw new Error('Erro ao contar inscrições')
-  }
-
-  const data = await response.json()
-  return data.count || 0
 }
