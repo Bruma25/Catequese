@@ -122,6 +122,67 @@ def listar_usuarios():
         raise HTTPException(status_code=500, detail=f"Erro ao listar usuários: {str(e)}")
 
 
+# @router.post("/usuarios", response_model=UsuarioResponse)
+# def criar_usuario(dados: UsuarioCreate):
+#     """
+#     Cria um novo usuário com papéis opcionais.
+#     Apenas coordenador geral pode usar este endpoint.
+#     """
+#     try:
+#         supabase = get_supabase()
+#
+#         # Gerar ID único
+#         usuario_id = str(uuid.uuid4())
+#
+#         # Criar usuário na tabela usuario
+#         result = (
+#             supabase
+#             .table("usuario")
+#             .insert({
+#                 "id": usuario_id,
+#                 "nome": dados.nome,
+#                 "email": dados.email
+#             })
+#             .execute()
+#         )
+#
+#         if not result.data:
+#             raise HTTPException(status_code=500, detail="Não foi possível criar o usuário")
+#
+#         # Atribuir papéis se houver
+#         if dados.papeis_ids:
+#             papeis_payload = [
+#                 {"usuario_id": usuario_id, "papel_id": papel_id}
+#                 for papel_id in dados.papeis_ids
+#             ]
+#
+#             supabase.table("usuario_papel").insert(papeis_payload).execute()
+#
+#         # Buscar usuário criado com papéis
+#         repo = UsuarioRepository()
+#         usuario = repo.buscar_por_id(usuario_id)
+#
+#         if not usuario:
+#             raise HTTPException(status_code=500, detail="Usuário criado mas não pôde ser buscado")
+#
+#         return UsuarioResponse(
+#             id=usuario.id,
+#             nome=usuario.nome,
+#             email=usuario.email,
+#             papeis=[
+#                 {
+#                     "id": papel.id,
+#                     "codigo": papel.codigo,
+#                     "descricao": papel.descricao
+#                 }
+#                 for papel in usuario.papeis
+#             ]
+#         )
+#
+#     except HTTPException:
+#         raise
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Erro ao criar usuário: {str(e)}")
 @router.post("/usuarios", response_model=UsuarioResponse)
 def criar_usuario(dados: UsuarioCreate):
     """
@@ -129,41 +190,18 @@ def criar_usuario(dados: UsuarioCreate):
     Apenas coordenador geral pode usar este endpoint.
     """
     try:
-        supabase = get_supabase()
+        repo = UsuarioRepository()
 
         # Gerar ID único
         usuario_id = str(uuid.uuid4())
 
-        # Criar usuário na tabela usuario
-        result = (
-            supabase
-            .table("usuario")
-            .insert({
-                "id": usuario_id,
-                "nome": dados.nome,
-                "email": dados.email
-            })
-            .execute()
+        # Criar usuário com papéis
+        usuario = repo.criar_com_papeis(
+            usuario_id=usuario_id,
+            nome=dados.nome,
+            email=dados.email,
+            papeis_ids=dados.papeis_ids if dados.papeis_ids else None
         )
-
-        if not result.data:
-            raise HTTPException(status_code=500, detail="Não foi possível criar o usuário")
-
-        # Atribuir papéis se houver
-        if dados.papeis_ids:
-            papeis_payload = [
-                {"usuario_id": usuario_id, "papel_id": papel_id}
-                for papel_id in dados.papeis_ids
-            ]
-
-            supabase.table("usuario_papel").insert(papeis_payload).execute()
-
-        # Buscar usuário criado com papéis
-        repo = UsuarioRepository()
-        usuario = repo.buscar_por_id(usuario_id)
-
-        if not usuario:
-            raise HTTPException(status_code=500, detail="Usuário criado mas não pôde ser buscado")
 
         return UsuarioResponse(
             id=usuario.id,
@@ -183,7 +221,6 @@ def criar_usuario(dados: UsuarioCreate):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao criar usuário: {str(e)}")
-
 
 @router.get("/usuarios/{usuario_id}", response_model=UsuarioResponse)
 def buscar_usuario(usuario_id: str):
