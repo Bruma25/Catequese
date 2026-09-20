@@ -3,10 +3,8 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 from app.repositories.usuarioRepository import UsuarioRepository
-from app.domain.usuario import Usuario
 from app.domain.tipoPapelUsuario import TipoPapelUsuario
 from app.infra.supabaseClient import get_supabase
-import uuid
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])
 

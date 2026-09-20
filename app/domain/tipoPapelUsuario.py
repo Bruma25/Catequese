@@ -1,5 +1,4 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+# app/domain/tipoPapelUsuario.py
 
 from dataclasses import dataclass
 
