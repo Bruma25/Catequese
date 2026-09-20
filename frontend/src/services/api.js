@@ -3,10 +3,14 @@ import { supabase } from './supabaseClient'
 const API_URL = import.meta.env.VITE_API_URL
 
 async function request(endpoint, options = {}) {
+  const { data: { session } } = await supabase.auth.getSession()
+
+  const token = session?.access_token
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
       ...options.headers
     }
   })

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Header
 from pydantic import BaseModel, field_validator
 from typing import Optional, List
 from datetime import date, datetime
@@ -881,17 +881,28 @@ def excluir_turma(turma_id: str):
 
 
 @router.post("/inscricoes", response_model=InscricaoResponse)
-def criar_inscricao(inscricao_data: InscricaoCreate):
+def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str] = Header(None)):
     """
     Cria uma nova inscrição de catequizando.
     """
     try:
         supabase = get_supabase()
 
-        # 1. Buscar usuário logado (via Supabase Auth)
-        # Observação: Em produção, use dependência de autenticação
-        auth_header = supabase.auth.get_user()
-        usuario_id = auth_header.user.id if auth_header else None
+        # 1. Buscar usuário logado via token
+        usuario_id = None
+
+        if authorization and authorization.startswith("Bearer "):
+            token = authorization.replace("Bearer ", "")
+
+            try:
+                # Validar token e pegar user_id
+                user_data = supabase.auth.get_user(token)
+                usuario_id = user_data.user.id
+            except:
+                raise HTTPException(status_code=401, detail="Usuário não autenticado")
+
+        if not usuario_id:
+            raise HTTPException(status_code=401, detail="Usuário não autenticado")
 
         if not usuario_id:
             raise HTTPException(status_code=401, detail="Usuário não autenticado")
@@ -919,7 +930,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate):
                 nome=inscricao_data.responsavel_nome,
                 email=inscricao_data.responsavel_email,
                 telefone=inscricao_data.responsavel_telefone,
-                usuario=Usuario(id=usuario_id, nome="", email=""),  # ✅ Vincular ao usuário
+                usuario=Usuario(id=usuario_id, nome="", email=""),
                 vinculos=[],
             )
 

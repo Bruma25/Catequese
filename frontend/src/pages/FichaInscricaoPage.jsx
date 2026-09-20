@@ -95,30 +95,6 @@ function FichaInscricaoPage() {
         navigate('/etapas')
       }
 
-      const { data: { user } } = await supabase.auth.getUser()
-
-      if (user) {
-        const { data: responsavelExistente } = await supabase
-          .from('responsavel')
-          .select('*')
-          .eq('usuario_id', user.id)
-          .single()
-
-        if (responsavelExistente) {
-          // Preencher dados do responsável
-          setFormData(prev => ({
-            ...prev,
-            nomeMae: responsavelExistente.nome,
-            emailMae: responsavelExistente.email,
-            telefoneMae: responsavelExistente.telefone,
-            tipoResponsavel: 'mae' // Assume mãe como padrão
-          }))
-
-          // Bloquear edição
-          setResponsavelBloqueado(true)
-        }
-      }
-
       // Buscar locais de encontro
       try {
         const locaisData = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/locais-encontro`)
