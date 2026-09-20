@@ -287,7 +287,7 @@ export async function excluirUsuario(id) {
 }
 
 export async function listarPapeis() {
-  return request('/api/v1/tipos-papel')
+  return request('/api/v1/usuarios/tipos-papel')
 }
 
 export async function atualizarPapeisUsuario(usuarioId, papeisIds) {
