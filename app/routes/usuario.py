@@ -49,6 +49,8 @@ class UsuarioUpdate(BaseModel):
 
 # --- Endpoints (ORDEM IMPORTANTE!) ---
 
+# ✅ 1. Rotas fixas (ANTES das rotas com parâmetros)
+
 @router.get("/me", response_model=UsuarioResponse)
 def buscar_usuario_atual():
     """
@@ -90,6 +92,9 @@ def listar_papeis():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao listar papéis: {str(e)}")
+
+
+# ✅ 2. Rotas com parâmetros (DEPOIS das rotas fixas)
 
 @router.get("", response_model=List[UsuarioResponse])
 def listar_usuarios():
@@ -495,4 +500,5 @@ def atualizar_papeis_usuario(usuario_id: str, dados: AtualizarPapeisRequest):
 
     except HTTPException:
         raise
-    except Exception as
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao atualizar papéis: {str(e)}")
