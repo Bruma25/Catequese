@@ -8,7 +8,7 @@ from app.domain.tipoPapelUsuario import TipoPapelUsuario
 from app.infra.supabaseClient import get_supabase
 import uuid
 
-router = APIRouter()
+router = APIRouter(prefix="/usuarios", tags=["usuarios"])
 
 
 # --- Pydantic Models ---
@@ -49,7 +49,7 @@ class UsuarioUpdate(BaseModel):
 
 # --- Endpoints ---
 
-@router.get("/usuarios/me", response_model=UsuarioResponse)
+@router.get("/me", response_model=UsuarioResponse)
 def buscar_usuario_atual():
     """
     Busca informações do usuário autenticado.
@@ -65,7 +65,7 @@ def buscar_usuario_atual():
     )
 
 
-@router.get("/usuarios", response_model=List[UsuarioResponse])
+@router.get("", response_model=List[UsuarioResponse])
 def listar_usuarios():
     """
     Lista todos os usuários com seus papéis.
@@ -121,8 +121,7 @@ def listar_usuarios():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao listar usuários: {str(e)}")
 
-
-@router.post("/usuarios", response_model=UsuarioResponse)
+@router.post("", response_model=UsuarioResponse)
 def criar_usuario(dados: UsuarioCreate):
     """
     Cria um novo usuário com papéis opcionais.
@@ -237,7 +236,7 @@ def criar_usuario(dados: UsuarioCreate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao criar usuário: {str(e)}")
 
-@router.get("/usuarios/{usuario_id}", response_model=UsuarioResponse)
+@router.get("/{usuario_id}", response_model=UsuarioResponse)
 def buscar_usuario(usuario_id: str):
     """
     Busca informações de um usuário específico.
@@ -269,8 +268,7 @@ def buscar_usuario(usuario_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao buscar usuário: {str(e)}")
 
-
-@router.put("/usuarios/{usuario_id}", response_model=UsuarioResponse)
+@router.put("/{usuario_id}", response_model=UsuarioResponse)
 def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
     """
     Edita um usuário existente (nome, email e papéis).
@@ -343,8 +341,7 @@ def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao editar usuário: {str(e)}")
 
-
-@router.delete("/usuarios/{usuario_id}")
+@router.delete("/{usuario_id}")
 def excluir_usuario(usuario_id: str):
     """
     Exclui um usuário e seus papéis associados.
@@ -384,8 +381,7 @@ def excluir_usuario(usuario_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao excluir usuário: {str(e)}")
 
-
-@router.get("/usuarios/{usuario_id}/papeis", response_model=List[PapelResponse])
+@router.get("/{usuario_id}/papeis", response_model=List[PapelResponse])
 def buscar_papeis_usuario(usuario_id: str):
     """
     Busca todos os papéis de um usuário específico.
@@ -411,8 +407,7 @@ def buscar_papeis_usuario(usuario_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao buscar papéis: {str(e)}")
 
-
-@router.put("/usuarios/{usuario_id}/papeis", response_model=List[PapelResponse])
+@router.put("/{usuario_id}/papeis", response_model=List[PapelResponse])
 def atualizar_papeis_usuario(usuario_id: str, dados: AtualizarPapeisRequest):
     """
     Atualiza os papéis de um usuário.
@@ -470,7 +465,6 @@ def atualizar_papeis_usuario(usuario_id: str, dados: AtualizarPapeisRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao atualizar papéis: {str(e)}")
-
 
 @router.get("/tipos-papel", response_model=List[PapelResponse])
 def listar_papeis():
