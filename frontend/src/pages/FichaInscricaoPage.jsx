@@ -12,7 +12,6 @@ function FichaInscricaoPage() {
   const [sacramentosCatequizando, setSacramentosCatequizando] = useState([])
   const [locaisEncontro, setLocaisEncontro] = useState([])
   const [inscricaoId, setInscricaoId] = useState(null)
-  const [responsavelBloqueado, setResponsavelBloqueado] = useState(false)
 
   // Dados do catequizando
   const [formData, setFormData] = useState({
@@ -656,7 +655,6 @@ function FichaInscricaoPage() {
                       checked={formData.responsavelProprio === 'sim'}
                       onChange={handleChange}
                       required
-                      disabled={responsavelBloqueado}
                     />
                     <span>Sim</span>
                   </label>
@@ -668,7 +666,6 @@ function FichaInscricaoPage() {
                       checked={formData.responsavelProprio === 'nao'}
                       onChange={handleChange}
                       required
-                      disabled={responsavelBloqueado}
                     />
                     <span>Não</span>
                   </label>
@@ -699,7 +696,6 @@ function FichaInscricaoPage() {
                         checked={formData.tipoResponsavel === 'pai'}
                         onChange={handleChange}
                         required
-                        disabled={responsavelBloqueado}
                       />
                       <span>Pai</span>
                     </label>
@@ -711,7 +707,6 @@ function FichaInscricaoPage() {
                         checked={formData.tipoResponsavel === 'mae'}
                         onChange={handleChange}
                         required
-                        disabled={responsavelBloqueado}  // ✅ Desabilitar se bloqueado
                       />
                       <span>Mãe</span>
                     </label>
@@ -723,15 +718,52 @@ function FichaInscricaoPage() {
                         checked={formData.tipoResponsavel === 'outro'}
                         onChange={handleChange}
                         required
-                        disabled={responsavelBloqueado}  // ✅ Desabilitar se bloqueado
                       />
                       <span>Outro</span>
                     </label>
                   </div>
                 </div>
 
-                {/* ... campos de pai ... */}
+                {/* CAMPOS DO PAI */}
+                <div className="form-group">
+                  <label className="form-label">Nome do Pai:</label>
+                  <input
+                    type="text"
+                    name="nomePai"
+                    value={formData.nomePai}
+                    onChange={handleChange}
+                    className="form-input"
+                    required={formData.tipoResponsavel === 'pai'}
+                  />
+                </div>
 
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Telefone do Pai:</label>
+                    <input
+                      type="tel"
+                      name="telefonePai"
+                      value={formData.telefonePai}
+                      onChange={handleChange}
+                      className="form-input"
+                      required={formData.tipoResponsavel === 'pai'}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">E-mail do Pai:</label>
+                    <input
+                      type="email"
+                      name="emailPai"
+                      value={formData.emailPai}
+                      onChange={handleChange}
+                      className="form-input"
+                      required={formData.tipoResponsavel === 'pai'}
+                    />
+                  </div>
+                </div>
+
+                {/* CAMPOS DA MÃE */}
                 <div className="form-group">
                   <label className="form-label">Nome da Mãe:</label>
                   <input
@@ -741,7 +773,6 @@ function FichaInscricaoPage() {
                     onChange={handleChange}
                     className="form-input"
                     required={formData.tipoResponsavel === 'mae'}
-                    disabled={responsavelBloqueado}  // ✅ Desabilitar se bloqueado
                   />
                 </div>
 
@@ -755,7 +786,6 @@ function FichaInscricaoPage() {
                       onChange={handleChange}
                       className="form-input"
                       required={formData.tipoResponsavel === 'mae'}
-                      disabled={responsavelBloqueado}  // ✅ Desabilitar se bloqueado
                     />
                   </div>
 
@@ -768,30 +798,48 @@ function FichaInscricaoPage() {
                       onChange={handleChange}
                       className="form-input"
                       required={formData.tipoResponsavel === 'mae'}
-                      disabled={responsavelBloqueado}  // ✅ Desabilitar se bloqueado
                     />
                   </div>
                 </div>
 
-                {/* ... resto dos campos ... */}
+                {/* CAMPOS DE OUTRO RESPONSÁVEL */}
+                <div className="form-group">
+                  <label className="form-label">Outro Responsável (se aplicável):</label>
+                  <input
+                    type="text"
+                    name="outroResponsavel"
+                    value={formData.outroResponsavel}
+                    onChange={handleChange}
+                    className="form-input"
+                    required={formData.tipoResponsavel === 'outro'}
+                  />
+                </div>
 
-                {/* ✅ Mensagem informativa */}
-                {responsavelBloqueado && (
-                  <div className="info-message" style={{
-                    background: '#e8f5e9',
-                    border: '1px solid #4caf50',
-                    borderRadius: '8px',
-                    padding: '15px',
-                    marginTop: '15px',
-                    color: '#2e7d32'
-                  }}>
-                    <strong>✅ Dados do responsável já cadastrados</strong>
-                    <p style={{ margin: '10px 0 0 0', fontSize: '14px' }}>
-                      Os dados do responsável foram preenchidos automaticamente.
-                      Se precisar alterar, entre em contato com o coordenador.
-                    </p>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Telefone:</label>
+                    <input
+                      type="tel"
+                      name="telefoneOutro"
+                      value={formData.telefoneOutro}
+                      onChange={handleChange}
+                      className="form-input"
+                      required={formData.tipoResponsavel === 'outro'}
+                    />
                   </div>
-                )}
+
+                  <div className="form-group">
+                    <label className="form-label">E-mail:</label>
+                    <input
+                      type="email"
+                      name="emailOutro"
+                      value={formData.emailOutro}
+                      onChange={handleChange}
+                      className="form-input"
+                      required={formData.tipoResponsavel === 'outro'}
+                    />
+                  </div>
+                </div>
               </>
             )}
           </section>
