@@ -3,14 +3,11 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabaseClient'
 import {
-  buscarInscricaoCompleta,
   listarDocumentosInscricao,
-  uploadDocumento,
-  atualizarStatusDocumento,
-  buscarResponsavelPorUsuario
+  uploadDocumento
 } from '../services/api'
 import Header from '../components/Header/Header'
-import { FileText, Upload, CheckCircle, XCircle, Clock, Edit, Eye } from 'lucide-react'
+import { FileText, Upload, CheckCircle, XCircle, Clock, Eye } from 'lucide-react'
 import './MeusCatequizandosPage.css'
 
 function MeusCatequizandosPage() {
@@ -93,6 +90,7 @@ function MeusCatequizandosPage() {
       console.log('👶 IDs dos catequizandos:', catequizandoIds)
 
       // 4. Buscar inscrições dos catequizandos
+      console.log('🔍 [4] Buscando inscrições para catequizando_ids:', catequizandoIds)
       const { data: inscricoes, error: erroInscricoes } = await supabase
         .from('inscricao')
         .select(`
@@ -139,6 +137,11 @@ function MeusCatequizandosPage() {
       console.log('📝 Inscrições encontradas:', inscricoes)
       console.log('❌ Erro inscrições:', erroInscricoes)
 
+      if (inscricoes && inscricoes.length > 0) {
+        console.log('🔍 Primeira inscrição:', inscricoes[0])
+        console.log('🔍 Local da primeira:', inscricoes[0].local)
+      }
+
       setCatequizandos(inscricoes || [])
       console.log('✅ Catequizandos definidos:', catequizandos)
     } catch (error) {
@@ -150,18 +153,24 @@ function MeusCatequizandosPage() {
     }
   }
 
-  // Abrir modal de detalhes
-  const handleAbrirDetalhes = async (inscricaoId) => {
+  // ✅ Abrir modal de detalhes - CORRIGIDO
+  const handleAbrirDetalhes = (inscricaoId) => {
     console.log('🔍 Abrindo detalhes da inscrição:', inscricaoId)
-    try {
-      const inscricaoCompleta = await buscarInscricaoCompleta(inscricaoId)
-      console.log('✅ Inscrição completa:', inscricaoCompleta)
-      setInscricaoSelecionada(inscricaoCompleta)
-      setShowModalDetalhes(true)
-    } catch (error) {
-      console.error('❌ Erro ao buscar detalhes:', error)
+
+    // ✅ Buscar a inscrição da lista (já tem o local)
+    const inscricao = catequizandos.find(i => i.id === inscricaoId)
+
+    if (!inscricao) {
+      console.error('❌ Inscrição não encontrada:', inscricaoId)
       alert('Erro ao carregar detalhes da inscrição.')
+      return
     }
+
+    console.log('✅ Inscrição encontrada:', inscricao)
+    console.log('🔍 Local da inscrição:', inscricao.local)
+
+    setInscricaoSelecionada(inscricao)
+    setShowModalDetalhes(true)
   }
 
   const handleCloseModalDetalhes = () => {
@@ -389,7 +398,7 @@ function MeusCatequizandosPage() {
                 </div>
               )}
 
-              {/* Local de Preferência */}
+              {/* ✅ Local de Preferência - CORRIGIDO */}
               {inscricaoSelecionada.local_encontro_id && (
                 <div className="detalhes-section">
                   <h4 className="detalhes-subtitulo">Local de Preferência</h4>
@@ -431,7 +440,6 @@ function MeusCatequizandosPage() {
               <h4 className="upload-title">Enviar Novo Documento</h4>
 
               <div className="upload-form">
-                {/* LISTA CORRIGIDA DE DOCUMENTOS */}
                 <select
                   value={tipoDocumento}
                   onChange={(e) => setTipoDocumento(e.target.value)}
@@ -475,7 +483,6 @@ function MeusCatequizandosPage() {
                 <div className="documentos-list">
                   {documentos.map(doc => {
                     const statusNormalizado = (doc.status_validacao || '').toLowerCase().trim()
-                    const mostrarBotoes = statusNormalizado === 'pendente'
 
                     return (
                       <div key={doc.id} className="documento-item">
