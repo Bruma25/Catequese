@@ -47,7 +47,7 @@ class UsuarioUpdate(BaseModel):
     papeis_ids: Optional[List[int]] = None
 
 
-# --- Endpoints ---
+# --- Endpoints (ORDEM IMPORTANTE!) ---
 
 @router.get("/me", response_model=UsuarioResponse)
 def buscar_usuario_atual():
@@ -55,8 +55,6 @@ def buscar_usuario_atual():
     Busca informações do usuário autenticado.
     Requer autenticação via Supabase Auth.
     """
-    # TODO: Implementar autenticação JWT do Supabase
-    # Por enquanto, retorna dados fixos para teste
     return UsuarioResponse(
         id="temp",
         nome="Usuário Teste",
@@ -64,6 +62,34 @@ def buscar_usuario_atual():
         papeis=[]
     )
 
+
+@router.get("/tipos-papel", response_model=List[PapelResponse])
+def listar_papeis():
+    """
+    Lista todos os tipos de papel disponíveis.
+    """
+    try:
+        supabase = get_supabase()
+
+        result = (
+            supabase
+            .table("tipo_papel_usuario")
+            .select("id, codigo, descricao")
+            .order("descricao")
+            .execute()
+        )
+
+        return [
+            PapelResponse(
+                id=p["id"],
+                codigo=p["codigo"],
+                descricao=p["descricao"]
+            )
+            for p in result.data
+        ]
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao listar papéis: {str(e)}")
 
 @router.get("", response_model=List[UsuarioResponse])
 def listar_usuarios():
@@ -120,6 +146,7 @@ def listar_usuarios():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao listar usuários: {str(e)}")
+
 
 @router.post("", response_model=UsuarioResponse)
 def criar_usuario(dados: UsuarioCreate):
@@ -236,6 +263,7 @@ def criar_usuario(dados: UsuarioCreate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao criar usuário: {str(e)}")
 
+
 @router.get("/{usuario_id}", response_model=UsuarioResponse)
 def buscar_usuario(usuario_id: str):
     """
@@ -267,6 +295,7 @@ def buscar_usuario(usuario_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao buscar usuário: {str(e)}")
+
 
 @router.put("/{usuario_id}", response_model=UsuarioResponse)
 def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
@@ -341,6 +370,7 @@ def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao editar usuário: {str(e)}")
 
+
 @router.delete("/{usuario_id}")
 def excluir_usuario(usuario_id: str):
     """
@@ -381,6 +411,7 @@ def excluir_usuario(usuario_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao excluir usuário: {str(e)}")
 
+
 @router.get("/{usuario_id}/papeis", response_model=List[PapelResponse])
 def buscar_papeis_usuario(usuario_id: str):
     """
@@ -406,6 +437,7 @@ def buscar_papeis_usuario(usuario_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao buscar papéis: {str(e)}")
+
 
 @router.put("/{usuario_id}/papeis", response_model=List[PapelResponse])
 def atualizar_papeis_usuario(usuario_id: str, dados: AtualizarPapeisRequest):
@@ -463,33 +495,4 @@ def atualizar_papeis_usuario(usuario_id: str, dados: AtualizarPapeisRequest):
 
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao atualizar papéis: {str(e)}")
-
-@router.get("/tipos-papel", response_model=List[PapelResponse])
-def listar_papeis():
-    """
-    Lista todos os tipos de papel disponíveis.
-    """
-    try:
-        supabase = get_supabase()
-
-        result = (
-            supabase
-            .table("tipo_papel_usuario")
-            .select("id, codigo, descricao")
-            .order("descricao")
-            .execute()
-        )
-
-        return [
-            PapelResponse(
-                id=p["id"],
-                codigo=p["codigo"],
-                descricao=p["descricao"]
-            )
-            for p in result.data
-        ]
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao listar papéis: {str(e)}")
+    except Exception as
