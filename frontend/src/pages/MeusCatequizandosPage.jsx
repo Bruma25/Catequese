@@ -33,47 +33,59 @@ function MeusCatequizandosPage() {
   async function carregarDados() {
     try {
       // 1. Buscar usuário logado
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user }, error: erroUser } = await supabase.auth.getUser()
+
+      console.log('👤 Usuário logado:', user?.id)
+      console.log('❌ Erro user:', erroUser)
 
       if (!user) {
+        console.log('⚠️ Usuário não logado, redirecionando...')
         navigate('/login')
         return
       }
 
       setUsuarioLogado(user)
 
-      // 2. Buscar responsável (pode ter múltiplos)
-      const { data: responsaveis } = await supabase
+      // 2. Buscar responsáveis do usuário
+      const { data: responsaveis, error: erroResponsaveis } = await supabase
         .from('responsavel')
-        .select('*')
+        .select('id, nome, usuario_id')
         .eq('usuario_id', user.id)
 
+      console.log('📋 Responsáveis encontrados:', responsaveis)
+      console.log('❌ Erro responsáveis:', erroResponsaveis)
+
       if (!responsaveis || responsaveis.length === 0) {
-        // Mensagem mais amigável
+        console.log('⚠️ Nenhum responsável encontrado para este usuário!')
         alert('Nenhuma inscrição encontrada. Faça sua primeira inscrição!')
         navigate('/home')
         return
       }
 
-      // Suportar múltiplos responsáveis
       const responsavelIds = responsaveis.map(r => r.id)
+      console.log('🆔 IDs dos responsáveis:', responsavelIds)
 
-      // 3. Buscar vínculos de todos os responsáveis
-      const { data: vinculos } = await supabase
+      // 3. Buscar vínculos catequizando_responsavel
+      const { data: vinculos, error: erroVinculos } = await supabase
         .from('catequizando_responsavel')
-        .select('catequizando_id')
+        .select('catequizando_id, responsavel_id, tipo_vinculo_id, descricao_outro')
         .in('responsavel_id', responsavelIds)
 
+      console.log('🔗 Vínculos catequizando_responsavel encontrados:', vinculos)
+      console.log('❌ Erro vínculos:', erroVinculos)
+
       if (!vinculos || vinculos.length === 0) {
+        console.log('⚠️ Nenhum vínculo catequizando_responsavel encontrado!')
         setCatequizandos([])
         setLoading(false)
         return
       }
 
       const catequizandoIds = vinculos.map(v => v.catequizando_id)
+      console.log('👶 IDs dos catequizandos:', catequizandoIds)
 
       // 4. Buscar inscrições dos catequizandos
-      const { data: inscricoes } = await supabase
+      const { data: inscricoes, error: erroInscricoes } = await supabase
         .from('inscricao')
         .select(`
           id,
@@ -108,9 +120,12 @@ function MeusCatequizandosPage() {
         .in('catequizando_id', catequizandoIds)
         .order('data_inscricao', { ascending: false })
 
+      console.log('📝 Inscrições encontradas:', inscricoes)
+      console.log('❌ Erro inscrições:', erroInscricoes)
+
       setCatequizandos(inscricoes || [])
     } catch (error) {
-      console.error('Erro ao carregar dados:', error)
+      console.error('💥 Erro ao carregar dados:', error)
       alert('Erro ao carregar dados.')
     } finally {
       setLoading(false)
@@ -118,14 +133,16 @@ function MeusCatequizandosPage() {
   }
 
   const handleOpenModalDoc = async (inscricao) => {
+    console.log('📂 Abrindo modal de documentos para inscrição:', inscricao.id)
     setInscricaoSelecionada(inscricao)
 
     // Buscar documentos da inscrição
     try {
       const docs = await listarDocumentosInscricao(inscricao.id)
+      console.log('📄 Documentos encontrados:', docs)
       setDocumentos(docs)
     } catch (error) {
-      console.error('Erro ao buscar documentos:', error)
+      console.error('❌ Erro ao buscar documentos:', error)
       setDocumentos([])
     }
 
@@ -133,6 +150,7 @@ function MeusCatequizandosPage() {
   }
 
   const handleCloseModalDoc = () => {
+    console.log('🚫 Fechando modal de documentos')
     setShowModalDoc(false)
     setInscricaoSelecionada(null)
     setDocumentos([])
@@ -146,18 +164,25 @@ function MeusCatequizandosPage() {
       return
     }
 
+    console.log('📤 Enviando documento:', {
+      inscricaoId: inscricaoSelecionada.id,
+      tipo: tipoDocumento,
+      arquivo: fileUpload.name
+    })
+
     try {
       await uploadDocumento(inscricaoSelecionada.id, fileUpload, tipoDocumento)
       alert('Documento enviado com sucesso!')
 
       // Recarregar documentos
       const docs = await listarDocumentosInscricao(inscricaoSelecionada.id)
+      console.log('📄 Documentos após upload:', docs)
       setDocumentos(docs)
 
       setFileUpload(null)
       setTipoDocumento('')
     } catch (error) {
-      console.error('Erro ao fazer upload:', error)
+      console.error('❌ Erro ao fazer upload:', error)
       alert(`Erro: ${error.message}`)
     }
   }
@@ -182,8 +207,11 @@ function MeusCatequizandosPage() {
   }
 
   if (loading) {
+    console.log('⏳ Carregando dados...')
     return <div className="loading-container">Carregando...</div>
   }
+
+  console.log('✅ Dados carregados com sucesso:', catequizandos)
 
   return (
     <div className="meus-catequizandos-container">
