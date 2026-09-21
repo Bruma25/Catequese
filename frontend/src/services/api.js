@@ -85,9 +85,13 @@ export async function listarCoordenadoresEtapa() {
 }
 
 export async function atribuirCoordenadorEtapa(etapaId, coordenadorId) {
-  return request(`/api/v1/etapas/${etapaId}/coordenador`, {
-    method: 'PUT',
-    body: JSON.stringify({ coordenador_id: coordenadorId })
+  // ✅ ENVIAR COMO QUERY PARAM
+  const url = coordenadorId
+    ? `/api/v1/etapas/${etapaId}/coordenador?coordenador_id=${encodeURIComponent(coordenadorId)}`
+    : `/api/v1/etapas/${etapaId}/coordenador`
+
+  return request(url, {
+    method: 'PUT'
   })
 }
 
