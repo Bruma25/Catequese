@@ -85,13 +85,13 @@ def listar_papeis():
         raise HTTPException(status_code=500, detail=f"Erro ao listar papéis: {str(e)}")
 
 
-
 @router.get("", response_model=List[UsuarioResponse])
 def listar_usuarios():
     """
     Lista todos os usuários com seus papéis.
-    Apenas coordenador geral pode usar este endpoint.
     """
+    import traceback
+
     try:
         repo = UsuarioRepository()
 
@@ -103,11 +103,8 @@ def listar_usuarios():
             .execute()
         )
 
-        print("🔵 [listar_usuarios] Result data:", result.data)
-
         usuarios = []
         for item in result.data:
-            print(f"🔵 [listar_usuarios] item['id'] = {item['id']}")
             papeis_result = (
                 repo.db
                 .table("usuario_papel")
@@ -145,9 +142,17 @@ def listar_usuarios():
         return usuarios
 
     except Exception as e:
-        import traceback
-        print("❌ ERRO:", traceback.format_exc())
-        raise HTTPException(status_code=500, detail=f"Erro ao listar usuários: {str(e)}")
+        traceback_str = traceback.format_exc()
+        print(f"❌ ERRO DETALHADO: {str(e)}")
+        print(f"❌ TRACEBACK: {traceback_str}")
+
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "erro": str(e),
+                "traceback": traceback_str
+            }
+        )
 
 
 @router.post("", response_model=UsuarioResponse)
