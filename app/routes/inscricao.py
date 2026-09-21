@@ -102,6 +102,10 @@ class TipoVinculoResponse(BaseModel):
     descricao: str
 
 
+class AtribuirTurmaRequest(BaseModel):
+    turma_id: str
+
+
 class LocalEncontroResponse(BaseModel):
     id: str
     codigo: str
@@ -715,28 +719,33 @@ def listar_catequistas():
         )
 
 
+#Minhas turmas
 @router.get("/minhas-turmas", response_model=List[TurmaResponse])
-def listar_minhas_turmas(authorization: Optional[str] = Header(None)):
+def listar_minhas_turmas(authorization: Optional[str] = Header(None, alias="Authorization")):
     """
-    Lista turmas do usuário logado:
-    - Catequista: apenas turmas que acompanha
-    - Coordenador Geral: todas as turmas
-    - Coordenador de Etapa: turmas da sua etapa
+    Lista turmas do usuário logado.
     """
     try:
         supabase = get_supabase()
 
+        print(f"🔵 [minhas-turmas] INÍCIO")
+        print(f"🔵 [minhas-turmas] Authorization header: {authorization}")
+
         # 1. Buscar usuário logado
         if not authorization or not authorization.startswith("Bearer "):
+            print(f"❌ [minhas-turmas] Token inválido: {authorization}")
             raise HTTPException(status_code=401, detail="Usuário não autenticado")
 
         token = authorization.replace("Bearer ", "")
+        print(f"🔵 [minhas-turmas] Token (primeiros 50 chars): {token[:50]}...")
 
         try:
             user_data = supabase.auth.get_user(token)
             usuario_id = user_data.user.id
-        except:
-            raise HTTPException(status_code=401, detail="Token inválido")
+            print(f"✅ [minhas-turmas] Usuário ID: {usuario_id}")
+        except Exception as e:
+            print(f"❌ [minhas-turmas] Erro ao validar token: {str(e)}")
+            raise HTTPException(status_code=401, detail=f"Token inválido: {str(e)}")
 
         # 2. Buscar papéis do usuário
         papeis_result = (
@@ -755,11 +764,15 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None)):
         papeis = papeis_result.data or []
         codigos_papeis = [p["tipo_papel_usuario"]["codigo"] for p in papeis if p.get("tipo_papel_usuario")]
 
+        print(f"🔵 [minhas-turmas] Papéis do usuário: {codigos_papeis}")
+
         # 3. Buscar turmas baseado no papel
         turmas = []
 
-        # CATEQUISTA: apenas turmas que acompanha
+        #  CATEQUISTA: apenas turmas que acompanha
         if "CATEQUISTA" in codigos_papeis and "COORDENADOR_GERAL" not in codigos_papeis:
+            print(f"🔵 [minhas-turmas] Usuário é CATEQUISTA")
+
             # Buscar catequista_id
             catequista_result = (
                 supabase
@@ -770,7 +783,10 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None)):
                 .execute()
             )
 
+            print(f"🔵 [minhas-turmas] Catequista result: {catequista_result.data}")
+
             if not catequista_result.data:
+                print(f"⚠️ [minhas-turmas] Catequista não encontrado")
                 return []  # Catequista sem registro na tabela
 
             catequista_id = catequista_result.data["id"]
@@ -784,9 +800,14 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None)):
                 .execute()
             )
 
+            print(f"🔵 [minhas-turmas] Turmas catequistas result: {turmas_catequistas_result.data}")
+
             turma_ids = [t["turma_id"] for t in turmas_catequistas_result.data or []]
 
+            print(f"🔵 [minhas-turmas] Turma IDs: {turma_ids}")
+
             if not turma_ids:
+                print(f"⚠️ [minhas-turmas] Catequista sem turmas")
                 return []  # Catequista sem turmas
 
             # Buscar turmas
@@ -809,10 +830,14 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None)):
                 .execute()
             )
 
+            print(f"🔵 [minhas-turmas] Turmas result: {turmas_result.data}")
+
             turmas = turmas_result.data or []
 
         # COORDENADOR GERAL: todas as turmas
         elif "COORDENADOR_GERAL" in codigos_papeis:
+            print(f"🔵 [minhas-turmas] Usuário é COORDENADOR_GERAL")
+
             turmas_result = (
                 supabase
                 .table("turma")
@@ -831,10 +856,14 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None)):
                 .execute()
             )
 
+            print(f"🔵 [minhas-turmas] Turmas result: {turmas_result.data}")
+
             turmas = turmas_result.data or []
 
         # COORDENADOR DE ETAPA: turmas da sua etapa
         elif "COORDENADOR_ETAPA" in codigos_papeis:
+            print(f"🔵 [minhas-turmas] Usuário é COORDENADOR_ETAPA")
+
             # Buscar coordenador_etapa
             coord_result = (
                 supabase
@@ -845,7 +874,10 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None)):
                 .execute()
             )
 
+            print(f"🔵 [minhas-turmas] Coordenador result: {coord_result.data}")
+
             if not coord_result.data or not coord_result.data.get("etapa_id"):
+                print(f"⚠️ [minhas-turmas] Coordenador sem etapa")
                 return []  # Coordenador sem etapa
 
             etapa_id = coord_result.data["etapa_id"]
@@ -870,10 +902,12 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None)):
                 .execute()
             )
 
+            print(f"🔵 [minhas-turmas] Turmas result: {turmas_result.data}")
+
             turmas = turmas_result.data or []
 
         # 4. Format response
-        return [
+        response = [
             TurmaResponse(
                 id=t["id"],
                 nome_sistema=t["nome_sistema"],
@@ -881,7 +915,7 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None)):
                 vagas_totais=t["vagas_totais"],
                 ativa=t.get("ativa", True),
                 etapa_id=t["etapa_id"],
-                etapa_nome="",  # Será preenchido no frontend
+                etapa_nome="",
                 local_encontro_id=str(t.get("local_encontro_id")) if t.get("local_encontro_id") else None,
                 ano_nasc_minimo=t.get("ano_nasc_minimo"),
                 ano_nasc_maximo=t.get("ano_nasc_maximo")
@@ -889,10 +923,55 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None)):
             for t in turmas
         ]
 
+        print(f"✅ [minhas-turmas] Response: {len(response)} turmas")
+
+        return response
+
     except HTTPException:
         raise
     except Exception as e:
+        print(f"❌ [minhas-turmas] ERRO: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Erro ao listar minhas turmas: {str(e)}")
+
+
+@router.get("/turmas", response_model=List[TurmaResponse])
+def listar_turmas():
+    """Lista todas as turmas."""
+    try:
+        from app.repositories.turmaRepository import TurmaRepository
+
+        repo = TurmaRepository()
+
+        supabase = get_supabase()
+        result = (
+            supabase
+            .table("turma")
+            .select("*")
+            .order("nome_sistema")
+            .execute()
+        )
+
+        turmas = []
+        for t in result.data:
+            turmas.append({
+                "id": t["id"],
+                "nome_sistema": t["nome_sistema"],
+                "nome_exibicao": t.get("nome_exibicao"),
+                "vagas_totais": t["vagas_totais"],
+                "ativa": t.get("ativa", True),
+                "etapa_id": t["etapa_id"],
+                "etapa_nome": "",
+                "local_encontro_id": str(t.get("local_encontro_id")) if t.get("local_encontro_id") else None,
+                "ano_nasc_minimo": t.get("ano_nasc_minimo"),
+                "ano_nasc_maximo": t.get("ano_nasc_maximo")
+            })
+
+        return turmas
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao listar turmas: {str(e)}")
 
 
 @router.get("/turmas/{turma_id}/catequizandos")
@@ -1199,42 +1278,19 @@ def exportar_catequizandos_turma(
         raise HTTPException(status_code=500, detail=f"Erro ao exportar: {str(e)}")
 
 
-@router.get("/turmas", response_model=List[TurmaResponse])
-def listar_turmas():
-    """Lista todas as turmas."""
+@router.get("/turmas/{turma_id}/vagas-ocupadas")
+def contar_vagas_ocupadas(turma_id: str):
+    """Conta quantas inscrições confirmadas existem em uma turma."""
     try:
-        from app.repositories.turmaRepository import TurmaRepository
+        repo = InscricaoRepository()
+        ocupadas = repo.contar_vagas_ocupadas_por_turma(turma_id)
 
-        repo = TurmaRepository()
-
-        supabase = get_supabase()
-        result = (
-            supabase
-            .table("turma")
-            .select("*")
-            .order("nome_sistema")
-            .execute()
-        )
-
-        turmas = []
-        for t in result.data:
-            turmas.append({
-                "id": t["id"],
-                "nome_sistema": t["nome_sistema"],
-                "nome_exibicao": t.get("nome_exibicao"),
-                "vagas_totais": t["vagas_totais"],
-                "ativa": t.get("ativa", True),
-                "etapa_id": t["etapa_id"],
-                "etapa_nome": "",
-                "local_encontro_id": str(t.get("local_encontro_id")) if t.get("local_encontro_id") else None,
-                "ano_nasc_minimo": t.get("ano_nasc_minimo"),
-                "ano_nasc_maximo": t.get("ano_nasc_maximo")
-            })
-
-        return turmas
-
+        return {
+            "turma_id": turma_id,
+            "vagas_ocupadas": ocupadas
+        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao listar turmas: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao contar vagas ocupadas: {str(e)}")
 
 
 @router.get("/turmas/{turma_id}", response_model=TurmaDetailResponse)
@@ -2028,7 +2084,7 @@ def atualizar_status_inscricao(inscricao_id: str, status_id: int):
 
 
 @router.put("/inscricoes/{inscricao_id}/turma")
-def atribuir_turma_inscricao(inscricao_id: str, turma_id: str):
+def atribuir_turma_inscricao(inscricao_id: str, dados: AtribuirTurmaRequest):#ADICIONEI AQUI. Antes estava assim: def atribuir_turma_inscricao(inscricao_id: str, turma_id: str):
     """Atribui uma turma a uma inscrição."""
     try:
         repo = InscricaoRepository()
@@ -2070,20 +2126,6 @@ def remover_turma_inscricao(inscricao_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao remover turma: {str(e)}")
 
-
-@router.get("/turmas/{turma_id}/vagas-ocupadas")
-def contar_vagas_ocupadas(turma_id: str):
-    """Conta quantas inscrições confirmadas existem em uma turma."""
-    try:
-        repo = InscricaoRepository()
-        ocupadas = repo.contar_vagas_ocupadas_por_turma(turma_id)
-
-        return {
-            "turma_id": turma_id,
-            "vagas_ocupadas": ocupadas
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao contar vagas ocupadas: {str(e)}")
 
 @router.get("/inscricoes/contar-por-turma/{turma_id}")
 def contar_inscricoes_por_turma(turma_id: str):
@@ -2139,63 +2181,6 @@ def atualizar_status_documento(documento_id: str, status_validacao: str, observa
         raise HTTPException(status_code=500, detail=f"Erro ao atualizar status do documento: {str(e)}")
 
 
-@router.get("/{catequizando_id}")
-def buscar_catequizando(catequizando_id: str):
-    """Busca dados de um catequizando específico."""
-    try:
-        repo = CatequizandoRepository()
-        catequizando = repo.buscar_por_id(catequizando_id)
-
-        if not catequizando:
-            raise HTTPException(status_code=404, detail="Catequizando não encontrado")
-
-        return {
-            "id": catequizando.id,
-            "nome": catequizando.nome,
-            "data_nascimento": catequizando.data_nascimento.isoformat() if catequizando.data_nascimento else None,
-            "endereco": catequizando.endereco,
-            "telefone": catequizando.telefone,
-            "email": catequizando.email,
-            "observacoes": catequizando.observacoes,
-            "necessidade_especial": catequizando.necessidade_especial,
-            "descricao_necessidade_especial": catequizando.descricao_necessidade_especial
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.put("/{catequizando_id}")
-def editar_catequizando(catequizando_id: str, dados: CatequizandoUpdate):
-    """Edita dados de um catequizando."""
-    try:
-        repo = CatequizandoRepository()
-
-        # Verificar se existe
-        catequizando_existente = repo.buscar_por_id(catequizando_id)
-        if not catequizando_existente:
-            raise HTTPException(status_code=404, detail="Catequizando não encontrado")
-
-        # Converter para dict e remover None
-        update_data = {k: v for k, v in dados.dict().items() if v is not None}
-
-        # Editar parcialmente
-        catequizando_atualizado = repo.editar_parcial(catequizando_id, update_data)
-
-        return {
-            "message": "Catequizando atualizado com sucesso",
-            "id": catequizando_atualizado.id,
-            "nome": catequizando_atualizado.nome
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @router.delete("/inscricoes/{inscricao_id}")
 def excluir_inscricao(inscricao_id: str):
     """Exclui uma inscrição e o catequizando (se não tiver outras inscrições)."""
@@ -2242,3 +2227,60 @@ def excluir_inscricao(inscricao_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao excluir inscrição: {str(e)}")
+
+
+@router.get("/catequizando/{catequizando_id}")
+def buscar_catequizando(catequizando_id: str):
+    """Busca dados de um catequizando específico."""
+    try:
+        repo = CatequizandoRepository()
+        catequizando = repo.buscar_por_id(catequizando_id)
+
+        if not catequizando:
+            raise HTTPException(status_code=404, detail="Catequizando não encontrado")
+
+        return {
+            "id": catequizando.id,
+            "nome": catequizando.nome,
+            "data_nascimento": catequizando.data_nascimento.isoformat() if catequizando.data_nascimento else None,
+            "endereco": catequizando.endereco,
+            "telefone": catequizando.telefone,
+            "email": catequizando.email,
+            "observacoes": catequizando.observacoes,
+            "necessidade_especial": catequizando.necessidade_especial,
+            "descricao_necessidade_especial": catequizando.descricao_necessidade_especial
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/catequizando/{catequizando_id}")
+def editar_catequizando(catequizando_id: str, dados: CatequizandoUpdate):
+    """Edita dados de um catequizando."""
+    try:
+        repo = CatequizandoRepository()
+
+        # Verificar se existe
+        catequizando_existente = repo.buscar_por_id(catequizando_id)
+        if not catequizando_existente:
+            raise HTTPException(status_code=404, detail="Catequizando não encontrado")
+
+        # Converter para dict e remover None
+        update_data = {k: v for k, v in dados.dict().items() if v is not None}
+
+        # Editar parcialmente
+        catequizando_atualizado = repo.editar_parcial(catequizando_id, update_data)
+
+        return {
+            "message": "Catequizando atualizado com sucesso",
+            "id": catequizando_atualizado.id,
+            "nome": catequizando_atualizado.nome
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

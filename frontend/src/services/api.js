@@ -261,8 +261,9 @@ export async function atualizarStatusInscricao(inscricaoId, statusId) {
 }
 
 export async function atribuirTurmaInscricao(inscricaoId, turmaId) {
-  return request(`/api/v1/inscricoes/${inscricaoId}/turma?turma_id=${turmaId}`, {
-    method: 'PUT'
+  return request(`/api/v1/inscricoes/${inscricaoId}/turma`, {
+    method: 'PUT',
+    body: JSON.stringify({ turma_id: turmaId })
   })
 }
 
