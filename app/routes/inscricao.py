@@ -456,6 +456,8 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
     try:
         supabase = get_supabase()
 
+        print(f"🔵 [atribuir] INÍCIO - etapa_id: {etapa_id}, coordenador_id: {coordenador_id}")
+
         # Verificar se etapa existe
         etapa_db = (
             supabase
@@ -465,11 +467,16 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
             .execute()
         )
 
+        print(f"🔍 [atribuir] etapa_db: {etapa_db}")
+        print(f"🔍 [atribuir] etapa_db.data: {etapa_db.data}")
+
         if not etapa_db.data or len(etapa_db.data) == 0:
             raise HTTPException(status_code=404, detail="Etapa não encontrada")
 
         # Se coordenador_id for None, remover coordenador da etapa
         if coordenador_id is None:
+            print(f"⚠️ [atribuir] Removendo coordenador da etapa")
+
             # Buscar coordenador atualmente vinculado a esta etapa
             coord_atual = (
                 supabase
@@ -478,6 +485,9 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
                 .eq("etapa_id", etapa_id)
                 .execute()
             )
+
+            print(f"🔍 [atribuir] coord_atual: {coord_atual}")
+            print(f"🔍 [atribuir] coord_atual.data: {coord_atual.data}")
 
             if coord_atual.data and len(coord_atual.data) > 0:
                 # Remover etapa_id do coordenador
@@ -489,7 +499,7 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
                     .execute()
                 )
 
-                print(f"✅ [remover] Update result: {update_result}")
+                print(f"✅ [atribuir] Update (remover) result: {update_result}")
 
             return {"message": "Coordenador removido da etapa com sucesso"}
 
@@ -501,6 +511,9 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
             .eq("id", coordenador_id)
             .execute()
         )
+
+        print(f"🔍 [atribuir] coord_db: {coord_db}")
+        print(f"🔍 [atribuir] coord_db.data: {coord_db.data}")
 
         if not coord_db.data or len(coord_db.data) == 0:
             raise HTTPException(status_code=404, detail="Coordenador não encontrado")
@@ -514,8 +527,13 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
             .execute()
         )
 
+        print(f"🔍 [atribuir] coord_com_etapa: {coord_com_etapa}")
+        print(f"🔍 [atribuir] coord_com_etapa.data: {coord_com_etapa.data}")
+
         if coord_com_etapa.data and len(coord_com_etapa.data) > 0:
             etapa_atual = coord_com_etapa.data[0].get("etapa_id")
+            print(f"🔍 [atribuir] etapa_atual do coordenador: {etapa_atual}")
+
             if etapa_atual and etapa_atual != etapa_id:
                 raise HTTPException(
                     status_code=400,
@@ -532,14 +550,19 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
             .execute()
         )
 
+        print(f"🔍 [atribuir] outro_coord: {outro_coord}")
+        print(f"🔍 [atribuir] outro_coord.data: {outro_coord.data}")
+
         if outro_coord.data and len(outro_coord.data) > 0:
+            print(f"⚠️ [atribuir] Removendo coordenador anterior da etapa")
+
             # Remover etapa_id do coordenador anterior
             supabase.table("coordenador_etapa").update({
                 "etapa_id": None
             }).eq("id", outro_coord.data[0]["id"]).execute()
 
         # Atualizar coordenador da etapa
-        print(f"🔵 [atribuir] etapa_id: {etapa_id}, coordenador_id: {coordenador_id}")
+        print(f"🔵 [atribuir] ATUALIZANDO - etapa_id: {etapa_id}, coordenador_id: {coordenador_id}")
 
         update_result = (
             supabase
@@ -550,6 +573,7 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
         )
 
         print(f"✅ [atribuir] Update result: {update_result}")
+        print(f"✅ [atribuir] Update result.data: {update_result.data}")
 
         # Verificar se o UPDATE funcionou
         if not update_result.data or len(update_result.data) == 0:
