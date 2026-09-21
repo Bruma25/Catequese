@@ -10,7 +10,7 @@ import GestaoEtapasPage from './pages/GestaoEtapasPage'
 import GestaoTurmasPage from './pages/GestaoTurmasPage'
 import GestaoInscricoesPage from './pages/GestaoInscricoesPage'
 import ConfiguracoesPage from './pages/ConfiguracoesPage'
-import ResetSenhaPage from './pages/ResetSenhaPage'
+import MinhasTurmasPage from './pages/MinhasTurmasPage'
 import GestaoUsuariosPage from './pages/GestaoUsuariosPage'
 import MeusCatequizandosPage from './pages/MeusCatequizandosPage'
 import './App.css'
@@ -68,14 +68,14 @@ function App() {
           </RotaPublica>
         }
       />
-      <Route
-          path="/reset-senha"
-          element={
-            <RotaPublica>
-              <ResetSenhaPage />
-            </RotaPublica>
-          }
-      />
+      {/*<Route*/}
+      {/*    path="/reset-senha"*/}
+      {/*    element={*/}
+      {/*      <RotaPublica>*/}
+      {/*        <ResetSenhaPage />*/}
+      {/*      </RotaPublica>*/}
+      {/*    }*/}
+      {/*/>*/}
 
       {/* Rotas protegidas */}
       <Route
@@ -147,6 +147,14 @@ function App() {
         element={
           <RotaProtegida>
             <MeusCatequizandosPage />
+          </RotaProtegida>
+        }
+      />
+      <Route
+        path="/minhas-turmas"
+        element={
+          <RotaProtegida>
+            <MinhasTurmasPage />
           </RotaProtegida>
         }
       />
