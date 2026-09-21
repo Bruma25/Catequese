@@ -85,6 +85,7 @@ class EtapaDetailResponse(BaseModel):
     ano_nasc_maximo: Optional[int] = None
     sacramentos_requeridos: List[int]
     sacramentos_proibidos: List[int]
+    coordenador_etapa_id: Optional[str] = None
 
 
 class SacramentoResponse(BaseModel):
@@ -214,12 +215,28 @@ def buscar_etapa(etapa_id: str):
     """Busca uma etapa específica pelo ID, incluindo sacramentos requeridos e proibidos."""
     try:
         from app.repositories.etapaRepository import EtapaRepository
+        from app.infra.supabaseClient import get_supabase
+
+        supabase = get_supabase()
 
         repo = EtapaRepository()
         etapa = repo.buscar_por_id(etapa_id)
 
         if not etapa:
             raise HTTPException(status_code=404, detail="Etapa não encontrada")
+
+        # Buscar coordenador da etapa
+        coord_result = (
+            supabase
+            .table("coordenador_etapa")
+            .select("id, etapa_id")
+            .eq("etapa_id", etapa_id)
+            .execute()
+        )
+
+        coordenador_etapa_id = None
+        if coord_result.data and len(coord_result.data) > 0:
+            coordenador_etapa_id = coord_result.data[0]["id"]
 
         return EtapaDetailResponse(
             id=etapa.id,
@@ -228,7 +245,8 @@ def buscar_etapa(etapa_id: str):
             ano_nasc_minimo=etapa.ano_nasc_minimo,
             ano_nasc_maximo=etapa.ano_nasc_maximo,
             sacramentos_requeridos=[s.id for s in etapa.sacramentos_requeridos],
-            sacramentos_proibidos=[s.id for s in etapa.sacramentos_proibidos]
+            sacramentos_proibidos=[s.id for s in etapa.sacramentos_proibidos],
+            coordenador_etapa_id=coordenador_etapa_id
         )
     except HTTPException:
         raise
@@ -308,7 +326,8 @@ def criar_etapa(etapa_data: EtapaCreate):
             ano_nasc_minimo=etapa_salva.ano_nasc_minimo,
             ano_nasc_maximo=etapa_salva.ano_nasc_maximo,
             sacramentos_requeridos=[s.id for s in etapa_salva.sacramentos_requeridos],
-            sacramentos_proibidos=[s.id for s in etapa_salva.sacramentos_proibidos]
+            sacramentos_proibidos=[s.id for s in etapa_salva.sacramentos_proibidos],
+            coordenador_etapa_id=None
         )
 
     except HTTPException:
@@ -393,7 +412,8 @@ def editar_etapa(etapa_id: str, etapa_data: EtapaUpdate):
             ano_nasc_minimo=etapa_editada.ano_nasc_minimo,
             ano_nasc_maximo=etapa_editada.ano_nasc_maximo,
             sacramentos_requeridos=[s.id for s in etapa_editada.sacramentos_requeridos],
-            sacramentos_proibidos=[s.id for s in etapa_editada.sacramentos_proibidos]
+            sacramentos_proibidos=[s.id for s in etapa_editada.sacramentos_proibidos],
+            coordenador_etapa_id=None
         )
 
     except HTTPException:
