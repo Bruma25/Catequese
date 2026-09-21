@@ -261,15 +261,18 @@ export async function uploadDocumento(inscricaoId, file, tipoDocumento) {
 // Usuários
 export async function listarUsuarios() {
   const endpoint = '/api/v1/usuarios'
-  console.log('🔵 [listarUsuarios] Chamando:', endpoint)
+  console.log('🔵 [listarUsuarios] Endpoint:', endpoint)
+  console.log('🔵 [listarUsuarios] URL completa:', `${API_URL}${endpoint}`)
 
   try {
     const result = await request(endpoint)
     console.log('✅ [listarUsuarios] Result:', result)
     return result
   } catch (error) {
-    console.log('❌ [listarUsuarios] Erro completo:', error)
+    console.log('❌ [listarUsuarios] Error:', error)
+    console.log('❌ [listarUsuarios] Error message:', error.message)
     console.log('❌ [listarUsuarios] Error detail:', error.detail)
+    console.log('❌ [listarUsuarios] Error completo:', JSON.stringify(error, null, 2))
     throw error
   }
 }
@@ -303,10 +306,15 @@ export async function listarPapeis() {
   console.log('🔵 [listarPapeis] Endpoint:', endpoint)
   console.log('🔵 [listarPapeis] URL completa:', `${API_URL}${endpoint}`)
 
-  const result = await request(endpoint)
-
-  console.log('✅ [listarPapeis] Result:', result)
-  return result
+  try {
+    const result = await request(endpoint)
+    console.log('✅ [listarPapeis] Result:', result)
+    return result
+  } catch (error) {
+    console.log('❌ [listarPapeis] Error:', error)
+    console.log('❌ [listarPapeis] Error message:', error.message)
+    throw error
+  }
 }
 
 export async function atualizarPapeisUsuario(usuarioId, papeisIds) {
