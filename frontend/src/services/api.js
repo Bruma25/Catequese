@@ -260,7 +260,18 @@ export async function uploadDocumento(inscricaoId, file, tipoDocumento) {
 
 // Usuários
 export async function listarUsuarios() {
-  return request('/api/v1/usuarios')
+  const endpoint = '/api/v1/usuarios'
+  console.log('🔵 [listarUsuarios] Chamando:', endpoint)
+
+  try {
+    const result = await request(endpoint)
+    console.log('✅ [listarUsuarios] Result:', result)
+    return result
+  } catch (error) {
+    console.log('❌ [listarUsuarios] Erro completo:', error)
+    console.log('❌ [listarUsuarios] Error detail:', error.detail)
+    throw error
+  }
 }
 
 export async function buscarUsuario(id) {
