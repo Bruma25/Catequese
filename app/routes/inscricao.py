@@ -1531,7 +1531,6 @@ def editar_catequizando(catequizando_id: str, dados: CatequizandoUpdate):
         # Converter para dict e remover None
         update_data = {k: v for k, v in dados.dict().items() if v is not None}
 
-        # ✅ Não precisa converter, o validator já fez isso
         # Editar parcialmente
         catequizando_atualizado = repo.editar_parcial(catequizando_id, update_data)
 

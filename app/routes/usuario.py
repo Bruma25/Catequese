@@ -86,48 +86,36 @@ def listar_papeis():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao listar papéis: {str(e)}")
 
-
-@router.get("", response_model=List[UsuarioResponse])
-def listar_usuarios():
     """
     Lista todos os usuários com seus papéis.
     """
+
+
+@router.get("", response_model=List[UsuarioResponse])
+def listar_usuarios():
     import traceback
 
     try:
-        repo = UsuarioRepository()
+        supabase = get_supabase()
 
+        # ✅ QUERY DIRETA, SEM REPOSITÓRIO
         result = (
-            repo.db
+            supabase
             .table("usuario")
             .select("id, nome, email, created_at, updated_at")
             .order("nome")
             .execute()
         )
 
-        # ✅ DADOS DEBUG
-        debug_data = {
-            "total_usuarios": len(result.data),
-            "usuarios": result.data,
-        }
+        print(f"✅ Query 1 funcionou: {len(result.data)} usuários")
 
         usuarios = []
         for item in result.data:
-            # ✅ VALIDAR ID ANTES DE USAR
-            usuario_id = item.get("id")
+            print(f"🔵 Processando: {item['id']}")
 
-            if not usuario_id or not isinstance(usuario_id, str):
-                print(f"⚠️ ID inválido: {usuario_id}")
-                continue
-
-            # ✅ VALIDAR SE É UUID VÁLIDO
-            uuid_pattern = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.I)
-            if not uuid_pattern.match(usuario_id):
-                print(f"⚠️ ID não é UUID: {usuario_id}")
-                # continue  # ← Descomente se quiser pular IDs inválidos
-
+            # ✅ QUERY DIRETA PARA PAPÉIS
             papeis_result = (
-                repo.db
+                supabase
                 .table("usuario_papel")
                 .select("""
                     papel_id,
@@ -137,7 +125,7 @@ def listar_usuarios():
                         descricao
                     )
                 """)
-                .eq("usuario_id", usuario_id)
+                .eq("usuario_id", item["id"])
                 .execute()
             )
 
@@ -153,24 +141,26 @@ def listar_usuarios():
 
             usuarios.append(
                 UsuarioResponse(
-                    id=usuario_id,
+                    id=item["id"],
                     nome=item["nome"],
                     email=item["email"],
                     papeis=papeis
                 )
             )
 
+        print(f"✅ Retornando {len(usuarios)} usuários")
         return usuarios
 
     except Exception as e:
         traceback_str = traceback.format_exc()
+        print(f"❌ ERRO: {str(e)}")
+        print(f"❌ TRACEBACK: {traceback_str}")
 
         raise HTTPException(
             status_code=500,
             detail={
                 "erro": str(e),
-                "traceback": traceback_str,
-                "debug": debug_data if 'debug_data' in locals() else "Não foi possível coletar debug"
+                "traceback": traceback_str
             }
         )
 
