@@ -42,6 +42,7 @@ class UsuarioUpdate(BaseModel):
 
 
 # --- Endpoints ---
+
 @router.get("/me", response_model=UsuarioResponse)
 def buscar_usuario_atual():
     """
@@ -91,10 +92,14 @@ def listar_usuarios():
     Lista todos os usuários com seus papéis.
     """
     import traceback
+    import json
 
     try:
+        print("🔵 [listar_usuarios] INICIANDO...")
+
         repo = UsuarioRepository()
 
+        print("🔵 [listar_usuarios] Executando query...")
         result = (
             repo.db
             .table("usuario")
@@ -103,8 +108,23 @@ def listar_usuarios():
             .execute()
         )
 
+        print(f"🔵 [listar_usuarios] {len(result.data)} usuários encontrados")
+
+        # ✅ LOG DETALHADO DE CADA USUÁRIO
+        print("🔵 [listar_usuarios] Dados brutos:")
+        for i, item in enumerate(result.data):
+            print(f"   [{i}] {json.dumps(item)}")
+
         usuarios = []
-        for item in result.data:
+        for i, item in enumerate(result.data):
+            print(f"🔵 [listar_usuarios] Processando usuário {i}: id={item.get('id')}")
+
+            # ✅ VALIDAR QUE O ID É UM UUID VÁLIDO
+            usuario_id = item.get("id")
+            if not usuario_id or not isinstance(usuario_id, str):
+                print(f"❌ [listar_usuarios] ID inválido: {usuario_id}")
+                continue
+
             papeis_result = (
                 repo.db
                 .table("usuario_papel")
@@ -116,7 +136,7 @@ def listar_usuarios():
                         descricao
                     )
                 """)
-                .eq("usuario_id", item["id"])
+                .eq("usuario_id", usuario_id)
                 .execute()
             )
 
@@ -132,19 +152,20 @@ def listar_usuarios():
 
             usuarios.append(
                 UsuarioResponse(
-                    id=item["id"],
+                    id=usuario_id,
                     nome=item["nome"],
                     email=item["email"],
                     papeis=papeis
                 )
             )
 
+        print(f"✅ [listar_usuarios] Retornando {len(usuarios)} usuários")
         return usuarios
 
     except Exception as e:
         traceback_str = traceback.format_exc()
-        print(f"❌ ERRO DETALHADO: {str(e)}")
-        print(f"❌ TRACEBACK: {traceback_str}")
+        print(f"❌ [listar_usuarios] ERRO DETALHADO: {str(e)}")
+        print(f"❌ [listar_usuarios] TRACEBACK: {traceback_str}")
 
         raise HTTPException(
             status_code=500,
@@ -269,7 +290,6 @@ def criar_usuario(dados: UsuarioCreate):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao criar usuário: {str(e)}")
-
 
 
 @router.get("/{usuario_id}", response_model=UsuarioResponse)
