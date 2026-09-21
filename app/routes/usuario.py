@@ -110,7 +110,6 @@ def listar_usuarios():
 
         print(f"🔵 [listar_usuarios] {len(result.data)} usuários encontrados")
 
-        # ✅ LOG DETALHADO DE CADA USUÁRIO
         print("🔵 [listar_usuarios] Dados brutos:")
         for i, item in enumerate(result.data):
             print(f"   [{i}] {json.dumps(item)}")
@@ -119,7 +118,6 @@ def listar_usuarios():
         for i, item in enumerate(result.data):
             print(f"🔵 [listar_usuarios] Processando usuário {i}: id={item.get('id')}")
 
-            # ✅ VALIDAR QUE O ID É UM UUID VÁLIDO
             usuario_id = item.get("id")
             if not usuario_id or not isinstance(usuario_id, str):
                 print(f"❌ [listar_usuarios] ID inválido: {usuario_id}")
