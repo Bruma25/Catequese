@@ -2,6 +2,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
 from pydantic import BaseModel
+import re
 
 from app.repositories.usuarioRepository import UsuarioRepository
 from app.domain.tipoPapelUsuario import TipoPapelUsuario
@@ -108,12 +109,23 @@ def listar_usuarios():
         debug_data = {
             "total_usuarios": len(result.data),
             "usuarios": result.data,
-            "primeiro_usuario_id": result.data[0]["id"] if result.data else None,
-            "tipo_primeiro_id": str(type(result.data[0]["id"])) if result.data else None
         }
 
         usuarios = []
         for item in result.data:
+            # ✅ VALIDAR ID ANTES DE USAR
+            usuario_id = item.get("id")
+
+            if not usuario_id or not isinstance(usuario_id, str):
+                print(f"⚠️ ID inválido: {usuario_id}")
+                continue
+
+            # ✅ VALIDAR SE É UUID VÁLIDO
+            uuid_pattern = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.I)
+            if not uuid_pattern.match(usuario_id):
+                print(f"⚠️ ID não é UUID: {usuario_id}")
+                # continue  # ← Descomente se quiser pular IDs inválidos
+
             papeis_result = (
                 repo.db
                 .table("usuario_papel")
@@ -125,7 +137,7 @@ def listar_usuarios():
                         descricao
                     )
                 """)
-                .eq("usuario_id", item["id"])
+                .eq("usuario_id", usuario_id)
                 .execute()
             )
 
@@ -141,7 +153,7 @@ def listar_usuarios():
 
             usuarios.append(
                 UsuarioResponse(
-                    id=item["id"],
+                    id=usuario_id,
                     nome=item["nome"],
                     email=item["email"],
                     papeis=papeis
@@ -153,7 +165,6 @@ def listar_usuarios():
     except Exception as e:
         traceback_str = traceback.format_exc()
 
-        # ✅ RETORNAR ERRO COM DEBUG
         raise HTTPException(
             status_code=500,
             detail={
