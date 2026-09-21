@@ -130,11 +130,16 @@ export async function buscarInscricao(id) {
   return request(`/api/v1/inscricoes/${id}`)
 }
 
+// Turmas
 export async function listarTurmas() {
   return request('/api/v1/turmas')
 }
 
 export async function buscarTurma(id) {
+  return request(`/api/v1/turmas/${id}`)
+}
+
+export async function buscarTurmaPorId(id) {
   return request(`/api/v1/turmas/${id}`)
 }
 

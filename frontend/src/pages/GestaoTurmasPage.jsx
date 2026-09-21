@@ -10,7 +10,8 @@ import {
   listarEtapas,
   listarLocaisEncontro,
   listarCatequistas,
-  contarInscricoesPorTurma
+  contarInscricoesPorTurma,
+  buscarTurmaPorId
 } from '../services/api'
 import './GestaoTurmasPage.css'
 
@@ -84,19 +85,22 @@ function GestaoTurmasPage() {
     return turma.etapa_id === filtroEtapa
   })
 
-  const handleOpenModal = (turma = null) => {
+  const handleOpenModal = async (turma = null) => {
     if (turma) {
-      setEditandoTurma(turma)
+      // Buscar detalhes completos da turma (com catequistas)
+      const turmaDetalhes = await buscarTurmaPorId(turma.id)
+
+      setEditandoTurma(turmaDetalhes)
       setFormData({
-        etapa_id: turma.etapa_id || '',
-        nome_sistema: turma.nome_sistema || '',
-        nome_exibicao: turma.nome_exibicao || '',
-        vagas_totais: turma.vagas_totais || '',
-        ativa: turma.ativa ?? true,
-        local_encontro_id: turma.local_encontro_id || '',
-        ano_nasc_minimo: turma.ano_nasc_minimo || '',
-        ano_nasc_maximo: turma.ano_nasc_maximo || '',
-        catequistas_ids: []
+        etapa_id: turmaDetalhes.etapa_id || '',
+        nome_sistema: turmaDetalhes.nome_sistema || '',
+        nome_exibicao: turmaDetalhes.nome_exibicao || '',
+        vagas_totais: turmaDetalhes.vagas_totais || '',
+        ativa: turmaDetalhes.ativa ?? true,
+        local_encontro_id: turmaDetalhes.local_encontro_id || '',
+        ano_nasc_minimo: turmaDetalhes.ano_nasc_minimo || '',
+        ano_nasc_maximo: turmaDetalhes.ano_nasc_maximo || '',
+        catequistas_ids: turmaDetalhes.catequistas?.map(c => c.id) || []
       })
     } else {
       setEditandoTurma(null)
