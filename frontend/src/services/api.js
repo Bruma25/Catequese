@@ -143,6 +143,12 @@ export async function listarInscricoes() {
   return request('/api/v1/inscricoes')
 }
 
+export async function excluirInscricao(id) {
+  return request(`/api/v1/inscricoes/${id}`, {
+    method: 'DELETE'
+  })
+}
+
 export async function buscarInscricao(id) {
   return request(`/api/v1/inscricoes/${id}`)
 }

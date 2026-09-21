@@ -1,3 +1,4 @@
+// ../frontend/src/pages/GestaoInscricoesPage.jsx
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Header from '../components/Header/Header'
@@ -9,7 +10,8 @@ import {
   buscarInscricaoCompleta,
   listarTurmas,
   listarDocumentosInscricao,
-  atualizarStatusDocumento
+  atualizarStatusDocumento,
+  excluirInscricao
 } from '../services/api'
 import './GestaoInscricoesPage.css'
 
@@ -145,6 +147,34 @@ function GestaoInscricoesPage() {
     } catch (error) {
       console.error('Erro ao remover turma:', error)
       let mensagemErro = 'Erro ao remover turma'
+      if (error && typeof error === 'object') {
+        if (error.detail) {
+          mensagemErro = error.detail
+        } else if (error.message) {
+          mensagemErro = error.message
+        } else {
+          mensagemErro = JSON.stringify(error)
+        }
+      } else if (typeof error === 'string') {
+        mensagemErro = error
+      }
+      alert(`Erro: ${mensagemErro}`)
+    }
+  }
+
+  // ✅ EXCLUIR INSCRIÇÃO
+  const handleExcluirInscricao = async (inscricaoId, catequizandoNome) => {
+    if (!confirm(`Tem certeza que deseja excluir a inscrição de "${catequizandoNome}"?`)) {
+      return
+    }
+
+    try {
+      await excluirInscricao(inscricaoId)
+      alert('Inscrição excluída com sucesso!')
+      fetchData()
+    } catch (error) {
+      console.error('Erro ao excluir inscrição:', error)
+      let mensagemErro = 'Erro ao excluir inscrição'
       if (error && typeof error === 'object') {
         if (error.detail) {
           mensagemErro = error.detail
@@ -357,6 +387,14 @@ function GestaoInscricoesPage() {
                         Remover Turma
                       </button>
                     )}
+
+                    {/* ✅ Botão Excluir */}
+                    <button
+                      className="excluir-button"
+                      onClick={() => handleExcluirInscricao(inscricao.id, inscricao.catequizando_nome)}
+                    >
+                      Excluir
+                    </button>
                   </div>
                 </div>
               )

@@ -1710,3 +1710,31 @@ def editar_catequizando(catequizando_id: str, dados: CatequizandoUpdate):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/inscricoes/{inscricao_id}")
+def excluir_inscricao(inscricao_id: str):
+    """Exclui uma inscrição."""
+    try:
+        from app.repositories.inscricaoRepository import InscricaoRepository
+
+        repo = InscricaoRepository()
+
+        # Verificar se inscrição existe
+        inscricao_existente = repo.buscar_por_id(inscricao_id)
+
+        if not inscricao_existente:
+            raise HTTPException(status_code=404, detail="Inscrição não encontrada")
+
+        # Excluir inscrição
+        sucesso = repo.apagar(inscricao_id)
+
+        if not sucesso:
+            raise HTTPException(status_code=500, detail="Não foi possível excluir a inscrição")
+
+        return {"message": "Inscrição excluída com sucesso"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao excluir inscrição: {str(e)}")

@@ -1,3 +1,4 @@
+#app/domain/inscricao.py
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING
@@ -31,7 +32,7 @@ class Inscricao:
     quer_mesma_turma_que_irmao: bool = False
     referencia_irmao: Optional[str] = None
     observacao_responsavel: Optional[str] = None
-    local_encontro_id: Optional[int] = None  # ✅ Mude de str para int
+    local_encontro_id: Optional[int] = None
 
     override_idade: bool = False
     motivo_override: Optional[str] = None
@@ -61,8 +62,7 @@ class Inscricao:
         self.id = self._normalizar_texto_obrigatorio(self.id, "id")
         self.referencia_irmao = self._normalizar_texto_opcional(self.referencia_irmao)
         self.observacao_responsavel = self._normalizar_texto_opcional(self.observacao_responsavel)
-        # ✅ REMOVER: local_encontro_id não é texto, é int
-        # self.local_encontro_id = self._normalizar_texto_opcional(self.local_encontro_id)
+        # REMOVER: local_encontro_id não é texto, é int
         self.motivo_override = self._normalizar_texto_opcional(self.motivo_override)
 
     def validar(self) -> None:

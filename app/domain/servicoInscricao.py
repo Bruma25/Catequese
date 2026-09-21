@@ -1,3 +1,4 @@
+#app/domain/servicoInscricao.py
 from typing import List, Optional
 
 from app.domain.catequizando import Catequizando
@@ -111,7 +112,7 @@ class ServicoInscricao:
         if not etapa.aceita_catequizando(catequizando):
             raise ValueError("O catequizando não atende aos requisitos da etapa.")
 
-        # ✅ Inscricao SEMPRE começa como pendente_distribuicao
+        # Inscricao SEMPRE começa como pendente_distribuicao
         # A verificação de vagas é feita apenas para informação,
         # mas não define o status inicial
         ainda_ha_vaga = self.verificar_vagas_antes_da_inscricao(
@@ -121,7 +122,7 @@ class ServicoInscricao:
             total_inscricoes_etapa=total_inscricoes_etapa,
         )
 
-        # ✅ Status inicial é SEMPRE pendente_distribuicao
+        # Status inicial é SEMPRE pendente_distribuicao
         status_inicial = self.status_pendente_distribuicao
 
         inscricao = Inscricao(
@@ -141,7 +142,7 @@ class ServicoInscricao:
         if referencia_irmao is not None:
             inscricao.marcar_preferencia_irmao(referencia_irmao)
 
-        # ✅ Marcar termo como assinado (já foi aceito no frontend)
+        # Marcar termo como assinado (já foi aceito no frontend)
         inscricao.assinar_termo()
 
         return inscricao
@@ -205,7 +206,7 @@ class ServicoInscricao:
 
         inscricao.atribuir_turma(turma)
 
-        # ✅ Define status final baseado em vagas
+        # Define status final baseado em vagas
         if turma.tem_vaga(numero_confirmadas):
             inscricao.confirmar()
         else:
