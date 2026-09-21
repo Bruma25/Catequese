@@ -2,10 +2,17 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
 from pydantic import BaseModel
+import logging
+import traceback
+import json
 
 from app.repositories.usuarioRepository import UsuarioRepository
 from app.domain.tipoPapelUsuario import TipoPapelUsuario
 from app.infra.supabaseClient import get_supabase
+
+# Configurar logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])
 
@@ -83,6 +90,7 @@ def listar_papeis():
         ]
 
     except Exception as e:
+        logger.error(f"❌ [listar_papeis] ERRO: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao listar papéis: {str(e)}")
 
 
@@ -91,15 +99,12 @@ def listar_usuarios():
     """
     Lista todos os usuários com seus papéis.
     """
-    import traceback
-    import json
-
     try:
-        print("🔵 [listar_usuarios] INICIANDO...")
+        logger.info("🔵 [listar_usuarios] INICIANDO...")
 
         repo = UsuarioRepository()
 
-        print("🔵 [listar_usuarios] Executando query...")
+        logger.info("🔵 [listar_usuarios] Executando query...")
         result = (
             repo.db
             .table("usuario")
@@ -108,19 +113,21 @@ def listar_usuarios():
             .execute()
         )
 
-        print(f"🔵 [listar_usuarios] {len(result.data)} usuários encontrados")
+        logger.info(f"🔵 [listar_usuarios] {len(result.data)} usuários encontrados")
 
-        print("🔵 [listar_usuarios] Dados brutos:")
+        # LOG DETALHADO DE CADA USUÁRIO
+        logger.info("🔵 [listar_usuarios] Dados brutos:")
         for i, item in enumerate(result.data):
-            print(f"   [{i}] {json.dumps(item)}")
+            logger.info(f"   [{i}] {json.dumps(item)}")
 
         usuarios = []
         for i, item in enumerate(result.data):
-            print(f"🔵 [listar_usuarios] Processando usuário {i}: id={item.get('id')}")
+            logger.info(f"🔵 [listar_usuarios] Processando usuário {i}: id={item.get('id')}")
 
+            # VALIDAR QUE O ID É UM UUID VÁLIDO
             usuario_id = item.get("id")
             if not usuario_id or not isinstance(usuario_id, str):
-                print(f"❌ [listar_usuarios] ID inválido: {usuario_id}")
+                logger.error(f"❌ [listar_usuarios] ID inválido: {usuario_id}")
                 continue
 
             papeis_result = (
@@ -157,13 +164,13 @@ def listar_usuarios():
                 )
             )
 
-        print(f"✅ [listar_usuarios] Retornando {len(usuarios)} usuários")
+        logger.info(f"✅ [listar_usuarios] Retornando {len(usuarios)} usuários")
         return usuarios
 
     except Exception as e:
         traceback_str = traceback.format_exc()
-        print(f"❌ [listar_usuarios] ERRO DETALHADO: {str(e)}")
-        print(f"❌ [listar_usuarios] TRACEBACK: {traceback_str}")
+        logger.error(f"❌ [listar_usuarios] ERRO DETALHADO: {str(e)}")
+        logger.error(f"❌ [listar_usuarios] TRACEBACK: {traceback_str}")
 
         raise HTTPException(
             status_code=500,
@@ -287,6 +294,7 @@ def criar_usuario(dados: UsuarioCreate):
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"❌ [criar_usuario] ERRO: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao criar usuário: {str(e)}")
 
 
@@ -320,6 +328,7 @@ def buscar_usuario(usuario_id: str):
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"❌ [buscar_usuario] ERRO: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao buscar usuário: {str(e)}")
 
 
@@ -394,6 +403,7 @@ def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"❌ [editar_usuario] ERRO: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao editar usuário: {str(e)}")
 
 
@@ -435,6 +445,7 @@ def excluir_usuario(usuario_id: str):
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"❌ [excluir_usuario] ERRO: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao excluir usuário: {str(e)}")
 
 
@@ -462,6 +473,7 @@ def buscar_papeis_usuario(usuario_id: str):
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"❌ [buscar_papeis_usuario] ERRO: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao buscar papéis: {str(e)}")
 
 
@@ -522,4 +534,5 @@ def atualizar_papeis_usuario(usuario_id: str, dados: AtualizarPapeisRequest):
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"❌ [atualizar_papeis_usuario] ERRO: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao atualizar papéis: {str(e)}")
