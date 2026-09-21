@@ -334,7 +334,7 @@ def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
                 .eq("usuario_id", usuario_id)
                 .execute()
             )
-            papeis_atuais_ids = [p["papel_id"] for p in papeis_atuais_result.data or []]
+            papeis_atuais_ids = [p["papel_id"] for p in (papeis_atuais_result.data or [])]
 
             # Remover papéis antigos
             supabase.table("usuario_papel").delete().eq("usuario_id", usuario_id).execute()
@@ -389,11 +389,9 @@ def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
                     }).execute()
 
             # Remover das tabelas específicas quando remover papel
-            # Remover de catequista se papel 2 foi removido
             if 2 not in dados.papeis_ids and 2 in papeis_atuais_ids:
                 supabase.table("catequista").delete().eq("usuario_id", usuario_id).execute()
 
-            # Remover de coordenador_etapa se papel 3 foi removido
             if 3 not in dados.papeis_ids and 3 in papeis_atuais_ids:
                 supabase.table("coordenador_etapa").delete().eq("usuario_id", usuario_id).execute()
 
