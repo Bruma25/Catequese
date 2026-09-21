@@ -1,5 +1,4 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+#app/domain/catequizando.py
 from dataclasses import dataclass, field
 from datetime import date
 from typing import List, Optional, TYPE_CHECKING

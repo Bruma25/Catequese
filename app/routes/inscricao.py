@@ -1714,23 +1714,43 @@ def editar_catequizando(catequizando_id: str, dados: CatequizandoUpdate):
 
 @router.delete("/inscricoes/{inscricao_id}")
 def excluir_inscricao(inscricao_id: str):
-    """Exclui uma inscrição."""
+    """Exclui uma inscrição e o catequizando (se não tiver outras inscrições)."""
     try:
         from app.repositories.inscricaoRepository import InscricaoRepository
+        from app.repositories.catequizandoRepository import CatequizandoRepository
 
         repo = InscricaoRepository()
+        repo_catequizando = CatequizandoRepository()
 
-        # Verificar se inscrição existe
+        # Buscar inscrição para saber o catequizando_id
         inscricao_existente = repo.buscar_por_id(inscricao_id)
 
         if not inscricao_existente:
             raise HTTPException(status_code=404, detail="Inscrição não encontrada")
+
+        catequizando_id = inscricao_existente.catequizando.id
 
         # Excluir inscrição
         sucesso = repo.apagar(inscricao_id)
 
         if not sucesso:
             raise HTTPException(status_code=500, detail="Não foi possível excluir a inscrição")
+
+        from app.infra.supabaseClient import get_supabase
+        supabase = get_supabase()
+
+        result = (
+            supabase
+            .table("inscricao")
+            .select("id", count="exact")
+            .eq("catequizando_id", catequizando_id)
+            .execute()
+        )
+
+        outras_inscricoes = result.count or 0
+
+        if outras_inscricoes == 0:
+            repo_catequizando.apagar(catequizando_id)
 
         return {"message": "Inscrição excluída com sucesso"}
 
