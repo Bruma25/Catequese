@@ -427,7 +427,7 @@ def excluir_etapa(etapa_id: str):
         raise HTTPException(status_code=500, detail=f"Erro ao excluir etapa: {str(e)}")
 
 
-@router.put("/{etapa_id}/coordenador")
+@router.put("/etapas/{etapa_id}/coordenador")
 def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = None):
     """
     Atribui ou remove um coordenador de uma etapa.
@@ -442,11 +442,10 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
             .table("etapa")
             .select("id")
             .eq("id", etapa_id)
-            .maybe_single()
             .execute()
         )
 
-        if not etapa_db.data:
+        if not etapa_db.data or len(etapa_db.data) == 0:
             raise HTTPException(status_code=404, detail="Etapa não encontrada")
 
         # Se coordenador_id for None, remover coordenador da etapa
@@ -457,15 +456,14 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
                 .table("coordenador_etapa")
                 .select("id")
                 .eq("etapa_id", etapa_id)
-                .maybe_single()
                 .execute()
             )
 
-            if coord_atual.data:
+            if coord_atual.data and len(coord_atual.data) > 0:
                 # Remover etapa_id do coordenador
                 supabase.table("coordenador_etapa").update({
                     "etapa_id": None
-                }).eq("id", coord_atual.data["id"]).execute()
+                }).eq("id", coord_atual.data[0]["id"]).execute()
 
             return {"message": "Coordenador removido da etapa com sucesso"}
 
@@ -475,11 +473,10 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
             .table("coordenador_etapa")
             .select("id")
             .eq("id", coordenador_id)
-            .maybe_single()
             .execute()
         )
 
-        if not coord_db.data:
+        if not coord_db.data or len(coord_db.data) == 0:
             raise HTTPException(status_code=404, detail="Coordenador não encontrado")
 
         # Verificar se coordenador já está vinculado a outra etapa
@@ -488,15 +485,16 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
             .table("coordenador_etapa")
             .select("id, etapa_id")
             .eq("id", coordenador_id)
-            .maybe_single()
             .execute()
         )
 
-        if coord_com_etapa.data and coord_com_etapa.data.get("etapa_id") and coord_com_etapa.data["etapa_id"] != etapa_id:
-            raise HTTPException(
-                status_code=400,
-                detail="Este coordenador já está vinculado a outra etapa"
-            )
+        if coord_com_etapa.data and len(coord_com_etapa.data) > 0:
+            etapa_atual = coord_com_etapa.data[0].get("etapa_id")
+            if etapa_atual and etapa_atual != etapa_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Este coordenador já está vinculado a outra etapa"
+                )
 
         # Verificar se já existe outro coordenador nesta etapa
         outro_coord = (
@@ -505,15 +503,14 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
             .select("id")
             .eq("etapa_id", etapa_id)
             .neq("id", coordenador_id)
-            .maybe_single()
             .execute()
         )
 
-        if outro_coord.data:
+        if outro_coord.data and len(outro_coord.data) > 0:
             # Remover etapa_id do coordenador anterior
             supabase.table("coordenador_etapa").update({
                 "etapa_id": None
-            }).eq("id", outro_coord.data["id"]).execute()
+            }).eq("id", outro_coord.data[0]["id"]).execute()
 
         # Atualizar coordenador da etapa
         supabase.table("coordenador_etapa").update({
