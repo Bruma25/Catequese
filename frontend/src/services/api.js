@@ -194,6 +194,48 @@ export async function listarCatequistas() {
   return request('/api/v1/catequistas')
 }
 
+// Minhas Turmas
+export async function listarMinhasTurmas() {
+  const { data: { session } } = await supabase.auth.getSession()
+  const token = session?.access_token
+
+  const response = await fetch(`${API_URL}/api/v1/minhas-turmas`, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Erro ao listar minhas turmas')
+  }
+
+  return await response.json()
+}
+
+export async function listarCatequizandosPorTurma(turmaId) {
+  return request(`/api/v1/turmas/${turmaId}/catequizandos`)
+}
+
+export async function exportarCatequizandosTurma(turmaId, campos) {
+  const { data: { session } } = await supabase.auth.getSession()
+  const token = session?.access_token
+
+  const url = campos
+    ? `${API_URL}/api/v1/turmas/${turmaId}/exportar?campos=${campos}`
+    : `${API_URL}/api/v1/turmas/${turmaId}/exportar`
+
+  // Criar link de download
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', '')
+  link.style.display = 'none'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
 // Inscrições - Gestão
 export async function buscarInscricaoCompleta(id) {
   return request(`/api/v1/inscricoes/${id}/completa`)

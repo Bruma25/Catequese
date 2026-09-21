@@ -1758,3 +1758,487 @@ def excluir_inscricao(inscricao_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao excluir inscrição: {str(e)}")
+
+
+@router.get("/minhas-turmas", response_model=List[TurmaResponse])
+def listar_minhas_turmas(authorization: Optional[str] = Header(None)):
+    """
+    Lista turmas do usuário logado:
+    - Catequista: apenas turmas que acompanha
+    - Coordenador Geral: todas as turmas
+    - Coordenador de Etapa: turmas da sua etapa
+    """
+    try:
+        supabase = get_supabase()
+
+        # 1. Buscar usuário logado
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Usuário não autenticado")
+
+        token = authorization.replace("Bearer ", "")
+
+        try:
+            user_data = supabase.auth.get_user(token)
+            usuario_id = user_data.user.id
+        except:
+            raise HTTPException(status_code=401, detail="Token inválido")
+
+        # 2. Buscar papéis do usuário
+        papeis_result = (
+            supabase
+            .table("usuario_papel")
+            .select("""
+                papel_id,
+                tipo_papel_usuario(
+                    codigo
+                )
+            """)
+            .eq("usuario_id", usuario_id)
+            .execute()
+        )
+
+        papeis = papeis_result.data or []
+        codigos_papeis = [p["tipo_papel_usuario"]["codigo"] for p in papeis if p.get("tipo_papel_usuario")]
+
+        # 3. Buscar turmas baseado no papel
+        turmas = []
+
+        # CATEQUISTA: apenas turmas que acompanha
+        if "CATEQUISTA" in codigos_papeis and "COORDENADOR_GERAL" not in codigos_papeis:
+            # Buscar catequista_id
+            catequista_result = (
+                supabase
+                .table("catequista")
+                .select("id")
+                .eq("usuario_id", usuario_id)
+                .maybe_single()
+                .execute()
+            )
+
+            if not catequista_result.data:
+                return []  # Catequista sem registro na tabela
+
+            catequista_id = catequista_result.data["id"]
+
+            # Buscar turmas_catequistas
+            turmas_catequistas_result = (
+                supabase
+                .table("turma_catequista")
+                .select("turma_id")
+                .eq("catequista_id", catequista_id)
+                .execute()
+            )
+
+            turma_ids = [t["turma_id"] for t in turmas_catequistas_result.data or []]
+
+            if not turma_ids:
+                return []  # Catequista sem turmas
+
+            # Buscar turmas
+            turmas_result = (
+                supabase
+                .table("turma")
+                .select("""
+                    id,
+                    nome_sistema,
+                    nome_exibicao,
+                    vagas_totais,
+                    ativa,
+                    etapa_id,
+                    local_encontro_id,
+                    ano_nasc_minimo,
+                    ano_nasc_maximo
+                """)
+                .in_("id", turma_ids)
+                .order("nome_sistema")
+                .execute()
+            )
+
+            turmas = turmas_result.data or []
+
+        # COORDENADOR GERAL: todas as turmas
+        elif "COORDENADOR_GERAL" in codigos_papeis:
+            turmas_result = (
+                supabase
+                .table("turma")
+                .select("""
+                    id,
+                    nome_sistema,
+                    nome_exibicao,
+                    vagas_totais,
+                    ativa,
+                    etapa_id,
+                    local_encontro_id,
+                    ano_nasc_minimo,
+                    ano_nasc_maximo
+                """)
+                .order("nome_sistema")
+                .execute()
+            )
+
+            turmas = turmas_result.data or []
+
+        # COORDENADOR DE ETAPA: turmas da sua etapa
+        elif "COORDENADOR_ETAPA" in codigos_papeis:
+            # Buscar coordenador_etapa
+            coord_result = (
+                supabase
+                .table("coordenador_etapa")
+                .select("etapa_id")
+                .eq("usuario_id", usuario_id)
+                .maybe_single()
+                .execute()
+            )
+
+            if not coord_result.data or not coord_result.data.get("etapa_id"):
+                return []  # Coordenador sem etapa
+
+            etapa_id = coord_result.data["etapa_id"]
+
+            # Buscar turmas da etapa
+            turmas_result = (
+                supabase
+                .table("turma")
+                .select("""
+                    id,
+                    nome_sistema,
+                    nome_exibicao,
+                    vagas_totais,
+                    ativa,
+                    etapa_id,
+                    local_encontro_id,
+                    ano_nasc_minimo,
+                    ano_nasc_maximo
+                """)
+                .eq("etapa_id", etapa_id)
+                .order("nome_sistema")
+                .execute()
+            )
+
+            turmas = turmas_result.data or []
+
+        # 4. Format response
+        return [
+            TurmaResponse(
+                id=t["id"],
+                nome_sistema=t["nome_sistema"],
+                nome_exibicao=t.get("nome_exibicao"),
+                vagas_totais=t["vagas_totais"],
+                ativa=t.get("ativa", True),
+                etapa_id=t["etapa_id"],
+                etapa_nome="",  # Será preenchido no frontend
+                local_encontro_id=str(t.get("local_encontro_id")) if t.get("local_encontro_id") else None,
+                ano_nasc_minimo=t.get("ano_nasc_minimo"),
+                ano_nasc_maximo=t.get("ano_nasc_maximo")
+            )
+            for t in turmas
+        ]
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao listar minhas turmas: {str(e)}")
+
+
+@router.get("/turmas/{turma_id}/catequizandos")
+def listar_catequizandos_por_turma(turma_id: str):
+    """
+    Lista todos os catequizandos de uma turma com dados completos.
+    """
+    try:
+        supabase = get_supabase()
+
+        # 1. Buscar inscrições da turma
+        inscricoes_result = (
+            supabase
+            .table("inscricao")
+            .select("""
+                id,
+                termo_assinado,
+                data_inscricao,
+                status:status_id (
+                    id,
+                    codigo
+                ),
+                catequizando:catequizando_id (
+                    id,
+                    nome,
+                    data_nascimento,
+                    telefone,
+                    email,
+                    observacoes,
+                    necessidade_especial,
+                    descricao_necessidade_especial,
+                    historico_sacramental:historico_sacramental (
+                        sacramento:sacramento (
+                            id,
+                            codigo,
+                            nome_exibicao
+                        )
+                    ),
+                    vinculos_responsaveis:catequizando_responsavel (
+                        responsavel:responsavel (
+                            id,
+                            nome,
+                            telefone,
+                            email
+                        ),
+                        tipo_vinculo:tipo_vinculo_responsavel (
+                            codigo,
+                            descricao
+                        )
+                    )
+                ),
+                documentos:documento_inscricao (
+                    id,
+                    tipo_documento,
+                    status_validacao
+                )
+            """)
+            .eq("turma_id", turma_id)
+            .order("catequizando:nome")
+            .execute()
+        )
+
+        inscricoes = inscricoes_result.data or []
+
+        # 2. Format response
+        catequizandos = []
+        for inscricao in inscricoes:
+            catequizando_data = inscricao["catequizando"]
+
+            # Sacramentos
+            sacramentos = []
+            for item in catequizando_data.get("historico_sacramental", []):
+                sacramento = item.get("sacramento")
+                if sacramento:
+                    sacramentos.append({
+                        "id": sacramento["id"],
+                        "codigo": sacramento["codigo"],
+                        "nome_exibicao": sacramento["nome_exibicao"]
+                    })
+
+            # Responsáveis
+            responsaveis = []
+            for vinculo in catequizando_data.get("vinculos_responsaveis", []):
+                responsavel = vinculo.get("responsavel")
+                tipo_vinculo = vinculo.get("tipo_vinculo")
+                if responsavel:
+                    responsaveis.append({
+                        "id": responsavel["id"],
+                        "nome": responsavel["nome"],
+                        "telefone": responsavel.get("telefone"),
+                        "email": responsavel.get("email"),
+                        "tipo_vinculo": tipo_vinculo["descricao"] if tipo_vinculo else None
+                    })
+
+            # Documentos
+            documentos = inscricao.get("documentos", [])
+
+            catequizandos.append({
+                "inscricao_id": inscricao["id"],
+                "id": catequizando_data["id"],
+                "nome": catequizando_data["nome"],
+                "data_nascimento": catequizando_data["data_nascimento"],
+                "telefone": catequizando_data.get("telefone"),
+                "email": catequizando_data.get("email"),
+                "observacoes": catequizando_data.get("observacoes"),
+                "necessidade_especial": catequizando_data.get("necessidade_especial", False),
+                "descricao_necessidade_especial": catequizando_data.get("descricao_necessidade_especial"),
+                "sacramentos": sacramentos,
+                "responsaveis": responsaveis,
+                "documentos": [
+                    {
+                        "id": d["id"],
+                        "tipo_documento": d["tipo_documento"],
+                        "status_validacao": d["status_validacao"]
+                    }
+                    for d in documentos
+                ],
+                "status_inscricao": inscricao["status"]["codigo"] if inscricao.get("status") else None,
+                "termo_assinado": inscricao.get("termo_assinado", False)
+            })
+
+        return {"turma_id": turma_id, "catequizandos": catequizandos, "total": len(catequizandos)}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao listar catequizandos: {str(e)}")
+
+
+@router.get("/turmas/{turma_id}/exportar")
+def exportar_catequizandos_turma(
+        turma_id: str,
+        campos: Optional[str] = None  # Ex: "nome,data_nascimento,responsaveis,sacramentos"
+):
+    """
+    Exporta lista de catequizandos em CSV com campos selecionados.
+    Campos disponíveis: nome, data_nascimento, idade, telefone, email, responsaveis, sacramentos, documentos, observacoes, necessidade_especial
+    """
+    try:
+        from fastapi.responses import StreamingResponse
+        import csv
+        import io
+
+        # 1. Definir campos a exportar
+        todos_campos = {
+            "nome": "Nome",
+            "data_nascimento": "Data Nascimento",
+            "idade": "Idade",
+            "telefone": "Telefone",
+            "email": "Email",
+            "responsaveis": "Responsáveis",
+            "sacramentos": "Sacramentos",
+            "documentos": "Documentos",
+            "observacoes": "Observações",
+            "necessidade_especial": "Necessidade Especial"
+        }
+
+        # Se campos não informado, exportar todos
+        if not campos:
+            campos_selecionados = list(todos_campos.keys())
+        else:
+            campos_selecionados = [c.strip() for c in campos.split(",") if c.strip() in todos_campos.keys()]
+
+        # 2. Buscar catequizandos
+        supabase = get_supabase()
+
+        inscricoes_result = (
+            supabase
+            .table("inscricao")
+            .select("""
+                id,
+                catequizando:catequizando_id (
+                    id,
+                    nome,
+                    data_nascimento,
+                    telefone,
+                    email,
+                    observacoes,
+                    necessidade_especial,
+                    descricao_necessidade_especial,
+                    historico_sacramental:historico_sacramental (
+                        sacramento:sacramento (
+                            codigo,
+                            nome_exibicao
+                        )
+                    ),
+                    vinculos_responsaveis:catequizando_responsavel (
+                        responsavel:responsavel (
+                            nome,
+                            telefone,
+                            email
+                        ),
+                        tipo_vinculo:tipo_vinculo_responsavel (
+                            descricao
+                        )
+                    )
+                ),
+                documentos:documento_inscricao (
+                    tipo_documento,
+                    status_validacao
+                )
+            """)
+            .eq("turma_id", turma_id)
+            .order("catequizando:nome")
+            .execute()
+        )
+
+        inscricoes = inscricoes_result.data or []
+
+        # 3. Criar CSV
+        output = io.StringIO()
+        fieldnames = [todos_campos[c] for c in campos_selecionados]
+
+        writer = csv.DictWriter(output, fieldnames=fieldnames)
+        writer.writeheader()
+
+        from datetime import date
+        hoje = date.today()
+
+        for inscricao in inscricoes:
+            catequizando_data = inscricao["catequizando"]
+
+            # Calcular idade
+            data_nasc = date.fromisoformat(catequizando_data["data_nascimento"])
+            idade = hoje.year - data_nasc.year - ((hoje.month, hoje.day) < (data_nasc.month, data_nasc.day))
+
+            # Responsáveis
+            responsaveis_nomes = []
+            for vinculo in catequizando_data.get("vinculos_responsaveis", []):
+                resp = vinculo.get("responsavel")
+                tipo = vinculo.get("tipo_vinculo", {}).get("descricao", "")
+                if resp:
+                    responsaveis_nomes.append(f"{resp['nome']} ({tipo})")
+
+            # Sacramentos
+            sacramentos_nomes = []
+            for item in catequizando_data.get("historico_sacramental", []):
+                sac = item.get("sacramento")
+                if sac:
+                    sacramentos_nomes.append(sac["nome_exibicao"])
+
+            # Documentos
+            docs_status = []
+            for doc in inscricao.get("documentos", []):
+                status = "✅" if doc["status_validacao"] == "aprovado" else "⏳" if doc[
+                                                                                      "status_validacao"] == "pendente" else "❌"
+                docs_status.append(f"{doc['tipo_documento']}: {status}")
+
+            row = {}
+
+            if "nome" in campos_selecionados:
+                row["Nome"] = catequizando_data["nome"]
+
+            if "data_nascimento" in campos_selecionados:
+                row["Data Nascimento"] = catequizando_data["data_nascimento"]
+
+            if "idade" in campos_selecionados:
+                row["Idade"] = idade
+
+            if "telefone" in campos_selecionados:
+                row["Telefone"] = catequizando_data.get("telefone", "")
+
+            if "email" in campos_selecionados:
+                row["Email"] = catequizando_data.get("email", "")
+
+            if "responsaveis" in campos_selecionados:
+                row["Responsáveis"] = "; ".join(responsaveis_nomes)
+
+            if "sacramentos" in campos_selecionados:
+                row["Sacramentos"] = "; ".join(sacramentos_nomes)
+
+            if "documentos" in campos_selecionados:
+                row["Documentos"] = "; ".join(docs_status)
+
+            if "observacoes" in campos_selecionados:
+                row["Observações"] = catequizando_data.get("observacoes", "") or ""
+
+            if "necessidade_especial" in campos_selecionados:
+                row["Necessidade Especial"] = "Sim" if catequizando_data.get("necessidade_especial") else "Não"
+
+            writer.writerow(row)
+
+        output.seek(0)
+
+        # 4. Buscar nome da turma para nome do arquivo
+        turma_result = (
+            supabase
+            .table("turma")
+            .select("nome_exibicao, nome_sistema")
+            .eq("id", turma_id)
+            .maybe_single()
+            .execute()
+        )
+
+        turma_nome = turma_result.data.get("nome_exibicao") or turma_result.data.get(
+            "nome_sistema") or "turma" if turma_result.data else "turma"
+        nome_arquivo = f"{turma_nome.replace(' ', '_')}.csv"
+
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={nome_arquivo}"}
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao exportar: {str(e)}")
