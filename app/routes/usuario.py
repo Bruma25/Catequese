@@ -309,10 +309,15 @@ def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
         supabase = get_supabase()
         repo = UsuarioRepository()
 
+        print(f"🔍 [editar_usuario] INÍCIO - usuario_id: {usuario_id}")
+        print(f"🔍 [editar_usuario] dados: {dados}")
+
         # Verificar se usuário existe
         usuario_existente = repo.buscar_por_id(usuario_id)
         if not usuario_existente:
             raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
+        print(f"✅ [editar_usuario] Usuário encontrado: {usuario_existente.nome}")
 
         # Atualizar dados básicos
         update_data = {}
@@ -322,10 +327,13 @@ def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
             update_data["email"] = dados.email
 
         if update_data:
+            print(f"📝 [editar_usuario] Atualizando dados básicos: {update_data}")
             supabase.table("usuario").update(update_data).eq("id", usuario_id).execute()
 
         # Atualizar papéis se fornecidos
         if dados.papeis_ids is not None:
+            print(f"📝 [editar_usuario] Atualizando papéis. Novos: {dados.papeis_ids}")
+
             # Buscar papéis atuais
             papeis_atuais_result = (
                 supabase
@@ -334,7 +342,11 @@ def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
                 .eq("usuario_id", usuario_id)
                 .execute()
             )
+            print(f"🔍 [editar_usuario] papeis_atuais_result: {papeis_atuais_result}")
+            print(f"🔍 [editar_usuario] papeis_atuais_result.data: {papeis_atuais_result.data}")
+
             papeis_atuais_ids = [p["papel_id"] for p in (papeis_atuais_result.data or [])]
+            print(f"🔍 [editar_usuario] papeis_atuais_ids: {papeis_atuais_ids}")
 
             # Remover papéis antigos
             supabase.table("usuario_papel").delete().eq("usuario_id", usuario_id).execute()
@@ -350,6 +362,8 @@ def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
             # Criar registros nas tabelas específicas
             # Papel 2 = CATEQUISTA
             if 2 in dados.papeis_ids and 2 not in papeis_atuais_ids:
+                print(f"➕ [editar_usuario] Adicionando papel CATEQUISTA (2)")
+
                 catequista_existente = (
                     supabase
                     .table("catequista")
@@ -359,17 +373,25 @@ def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
                     .execute()
                 )
 
+                print(f"🔍 [editar_usuario] catequista_existente: {catequista_existente}")
+                print(f"🔍 [editar_usuario] catequista_existente.data: {catequista_existente.data}")
+
                 if not catequista_existente.data:
-                    supabase.table("catequista").insert({
+                    print(f"📝 [editar_usuario] Inserindo na tabela catequista...")
+                    catequista_insert_result = supabase.table("catequista").insert({
                         "id": str(uuid.uuid4()),
                         "usuario_id": usuario_id,
                         "nome": usuario_existente.nome,
                         "email": usuario_existente.email,
                         "telefone": None
                     }).execute()
+                    print(f"✅ [editar_usuario] catequista_insert_result: {catequista_insert_result}")
+                    print(f"✅ [editar_usuario] catequista_insert_result.data: {catequista_insert_result.data}")
 
             # Papel 3 = COORDENADOR_ETAPA
             if 3 in dados.papeis_ids and 3 not in papeis_atuais_ids:
+                print(f"➕ [editar_usuario] Adicionando papel COORDENADOR_ETAPA (3)")
+
                 coord_existente = (
                     supabase
                     .table("coordenador_etapa")
@@ -379,24 +401,34 @@ def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
                     .execute()
                 )
 
+                print(f"🔍 [editar_usuario] coord_existente: {coord_existente}")
+                print(f"🔍 [editar_usuario] coord_existente.data: {coord_existente.data}")
+
                 if not coord_existente.data:
-                    supabase.table("coordenador_etapa").insert({
+                    print(f"📝 [editar_usuario] Inserindo na tabela coordenador_etapa...")
+                    coord_insert_result = supabase.table("coordenador_etapa").insert({
                         "id": str(uuid.uuid4()),
                         "usuario_id": usuario_id,
                         "nome": usuario_existente.nome,
                         "email": usuario_existente.email,
                         "telefone": None
                     }).execute()
+                    print(f"✅ [editar_usuario] coord_insert_result: {coord_insert_result}")
+                    print(f"✅ [editar_usuario] coord_insert_result.data: {coord_insert_result.data}")
 
             # Remover das tabelas específicas quando remover papel
             if 2 not in dados.papeis_ids and 2 in papeis_atuais_ids:
+                print(f"➖ [editar_usuario] Removendo papel CATEQUISTA (2)")
                 supabase.table("catequista").delete().eq("usuario_id", usuario_id).execute()
 
             if 3 not in dados.papeis_ids and 3 in papeis_atuais_ids:
+                print(f"➖ [editar_usuario] Removendo papel COORDENADOR_ETAPA (3)")
                 supabase.table("coordenador_etapa").delete().eq("usuario_id", usuario_id).execute()
 
         # Buscar usuário atualizado
         usuario_atualizado = repo.buscar_por_id(usuario_id)
+
+        print(f"✅ [editar_usuario] Usuário atualizado com sucesso")
 
         return UsuarioResponse(
             id=usuario_atualizado.id,
@@ -415,6 +447,9 @@ def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
     except HTTPException:
         raise
     except Exception as e:
+        print(f"❌ [editar_usuario] ERRO: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Erro ao editar usuário: {str(e)}")
 
 
