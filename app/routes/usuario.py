@@ -369,14 +369,16 @@ def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
                     .table("catequista")
                     .select("id")
                     .eq("usuario_id", usuario_id)
-                    .maybe_single()
                     .execute()
                 )
 
                 print(f"🔍 [editar_usuario] catequista_existente: {catequista_existente}")
                 print(f"🔍 [editar_usuario] catequista_existente.data: {catequista_existente.data}")
 
-                if not catequista_existente.data:
+                # Verificar se já existe (data é uma lista)
+                ja_existe = catequista_existente.data and len(catequista_existente.data) > 0
+
+                if not ja_existe:
                     print(f"📝 [editar_usuario] Inserindo na tabela catequista...")
                     catequista_insert_result = supabase.table("catequista").insert({
                         "id": str(uuid.uuid4()),
@@ -386,7 +388,6 @@ def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
                         "telefone": None
                     }).execute()
                     print(f"✅ [editar_usuario] catequista_insert_result: {catequista_insert_result}")
-                    print(f"✅ [editar_usuario] catequista_insert_result.data: {catequista_insert_result.data}")
 
             # Papel 3 = COORDENADOR_ETAPA
             if 3 in dados.papeis_ids and 3 not in papeis_atuais_ids:
@@ -397,14 +398,16 @@ def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
                     .table("coordenador_etapa")
                     .select("id")
                     .eq("usuario_id", usuario_id)
-                    .maybe_single()
                     .execute()
                 )
 
                 print(f"🔍 [editar_usuario] coord_existente: {coord_existente}")
                 print(f"🔍 [editar_usuario] coord_existente.data: {coord_existente.data}")
 
-                if not coord_existente.data:
+                # Verificar se já existe (data é uma lista)
+                ja_existe = coord_existente.data and len(coord_existente.data) > 0
+
+                if not ja_existe:
                     print(f"📝 [editar_usuario] Inserindo na tabela coordenador_etapa...")
                     coord_insert_result = supabase.table("coordenador_etapa").insert({
                         "id": str(uuid.uuid4()),
@@ -414,7 +417,6 @@ def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
                         "telefone": None
                     }).execute()
                     print(f"✅ [editar_usuario] coord_insert_result: {coord_insert_result}")
-                    print(f"✅ [editar_usuario] coord_insert_result.data: {coord_insert_result.data}")
 
             # Remover das tabelas específicas quando remover papel
             if 2 not in dados.papeis_ids and 2 in papeis_atuais_ids:
