@@ -1,3 +1,4 @@
+# app/routes/usuario.py
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
 from pydantic import BaseModel
@@ -93,32 +94,34 @@ def listar_usuarios():
     """
     try:
         repo = UsuarioRepository()
+
         result = (
             repo.db
             .table("usuario")
-            .select("""
-                id,
-                nome,
-                email,
-                created_at,
-                updated_at,
-                usuario_papel(
-                    papel_id,
-                    tipo_papel_usuario(
-                        id,
-                        codigo,
-                        descricao
-                    )
-                )
-            """)
+            .select("id, nome, email, created_at, updated_at")
             .order("nome")
             .execute()
         )
 
         usuarios = []
         for item in result.data:
+            papeis_result = (
+                repo.db
+                .table("usuario_papel")
+                .select("""
+                    papel_id,
+                    tipo_papel_usuario(
+                        id,
+                        codigo,
+                        descricao
+                    )
+                """)
+                .eq("usuario_id", item["id"])
+                .execute()
+            )
+
             papeis = []
-            for papel_item in item.get("usuario_papel", []):
+            for papel_item in papeis_result.data or []:
                 papel_data = papel_item.get("tipo_papel_usuario")
                 if papel_data:
                     papeis.append({
@@ -139,6 +142,8 @@ def listar_usuarios():
         return usuarios
 
     except Exception as e:
+        import traceback
+        print("❌ ERRO:", traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Erro ao listar usuários: {str(e)}")
 
 
