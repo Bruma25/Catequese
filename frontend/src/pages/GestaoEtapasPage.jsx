@@ -1,6 +1,7 @@
 // ../frontend/src/pages/GestaoEtapasPage.jsx
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { supabase } from '../services/supabaseClient'
 import Header from '../components/Header/Header'
 import {
   listarEtapas,
@@ -42,6 +43,14 @@ function GestaoEtapasPage() {
 
   async function fetchData() {
     try {
+      // ✅ Verificar autenticação
+      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+
+      console.log('🔵 [fetchData] Usuário logado:', user)
+      console.log('🔵 [fetchData] Session:', session)
+      console.log('🔵 [fetchData] Token:', session?.access_token)
+
       // Buscar etapas
       const etapasData = await listarEtapas()
 
@@ -170,6 +179,18 @@ function GestaoEtapasPage() {
     }
 
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+
+      console.log('🔵 [handleSubmit] Usuário logado:', user)
+      console.log('🔵 [handleSubmit] Session:', session)
+      console.log('🔵 [handleSubmit] Token:', session?.access_token)
+
+      if (!user || !session) {
+        alert('❌ Usuário não autenticado. Faça login novamente.')
+        return
+      }
+
       const dadosEtapa = {
         nome: formData.nome,
         descricao: formData.descricao,
@@ -185,6 +206,11 @@ function GestaoEtapasPage() {
 
         // Atualizar coordenador da etapa
         const coordenadorId = formData.coordenador_etapa_id || null
+        console.log('🔵 [handleSubmit] Atribuindo coordenador:', {
+          etapaId: editandoEtapa.id,
+          coordenadorId: coordenadorId
+        })
+
         await atribuirCoordenadorEtapa(editandoEtapa.id, coordenadorId)
 
         alert('Etapa atualizada com sucesso!')

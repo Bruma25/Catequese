@@ -481,9 +481,15 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
 
             if coord_atual.data and len(coord_atual.data) > 0:
                 # Remover etapa_id do coordenador
-                supabase.table("coordenador_etapa").update({
-                    "etapa_id": None
-                }).eq("id", coord_atual.data[0]["id"]).execute()
+                update_result = (
+                    supabase
+                    .table("coordenador_etapa")
+                    .update({"etapa_id": None})
+                    .eq("id", coord_atual.data[0]["id"])
+                    .execute()
+                )
+
+                print(f"✅ [remover] Update result: {update_result}")
 
             return {"message": "Coordenador removido da etapa com sucesso"}
 
@@ -533,15 +539,32 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
             }).eq("id", outro_coord.data[0]["id"]).execute()
 
         # Atualizar coordenador da etapa
-        supabase.table("coordenador_etapa").update({
-            "etapa_id": etapa_id
-        }).eq("id", coordenador_id).execute()
+        print(f"🔵 [atribuir] etapa_id: {etapa_id}, coordenador_id: {coordenador_id}")
+
+        update_result = (
+            supabase
+            .table("coordenador_etapa")
+            .update({"etapa_id": etapa_id})
+            .eq("id", coordenador_id)
+            .execute()
+        )
+
+        print(f"✅ [atribuir] Update result: {update_result}")
+
+        # Verificar se o UPDATE funcionou
+        if not update_result.data or len(update_result.data) == 0:
+            print(f"❌ [atribuir] UPDATE não retornou dados!")
+        else:
+            print(f"✅ [atribuir] UPDATE funcionou! Dados: {update_result.data}")
 
         return {"message": "Coordenador atribuído à etapa com sucesso"}
 
     except HTTPException:
         raise
     except Exception as e:
+        print(f"❌ [atribuir] ERRO: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Erro ao atribuir coordenador: {str(e)}")
 
 
