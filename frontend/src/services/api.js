@@ -288,7 +288,14 @@ export async function excluirUsuario(id) {
 }
 
 export async function listarPapeis() {
-  return request('/api/v1/usuarios/tipos-papel')
+  const endpoint = '/api/v1/usuarios/tipos-papel'
+  console.log('🔵 [listarPapeis] Endpoint:', endpoint)
+  console.log('🔵 [listarPapeis] URL completa:', `${API_URL}${endpoint}`)
+
+  const result = await request(endpoint)
+
+  console.log('✅ [listarPapeis] Result:', result)
+  return result
 }
 
 export async function atualizarPapeisUsuario(usuarioId, papeisIds) {

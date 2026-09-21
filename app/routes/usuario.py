@@ -24,11 +24,6 @@ class PapelResponse(BaseModel):
     descricao: str
 
 
-class UsuarioPapeisResponse(BaseModel):
-    usuario_id: str
-    papeis: List[PapelResponse]
-
-
 class AtualizarPapeisRequest(BaseModel):
     papeis_ids: List[int]
 
@@ -45,10 +40,7 @@ class UsuarioUpdate(BaseModel):
     papeis_ids: Optional[List[int]] = None
 
 
-# --- Endpoints (ORDEM IMPORTANTE!) ---
-
-# ✅ 1. Rotas fixas (ANTES das rotas com parâmetros)
-
+# --- Endpoints ---
 @router.get("/me", response_model=UsuarioResponse)
 def buscar_usuario_atual():
     """
@@ -92,7 +84,6 @@ def listar_papeis():
         raise HTTPException(status_code=500, detail=f"Erro ao listar papéis: {str(e)}")
 
 
-# ✅ 2. Rotas com parâmetros (DEPOIS das rotas fixas)
 
 @router.get("", response_model=List[UsuarioResponse])
 def listar_usuarios():
@@ -265,6 +256,7 @@ def criar_usuario(dados: UsuarioCreate):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao criar usuário: {str(e)}")
+
 
 
 @router.get("/{usuario_id}", response_model=UsuarioResponse)
