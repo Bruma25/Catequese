@@ -61,6 +61,9 @@ class UsuarioRepository:
         return bool(result.data)
 
     def buscar_por_id(self, usuario_id: str) -> Optional[Usuario]:
+        print(f"🔵 [buscar_por_id] Recebendo usuario_id: {usuario_id}")
+        print(f"🔵 [buscar_por_id] Tipo: {type(usuario_id)}")
+
         result = (
             self.db.table(self.table)
             .select("""
