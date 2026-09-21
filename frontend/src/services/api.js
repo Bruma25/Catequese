@@ -79,6 +79,19 @@ export async function listarEtapas() {
   return request('/api/v1/etapas')
 }
 
+// Coordenadores de etapa
+export async function listarCoordenadoresEtapa() {
+  return request('/api/v1/usuarios/coordenadores-etapa')
+}
+
+export async function atribuirCoordenadorEtapa(etapaId, coordenadorId) {
+  return request(`/api/v1/etapas/${etapaId}/coordenador`, {
+    method: 'PUT',
+    body: JSON.stringify({ coordenador_id: coordenadorId })
+  })
+}
+
+
 // Sacramentos
 export async function listarSacramentos() {
   return request('/api/v1/sacramentos')

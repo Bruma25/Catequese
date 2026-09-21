@@ -2,13 +2,23 @@
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Header from '../components/Header/Header'
-import { listarEtapas, criarEtapa, editarEtapa, excluirEtapa, listarSacramentos, buscarEtapa } from '../services/api'
+import {
+  listarEtapas,
+  criarEtapa,
+  editarEtapa,
+  excluirEtapa,
+  listarSacramentos,
+  buscarEtapa,
+  listarCoordenadoresEtapa,
+  atribuirCoordenadorEtapa
+} from '../services/api'
 import './GestaoEtapasPage.css'
 
 function GestaoEtapasPage() {
   const navigate = useNavigate()
   const [etapas, setEtapas] = useState([])
   const [sacramentos, setSacramentos] = useState([])
+  const [coordenadores, setCoordenadores] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editandoEtapa, setEditandoEtapa] = useState(null)
@@ -18,7 +28,8 @@ function GestaoEtapasPage() {
     ano_nasc_minimo: '',
     ano_nasc_maximo: '',
     sacramentos_requeridos: [],
-    sacramentos_proibidos: []
+    sacramentos_proibidos: [],
+    coordenador_etapa_id: ''
   })
 
   const anoAtual = new Date().getFullYear()
@@ -47,6 +58,10 @@ function GestaoEtapasPage() {
       // Buscar sacramentos
       const sacramentosData = await listarSacramentos()
       setSacramentos(sacramentosData)
+
+      // Buscar coordenadores de etapa
+      const coordenadoresData = await listarCoordenadoresEtapa()
+      setCoordenadores(coordenadoresData)
     } catch (error) {
       console.error('Erro ao buscar dados:', error)
       alert('Erro ao carregar dados. Tente novamente.')
@@ -55,16 +70,20 @@ function GestaoEtapasPage() {
     }
   }
 
-  const handleOpenModal = (etapa = null) => {
+  const handleOpenModal = async (etapa = null) => {
     if (etapa) {
-      setEditandoEtapa(etapa)
+      // Buscar detalhes completos da etapa
+      const etapaDetalhes = await buscarEtapa(etapa.id)
+
+      setEditandoEtapa(etapaDetalhes)
       setFormData({
-        nome: etapa.nome || '',
-        descricao: etapa.descricao || '',
-        ano_nasc_minimo: etapa.ano_nasc_minimo || '',
-        ano_nasc_maximo: etapa.ano_nasc_maximo || '',
-        sacramentos_requeridos: etapa.sacramentos_requeridos || [],
-        sacramentos_proibidos: etapa.sacramentos_proibidos || []
+        nome: etapaDetalhes.nome || '',
+        descricao: etapaDetalhes.descricao || '',
+        ano_nasc_minimo: etapaDetalhes.ano_nasc_minimo || '',
+        ano_nasc_maximo: etapaDetalhes.ano_nasc_maximo || '',
+        sacramentos_requeridos: etapaDetalhes.sacramentos_requeridos || [],
+        sacramentos_proibidos: etapaDetalhes.sacramentos_proibidos || [],
+        coordenador_etapa_id: etapaDetalhes.coordenador_etapa_id || ''
       })
     } else {
       setEditandoEtapa(null)
@@ -74,7 +93,8 @@ function GestaoEtapasPage() {
         ano_nasc_minimo: '',
         ano_nasc_maximo: '',
         sacramentos_requeridos: [],
-        sacramentos_proibidos: []
+        sacramentos_proibidos: [],
+        coordenador_etapa_id: ''
       })
     }
     setShowModal(true)
@@ -89,7 +109,8 @@ function GestaoEtapasPage() {
       ano_nasc_minimo: '',
       ano_nasc_maximo: '',
       sacramentos_requeridos: [],
-      sacramentos_proibidos: []
+      sacramentos_proibidos: [],
+      coordenador_etapa_id: ''
     })
   }
 
@@ -161,6 +182,11 @@ function GestaoEtapasPage() {
       if (editandoEtapa) {
         // Editar etapa existente
         await editarEtapa(editandoEtapa.id, dadosEtapa)
+
+        // Atualizar coordenador da etapa
+        const coordenadorId = formData.coordenador_etapa_id || null
+        await atribuirCoordenadorEtapa(editandoEtapa.id, coordenadorId)
+
         alert('Etapa atualizada com sucesso!')
       } else {
         // Criar nova etapa
@@ -272,6 +298,11 @@ function GestaoEtapasPage() {
                           .join(', ')}
                       </p>
                     )}
+                    {etapa.coordenador_etapa_nome && (
+                      <p className="etapa-coordenador">
+                        <strong>Coordenador:</strong> {etapa.coordenador_etapa_nome}
+                      </p>
+                    )}
                   </div>
                   <div className="etapa-actions">
                     <button
@@ -358,6 +389,29 @@ function GestaoEtapasPage() {
                     max={anoAtual}
                   />
                 </div>
+              </div>
+
+              {/* Coordenador de Etapa */}
+              <div className="form-group">
+                <label className="form-label">Coordenador de Etapa:</label>
+                <select
+                  name="coordenador_etapa_id"
+                  value={formData.coordenador_etapa_id}
+                  onChange={handleChange}
+                  className="form-input"
+                >
+                  <option value="">Selecione um coordenador</option>
+                  {coordenadores
+                    .filter(coord => !coord.etapa_id || coord.etapa_id === editandoEtapa?.id)
+                    .map(coord => (
+                      <option key={coord.id} value={coord.id}>
+                        {coord.nome} {coord.etapa_id && editandoEtapa?.id !== coord.etapa_id ? '(já vinculado)' : ''}
+                      </option>
+                    ))}
+                </select>
+                <p className="form-hint">
+                  * Um coordenador só pode estar vinculado a uma etapa.
+                </p>
               </div>
 
               {/* Sacramentos Requeridos */}

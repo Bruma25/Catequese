@@ -87,6 +87,38 @@ def listar_papeis():
         raise HTTPException(status_code=500, detail=f"Erro ao listar papéis: {str(e)}")
 
 
+@router.get("/coordenadores-etapa", response_model=List[dict])
+def listar_coordenadores_etapa():
+    """
+    Lista todos os coordenadores de etapa (com ou sem etapa vinculada).
+    """
+    try:
+        supabase = get_supabase()
+
+        result = (
+            supabase
+            .table("coordenador_etapa")
+            .select("id, usuario_id, nome, email, telefone, etapa_id")
+            .order("nome")
+            .execute()
+        )
+
+        return [
+            {
+                "id": c["id"],
+                "usuario_id": c["usuario_id"],
+                "nome": c["nome"],
+                "email": c["email"],
+                "telefone": c["telefone"],
+                "etapa_id": c["etapa_id"]
+            }
+            for c in result.data or []
+        ]
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao listar coordenadores: {str(e)}")
+
+
 @router.get("", response_model=List[UsuarioResponse])
 def listar_usuarios():
     """
