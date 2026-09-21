@@ -26,7 +26,6 @@ class ResponsavelRepository:
 
         return self._from_row(data)
 
-    # ✅ NOVO MÉTODO ADICIONADO
     def buscar_por_usuario_id(self, usuario_id: str) -> Optional[Responsavel]:
         """
         Busca responsável vinculado a um usuário específico.
@@ -106,7 +105,6 @@ class ResponsavelRepository:
         return payload
 
     def _from_row(self, data: dict) -> Responsavel:
-        # ✅ Criar usuário se tiver usuario_id
         usuario = None
         if data.get("usuario_id"):
             usuario = Usuario(

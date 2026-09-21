@@ -103,8 +103,11 @@ def listar_usuarios():
             .execute()
         )
 
+        print("🔵 [listar_usuarios] Result data:", result.data)
+
         usuarios = []
         for item in result.data:
+            print(f"🔵 [listar_usuarios] item['id'] = {item['id']}")
             papeis_result = (
                 repo.db
                 .table("usuario_papel")
