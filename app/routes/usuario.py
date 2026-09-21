@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
 from pydantic import BaseModel
-import re
+import uuid
 
 from app.repositories.usuarioRepository import UsuarioRepository
 from app.domain.tipoPapelUsuario import TipoPapelUsuario
@@ -86,47 +86,32 @@ def listar_papeis():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao listar papéis: {str(e)}")
 
-    """
-    Lista todos os usuários com seus papéis.
-    """
+
 @router.get("", response_model=List[UsuarioResponse])
 def listar_usuarios():
     """
     Lista todos os usuários com seus papéis.
     """
-    import traceback
-
     try:
-        repo = UsuarioRepository()
+        supabase = get_supabase()
 
         result = (
-            repo.db
+            supabase
             .table("usuario")
             .select("id, nome, email, created_at, updated_at")
             .order("nome")
             .execute()
         )
 
-        debug_data = {
-            "total_usuarios": len(result.data),
-            "usuarios": result.data,
-        }
-
         usuarios = []
         for item in result.data:
             usuario_id = item.get("id")
 
             if not usuario_id or not isinstance(usuario_id, str):
-                print(f"⚠️ ID inválido: {usuario_id}")
                 continue
 
-            uuid_pattern = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.I)
-            if not uuid_pattern.match(usuario_id):
-                print(f"⚠️ ID não é UUID: {usuario_id}")
-                # continue  # ← Descomente se quiser pular IDs inválidos
-
             papeis_result = (
-                repo.db
+                supabase
                 .table("usuario_papel")
                 .select("""
                     papel_id,
@@ -162,16 +147,7 @@ def listar_usuarios():
         return usuarios
 
     except Exception as e:
-        traceback_str = traceback.format_exc()
-
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "erro": str(e),
-                "traceback": traceback_str,
-                "debug": debug_data if 'debug_data' in locals() else "Não foi possível coletar debug"
-            }
-        )
+        raise HTTPException(status_code=500, detail=f"Erro ao listar usuários: {str(e)}")
 
 
 @router.post("", response_model=UsuarioResponse)
@@ -346,24 +322,22 @@ def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
             update_data["email"] = dados.email
 
         if update_data:
-            (
-                supabase
-                .table("usuario")
-                .update(update_data)
-                .eq("id", usuario_id)
-                .execute()
-            )
+            supabase.table("usuario").update(update_data).eq("id", usuario_id).execute()
 
         # Atualizar papéis se fornecidos
         if dados.papeis_ids is not None:
-            # Remover papéis antigos
-            (
+            # Buscar papéis atuais
+            papeis_atuais_result = (
                 supabase
                 .table("usuario_papel")
-                .delete()
+                .select("papel_id")
                 .eq("usuario_id", usuario_id)
                 .execute()
             )
+            papeis_atuais_ids = [p["papel_id"] for p in papeis_atuais_result.data or []]
+
+            # Remover papéis antigos
+            supabase.table("usuario_papel").delete().eq("usuario_id", usuario_id).execute()
 
             # Adicionar novos papéis
             if dados.papeis_ids:
@@ -371,8 +345,57 @@ def editar_usuario(usuario_id: str, dados: UsuarioUpdate):
                     {"usuario_id": usuario_id, "papel_id": papel_id}
                     for papel_id in dados.papeis_ids
                 ]
-
                 supabase.table("usuario_papel").insert(papeis_payload).execute()
+
+            # Criar registros nas tabelas específicas
+            # Papel 2 = CATEQUISTA
+            if 2 in dados.papeis_ids and 2 not in papeis_atuais_ids:
+                catequista_existente = (
+                    supabase
+                    .table("catequista")
+                    .select("id")
+                    .eq("usuario_id", usuario_id)
+                    .maybe_single()
+                    .execute()
+                )
+
+                if not catequista_existente.data:
+                    supabase.table("catequista").insert({
+                        "id": str(uuid.uuid4()),
+                        "usuario_id": usuario_id,
+                        "nome": usuario_existente.nome,
+                        "email": usuario_existente.email,
+                        "telefone": None
+                    }).execute()
+
+            # Papel 3 = COORDENADOR_ETAPA
+            if 3 in dados.papeis_ids and 3 not in papeis_atuais_ids:
+                coord_existente = (
+                    supabase
+                    .table("coordenador_etapa")
+                    .select("id")
+                    .eq("usuario_id", usuario_id)
+                    .maybe_single()
+                    .execute()
+                )
+
+                if not coord_existente.data:
+                    supabase.table("coordenador_etapa").insert({
+                        "id": str(uuid.uuid4()),
+                        "usuario_id": usuario_id,
+                        "nome": usuario_existente.nome,
+                        "email": usuario_existente.email,
+                        "telefone": None
+                    }).execute()
+
+            # Remover das tabelas específicas quando remover papel
+            # Remover de catequista se papel 2 foi removido
+            if 2 not in dados.papeis_ids and 2 in papeis_atuais_ids:
+                supabase.table("catequista").delete().eq("usuario_id", usuario_id).execute()
+
+            # Remover de coordenador_etapa se papel 3 foi removido
+            if 3 not in dados.papeis_ids and 3 in papeis_atuais_ids:
+                supabase.table("coordenador_etapa").delete().eq("usuario_id", usuario_id).execute()
 
         # Buscar usuário atualizado
         usuario_atualizado = repo.buscar_por_id(usuario_id)
@@ -413,22 +436,10 @@ def excluir_usuario(usuario_id: str):
             raise HTTPException(status_code=404, detail="Usuário não encontrado")
 
         # Remover papéis associados
-        (
-            supabase
-            .table("usuario_papel")
-            .delete()
-            .eq("usuario_id", usuario_id)
-            .execute()
-        )
+        supabase.table("usuario_papel").delete().eq("usuario_id", usuario_id).execute()
 
         # Excluir usuário
-        (
-            supabase
-            .table("usuario")
-            .delete()
-            .eq("id", usuario_id)
-            .execute()
-        )
+        supabase.table("usuario").delete().eq("id", usuario_id).execute()
 
         return {"message": "Usuário excluído com sucesso"}
 
