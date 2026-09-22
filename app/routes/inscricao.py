@@ -683,20 +683,22 @@ async def listar_minhas_turmas(request: Request):
     Lista turmas do usuário logado.
     """
     try:
-        # Pegar header de autenticação
+        # Pegar header de autenticação (case-insensitive)
         auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
 
         if not auth_header or not auth_header.startswith("Bearer "):
+            print(f"❌ [minhas-turmas] Header inválido: {auth_header}")
             raise HTTPException(status_code=401, detail="Usuário não autenticado")
 
         token = auth_header.replace("Bearer ", "")
+        print(f"🔵 [minhas-turmas] Token recebido (primeiros 50 chars): {token[:50]}...")
 
         supabase = get_supabase()
 
-        # USAR admin.get_user ao invés de auth.get_user
+        # Validar token
         try:
-            user_response = supabase.auth.admin.get_user(token)
-            usuario_id = user_response.user.id
+            user_data = supabase.auth.get_user(token)
+            usuario_id = user_data.user.id
             print(f"✅ [minhas-turmas] Usuário ID: {usuario_id}")
         except Exception as e:
             print(f"❌ [minhas-turmas] Erro ao validar token: {str(e)}")
