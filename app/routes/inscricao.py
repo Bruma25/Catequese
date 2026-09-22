@@ -1,5 +1,5 @@
 #app/routes/inscricao.py
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Header, Query
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Header, Query, Request
 from pydantic import BaseModel, field_validator
 from typing import Optional, List
 from datetime import date, datetime
@@ -191,11 +191,7 @@ class CatequizandoUpdate(BaseModel):
 class AtribuirTurmaRequest(BaseModel):
     turma_id: str
 
-
-# ====================================
-# 1. ETAPAS
-# ====================================
-
+#Etapas
 @router.get("/etapas", response_model=List[EtapaResponse])
 def listar_etapas():
     """Lista todas as etapas disponíveis para inscrição."""
@@ -558,10 +554,7 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = Qu
         raise HTTPException(status_code=500, detail=f"Erro ao atribuir coordenador: {str(e)}")
 
 
-# ====================================
-# 2. SACRAMENTOS, TIPOS DE VÍNCULO, LOCAIS, CATEQUISTAS
-# ====================================
-
+# Sacrametnos, tipos de vínculos, locais, catequistas
 @router.get("/sacramentos", response_model=List[SacramentoResponse])
 def listar_sacramentos():
     """Lista todos os sacramentos disponíveis."""
@@ -683,32 +676,35 @@ def listar_catequistas():
             detail=f"Erro ao listar catequistas: {str(e)}"
         )
 
-
-# ====================================
-# 3. MINHAS TURMAS (ANTES DE /turmas)
-# ====================================
-
+#Minhas turmas
 @router.get("/minhas-turmas", response_model=List[TurmaResponse])
-def listar_minhas_turmas(authorization: Optional[str] = Header(None, alias="Authorization")):
+async def listar_minhas_turmas(request: Request):
     """
     Lista turmas do usuário logado.
     """
     try:
-        supabase = get_supabase()
+        # Pegar header de autenticação (case-insensitive)
+        auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
 
-        # 1. Buscar usuário logado
-        if not authorization or not authorization.startswith("Bearer "):
+        if not auth_header or not auth_header.startswith("Bearer "):
+            print(f"❌ [minhas-turmas] Header inválido: {auth_header}")
             raise HTTPException(status_code=401, detail="Usuário não autenticado")
 
-        token = authorization.replace("Bearer ", "")
+        token = auth_header.replace("Bearer ", "")
+        print(f"🔵 [minhas-turmas] Token recebido (primeiros 50 chars): {token[:50]}...")
 
+        supabase = get_supabase()
+
+        # Validar token
         try:
             user_data = supabase.auth.get_user(token)
             usuario_id = user_data.user.id
+            print(f"✅ [minhas-turmas] Usuário ID: {usuario_id}")
         except Exception as e:
+            print(f"❌ [minhas-turmas] Erro ao validar token: {str(e)}")
             raise HTTPException(status_code=401, detail=f"Token inválido: {str(e)}")
 
-        # 2. Buscar papéis do usuário
+        # Buscar papéis do usuário
         papeis_result = (
             supabase
             .table("usuario_papel")
@@ -725,12 +721,15 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None, alias="Auth
         papeis = papeis_result.data or []
         codigos_papeis = [p["tipo_papel_usuario"]["codigo"] for p in papeis if p.get("tipo_papel_usuario")]
 
-        # 3. Buscar turmas baseado no papel
+        print(f"🔵 [minhas-turmas] Papéis do usuário: {codigos_papeis}")
+
+        # Buscar turmas baseado no papel
         turmas = []
 
         # CATEQUISTA: apenas turmas que acompanha
         if "CATEQUISTA" in codigos_papeis and "COORDENADOR_GERAL" not in codigos_papeis:
-            # Buscar catequista_id
+            print(f"🔵 [minhas-turmas] Usuário é CATEQUISTA")
+
             catequista_result = (
                 supabase
                 .table("catequista")
@@ -740,12 +739,14 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None, alias="Auth
                 .execute()
             )
 
+            print(f"🔵 [minhas-turmas] Catequista result: {catequista_result.data}")
+
             if not catequista_result.data:
+                print(f"⚠️ [minhas-turmas] Catequista não encontrado")
                 return []
 
             catequista_id = catequista_result.data["id"]
 
-            # Buscar turmas_catequistas
             turmas_catequistas_result = (
                 supabase
                 .table("turma_catequista")
@@ -754,12 +755,16 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None, alias="Auth
                 .execute()
             )
 
+            print(f"🔵 [minhas-turmas] Turmas catequistas result: {turmas_catequistas_result.data}")
+
             turma_ids = [t["turma_id"] for t in turmas_catequistas_result.data or []]
 
+            print(f"🔵 [minhas-turmas] Turma IDs: {turma_ids}")
+
             if not turma_ids:
+                print(f"⚠️ [minhas-turmas] Catequista sem turmas")
                 return []
 
-            # Buscar turmas
             turmas_result = (
                 supabase
                 .table("turma")
@@ -779,10 +784,14 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None, alias="Auth
                 .execute()
             )
 
+            print(f"🔵 [minhas-turmas] Turmas result: {turmas_result.data}")
+
             turmas = turmas_result.data or []
 
         # COORDENADOR GERAL: todas as turmas
         elif "COORDENADOR_GERAL" in codigos_papeis:
+            print(f"🔵 [minhas-turmas] Usuário é COORDENADOR_GERAL")
+
             turmas_result = (
                 supabase
                 .table("turma")
@@ -801,11 +810,14 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None, alias="Auth
                 .execute()
             )
 
+            print(f"🔵 [minhas-turmas] Turmas result: {turmas_result.data}")
+
             turmas = turmas_result.data or []
 
         # COORDENADOR DE ETAPA: turmas da sua etapa
         elif "COORDENADOR_ETAPA" in codigos_papeis:
-            # Buscar coordenador_etapa
+            print(f"🔵 [minhas-turmas] Usuário é COORDENADOR_ETAPA")
+
             coord_result = (
                 supabase
                 .table("coordenador_etapa")
@@ -815,12 +827,14 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None, alias="Auth
                 .execute()
             )
 
+            print(f"🔵 [minhas-turmas] Coordenador result: {coord_result.data}")
+
             if not coord_result.data or not coord_result.data.get("etapa_id"):
+                print(f"⚠️ [minhas-turmas] Coordenador sem etapa")
                 return []
 
             etapa_id = coord_result.data["etapa_id"]
 
-            # Buscar turmas da etapa
             turmas_result = (
                 supabase
                 .table("turma")
@@ -840,9 +854,11 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None, alias="Auth
                 .execute()
             )
 
+            print(f"🔵 [minhas-turmas] Turmas result: {turmas_result.data}")
+
             turmas = turmas_result.data or []
 
-        # 4. Format response
+        # Format response
         response = [
             TurmaResponse(
                 id=t["id"],
@@ -859,18 +875,20 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None, alias="Auth
             for t in turmas
         ]
 
+        print(f"✅ [minhas-turmas] Response: {len(response)} turmas")
+
         return response
 
     except HTTPException:
         raise
     except Exception as e:
+        print(f"❌ [minhas-turmas] ERRO: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Erro ao listar minhas turmas: {str(e)}")
 
 
-# ====================================
-# 4. TURMAS - LISTA GERAL
-# ====================================
-
+# Turmas - Lista Geral
 @router.get("/turmas", response_model=List[TurmaResponse])
 def listar_turmas():
     """Lista todas as turmas."""
@@ -909,10 +927,7 @@ def listar_turmas():
         raise HTTPException(status_code=500, detail=f"Erro ao listar turmas: {str(e)}")
 
 
-# ====================================
-# 5. TURMAS - ENDPOINTS ESPECÍFICOS (ANTES DE /turmas/{turma_id})
-# ====================================
-
+# Turmas - Endpoints específicos
 @router.get("/turmas/{turma_id}/catequizandos")
 def listar_catequizandos_por_turma(turma_id: str):
     """
@@ -1235,10 +1250,7 @@ def contar_vagas_ocupadas(turma_id: str):
         raise HTTPException(status_code=500, detail=f"Erro ao contar vagas ocupadas: {str(e)}")
 
 
-# ====================================
-# 6. TURMA INDIVIDUAL - CRUD
-# ====================================
-
+# Turma Individual - CRUD
 @router.get("/turmas/{turma_id}", response_model=TurmaDetailResponse)
 def buscar_turma(turma_id: str):
     """Busca uma turma específica pelo ID."""
@@ -1532,10 +1544,8 @@ def excluir_turma(turma_id: str):
         raise HTTPException(status_code=500, detail=f"Erro ao excluir turma: {str(e)}")
 
 
-# ====================================
-# 7. INSCRIÇÕES
-# ====================================
 
+# Inscrições
 @router.post("/inscricoes", response_model=InscricaoResponse)
 def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str] = Header(None)):
     """
@@ -2131,10 +2141,7 @@ def excluir_inscricao(inscricao_id: str):
         raise HTTPException(status_code=500, detail=f"Erro ao excluir inscrição: {str(e)}")
 
 
-# ====================================
-# 8. DOCUMENTOS
-# ====================================
-
+# Documentos
 @router.delete("/documentos/{documento_id}")
 def excluir_documento(documento_id: str):
     """Exclui um documento de inscrição."""
@@ -2178,10 +2185,7 @@ def atualizar_status_documento(documento_id: str, status_validacao: str, observa
         raise HTTPException(status_code=500, detail=f"Erro ao atualizar status do documento: {str(e)}")
 
 
-# ====================================
-# 9. CATEQUIZANDOS (PATH ESPECÍFICO)
-# ====================================
-
+# Catequizando (Path específico)
 @router.get("/catequizandos/{catequizando_id}")
 def buscar_catequizando(catequizando_id: str):
     """Busca dados de um catequizando específico."""
