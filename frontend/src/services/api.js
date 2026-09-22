@@ -198,6 +198,10 @@ export async function listarMinhasTurmas() {
   const { data: { session } } = await supabase.auth.getSession()
   const token = session?.access_token
 
+  if (!token) {
+    throw new Error('Usuário não autenticado')
+  }
+
   const response = await fetch(`${API_URL}/api/v1/minhas-turmas`, {
     headers: {
       'Content-Type': 'application/json',

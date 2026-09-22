@@ -32,6 +32,9 @@ function MinhasTurmasPage() {
     'sacramentos'
   ])
 
+  // PERFIL ATIVO
+  const [perfilAtivo, setPerfilAtivo] = useState('')
+
   const anoAtual = new Date().getFullYear()
 
   // Campos disponíveis para exportação
@@ -56,6 +59,25 @@ function MinhasTurmasPage() {
     'cancelada': { label: 'Cancelada', class: 'status-cancelada' },
     'distribuida': { label: 'Distribuída', class: 'status-distribuida' }
   }
+
+  // CARREGAR PERFIL ATIVO DO LOCALSTORAGE
+  useEffect(() => {
+    const perfilSalvo = localStorage.getItem('perfil_ativo')
+    if (perfilSalvo) {
+      setPerfilAtivo(perfilSalvo)
+    }
+
+    // Ouvir evento de troca de perfil
+    const handlePerfilMudou = (event) => {
+      setPerfilAtivo(event.detail)
+    }
+
+    window.addEventListener('perfil_mudou', handlePerfilMudou)
+
+    return () => {
+      window.removeEventListener('perfil_mudou', handlePerfilMudou)
+    }
+  }, [])
 
   // Buscar dados
   useEffect(() => {
@@ -82,8 +104,9 @@ function MinhasTurmasPage() {
     }
   }
 
-  // Filtrar turmas
+  // FILTRAR TURMAS BASEADO NO PERFIL ATIVO
   const turmasFiltradas = turmas.filter(turma => {
+    // Filtro por etapa
     const matchEtapa = !filtroEtapa || turma.etapa_id === filtroEtapa
 
     // Filtro por catequista (apenas para coordenadores)
@@ -179,6 +202,12 @@ function MinhasTurmasPage() {
       <main className="gestao-content">
         <div className="gestao-header-content">
           <h2 className="page-title">Minhas Turmas</h2>
+          {/* MOSTRAR PERFIL ATIVO */}
+          {perfilAtivo && (
+            <p className="perfil-ativo-info">
+              Perfil: {perfilAtivo.replace('_', ' ')}
+            </p>
+          )}
         </div>
 
         {/* Filtros */}
