@@ -694,11 +694,16 @@ async def listar_minhas_turmas(request: Request):
         token = auth_header.replace("Bearer ", "")
         print(f"🔵 [minhas-turmas] Token recebido (primeiros 50 chars): {token[:50]}...")
 
-        # VALIDAR JWT MANUALMENTE
-        usuario_id = validar_token_supabase(token)
-        print(f"✅ [minhas-turmas] Usuário ID: {usuario_id}")
-
         supabase = get_supabase()
+
+        # Validar token
+        try:
+            user_data = supabase.auth.get_user(token)
+            usuario_id = user_data.user.id
+            print(f"✅ [minhas-turmas] Usuário ID: {usuario_id}")
+        except Exception as e:
+            print(f"❌ [minhas-turmas] Erro ao validar token: {str(e)}")
+            raise HTTPException(status_code=401, detail=f"Token inválido: {str(e)}")
 
         # Buscar papéis do usuário
         papeis_result = (
