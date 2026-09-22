@@ -1,5 +1,5 @@
 #app/routes/inscricao.py
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Header
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Header, Query
 from pydantic import BaseModel, field_validator
 from typing import Optional, List
 from datetime import date, datetime
@@ -52,7 +52,7 @@ class InscricaoResponse(BaseModel):
 
 class EtapaResponse(BaseModel):
     id: str
-    nome:str
+    nome: str
     descricao: Optional[str] = None
     ano_nascimento_min: Optional[int] = None
     ano_nascimento_max: Optional[int] = None
@@ -100,10 +100,6 @@ class TipoVinculoResponse(BaseModel):
     id: int
     codigo: str
     descricao: str
-
-
-class AtribuirTurmaRequest(BaseModel):
-    turma_id: str
 
 
 class LocalEncontroResponse(BaseModel):
@@ -191,7 +187,14 @@ class CatequizandoUpdate(BaseModel):
             return datetime.strptime(value, '%Y-%m-%d').date()
         return value
 
-# --- Endpoints ---
+
+class AtribuirTurmaRequest(BaseModel):
+    turma_id: str
+
+
+# ====================================
+# 1. ETAPAS
+# ====================================
 
 @router.get("/etapas", response_model=List[EtapaResponse])
 def listar_etapas():
@@ -453,15 +456,13 @@ def excluir_etapa(etapa_id: str):
 
 
 @router.put("/etapas/{etapa_id}/coordenador")
-def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = None):
+def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = Query(None)):
     """
     Atribui ou remove um coordenador de uma etapa.
     Um coordenador só pode estar vinculado a uma etapa.
     """
     try:
         supabase = get_supabase()
-
-        print(f"🔵 [atribuir] INÍCIO - etapa_id: {etapa_id}, coordenador_id: {coordenador_id}")
 
         # Verificar se etapa existe
         etapa_db = (
@@ -472,16 +473,11 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
             .execute()
         )
 
-        print(f"🔍 [atribuir] etapa_db: {etapa_db}")
-        print(f"🔍 [atribuir] etapa_db.data: {etapa_db.data}")
-
         if not etapa_db.data or len(etapa_db.data) == 0:
             raise HTTPException(status_code=404, detail="Etapa não encontrada")
 
         # Se coordenador_id for None, remover coordenador da etapa
         if coordenador_id is None:
-            print(f"⚠️ [atribuir] Removendo coordenador da etapa")
-
             # Buscar coordenador atualmente vinculado a esta etapa
             coord_atual = (
                 supabase
@@ -491,20 +487,11 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
                 .execute()
             )
 
-            print(f"🔍 [atribuir] coord_atual: {coord_atual}")
-            print(f"🔍 [atribuir] coord_atual.data: {coord_atual.data}")
-
             if coord_atual.data and len(coord_atual.data) > 0:
                 # Remover etapa_id do coordenador
-                update_result = (
-                    supabase
-                    .table("coordenador_etapa")
-                    .update({"etapa_id": None})
-                    .eq("id", coord_atual.data[0]["id"])
-                    .execute()
-                )
-
-                print(f"✅ [atribuir] Update (remover) result: {update_result}")
+                supabase.table("coordenador_etapa").update({
+                    "etapa_id": None
+                }).eq("id", coord_atual.data[0]["id"]).execute()
 
             return {"message": "Coordenador removido da etapa com sucesso"}
 
@@ -516,9 +503,6 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
             .eq("id", coordenador_id)
             .execute()
         )
-
-        print(f"🔍 [atribuir] coord_db: {coord_db}")
-        print(f"🔍 [atribuir] coord_db.data: {coord_db.data}")
 
         if not coord_db.data or len(coord_db.data) == 0:
             raise HTTPException(status_code=404, detail="Coordenador não encontrado")
@@ -532,12 +516,8 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
             .execute()
         )
 
-        print(f"🔍 [atribuir] coord_com_etapa: {coord_com_etapa}")
-        print(f"🔍 [atribuir] coord_com_etapa.data: {coord_com_etapa.data}")
-
         if coord_com_etapa.data and len(coord_com_etapa.data) > 0:
             etapa_atual = coord_com_etapa.data[0].get("etapa_id")
-            print(f"🔍 [atribuir] etapa_atual do coordenador: {etapa_atual}")
 
             if etapa_atual and etapa_atual != etapa_id:
                 raise HTTPException(
@@ -555,20 +535,13 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
             .execute()
         )
 
-        print(f"🔍 [atribuir] outro_coord: {outro_coord}")
-        print(f"🔍 [atribuir] outro_coord.data: {outro_coord.data}")
-
         if outro_coord.data and len(outro_coord.data) > 0:
-            print(f"⚠️ [atribuir] Removendo coordenador anterior da etapa")
-
             # Remover etapa_id do coordenador anterior
             supabase.table("coordenador_etapa").update({
                 "etapa_id": None
             }).eq("id", outro_coord.data[0]["id"]).execute()
 
         # Atualizar coordenador da etapa
-        print(f"🔵 [atribuir] ATUALIZANDO - etapa_id: {etapa_id}, coordenador_id: {coordenador_id}")
-
         update_result = (
             supabase
             .table("coordenador_etapa")
@@ -577,25 +550,17 @@ def atribuir_coordenador_etapa(etapa_id: str, coordenador_id: Optional[str] = No
             .execute()
         )
 
-        print(f"✅ [atribuir] Update result: {update_result}")
-        print(f"✅ [atribuir] Update result.data: {update_result.data}")
-
-        # Verificar se o UPDATE funcionou
-        if not update_result.data or len(update_result.data) == 0:
-            print(f"❌ [atribuir] UPDATE não retornou dados!")
-        else:
-            print(f"✅ [atribuir] UPDATE funcionou! Dados: {update_result.data}")
-
         return {"message": "Coordenador atribuído à etapa com sucesso"}
 
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ [atribuir] ERRO: {str(e)}")
-        import traceback
-        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Erro ao atribuir coordenador: {str(e)}")
 
+
+# ====================================
+# 2. SACRAMENTOS, TIPOS DE VÍNCULO, LOCAIS, CATEQUISTAS
+# ====================================
 
 @router.get("/sacramentos", response_model=List[SacramentoResponse])
 def listar_sacramentos():
@@ -719,7 +684,10 @@ def listar_catequistas():
         )
 
 
-#Minhas turmas
+# ====================================
+# 3. MINHAS TURMAS (ANTES DE /turmas)
+# ====================================
+
 @router.get("/minhas-turmas", response_model=List[TurmaResponse])
 def listar_minhas_turmas(authorization: Optional[str] = Header(None, alias="Authorization")):
     """
@@ -728,23 +696,16 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None, alias="Auth
     try:
         supabase = get_supabase()
 
-        print(f"🔵 [minhas-turmas] INÍCIO")
-        print(f"🔵 [minhas-turmas] Authorization header: {authorization}")
-
         # 1. Buscar usuário logado
         if not authorization or not authorization.startswith("Bearer "):
-            print(f"❌ [minhas-turmas] Token inválido: {authorization}")
             raise HTTPException(status_code=401, detail="Usuário não autenticado")
 
         token = authorization.replace("Bearer ", "")
-        print(f"🔵 [minhas-turmas] Token (primeiros 50 chars): {token[:50]}...")
 
         try:
             user_data = supabase.auth.get_user(token)
             usuario_id = user_data.user.id
-            print(f"✅ [minhas-turmas] Usuário ID: {usuario_id}")
         except Exception as e:
-            print(f"❌ [minhas-turmas] Erro ao validar token: {str(e)}")
             raise HTTPException(status_code=401, detail=f"Token inválido: {str(e)}")
 
         # 2. Buscar papéis do usuário
@@ -764,15 +725,11 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None, alias="Auth
         papeis = papeis_result.data or []
         codigos_papeis = [p["tipo_papel_usuario"]["codigo"] for p in papeis if p.get("tipo_papel_usuario")]
 
-        print(f"🔵 [minhas-turmas] Papéis do usuário: {codigos_papeis}")
-
         # 3. Buscar turmas baseado no papel
         turmas = []
 
-        #  CATEQUISTA: apenas turmas que acompanha
+        # CATEQUISTA: apenas turmas que acompanha
         if "CATEQUISTA" in codigos_papeis and "COORDENADOR_GERAL" not in codigos_papeis:
-            print(f"🔵 [minhas-turmas] Usuário é CATEQUISTA")
-
             # Buscar catequista_id
             catequista_result = (
                 supabase
@@ -783,11 +740,8 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None, alias="Auth
                 .execute()
             )
 
-            print(f"🔵 [minhas-turmas] Catequista result: {catequista_result.data}")
-
             if not catequista_result.data:
-                print(f"⚠️ [minhas-turmas] Catequista não encontrado")
-                return []  # Catequista sem registro na tabela
+                return []
 
             catequista_id = catequista_result.data["id"]
 
@@ -800,15 +754,10 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None, alias="Auth
                 .execute()
             )
 
-            print(f"🔵 [minhas-turmas] Turmas catequistas result: {turmas_catequistas_result.data}")
-
             turma_ids = [t["turma_id"] for t in turmas_catequistas_result.data or []]
 
-            print(f"🔵 [minhas-turmas] Turma IDs: {turma_ids}")
-
             if not turma_ids:
-                print(f"⚠️ [minhas-turmas] Catequista sem turmas")
-                return []  # Catequista sem turmas
+                return []
 
             # Buscar turmas
             turmas_result = (
@@ -830,14 +779,10 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None, alias="Auth
                 .execute()
             )
 
-            print(f"🔵 [minhas-turmas] Turmas result: {turmas_result.data}")
-
             turmas = turmas_result.data or []
 
         # COORDENADOR GERAL: todas as turmas
         elif "COORDENADOR_GERAL" in codigos_papeis:
-            print(f"🔵 [minhas-turmas] Usuário é COORDENADOR_GERAL")
-
             turmas_result = (
                 supabase
                 .table("turma")
@@ -856,14 +801,10 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None, alias="Auth
                 .execute()
             )
 
-            print(f"🔵 [minhas-turmas] Turmas result: {turmas_result.data}")
-
             turmas = turmas_result.data or []
 
         # COORDENADOR DE ETAPA: turmas da sua etapa
         elif "COORDENADOR_ETAPA" in codigos_papeis:
-            print(f"🔵 [minhas-turmas] Usuário é COORDENADOR_ETAPA")
-
             # Buscar coordenador_etapa
             coord_result = (
                 supabase
@@ -874,11 +815,8 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None, alias="Auth
                 .execute()
             )
 
-            print(f"🔵 [minhas-turmas] Coordenador result: {coord_result.data}")
-
             if not coord_result.data or not coord_result.data.get("etapa_id"):
-                print(f"⚠️ [minhas-turmas] Coordenador sem etapa")
-                return []  # Coordenador sem etapa
+                return []
 
             etapa_id = coord_result.data["etapa_id"]
 
@@ -902,8 +840,6 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None, alias="Auth
                 .execute()
             )
 
-            print(f"🔵 [minhas-turmas] Turmas result: {turmas_result.data}")
-
             turmas = turmas_result.data or []
 
         # 4. Format response
@@ -923,18 +859,17 @@ def listar_minhas_turmas(authorization: Optional[str] = Header(None, alias="Auth
             for t in turmas
         ]
 
-        print(f"✅ [minhas-turmas] Response: {len(response)} turmas")
-
         return response
 
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ [minhas-turmas] ERRO: {str(e)}")
-        import traceback
-        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Erro ao listar minhas turmas: {str(e)}")
 
+
+# ====================================
+# 4. TURMAS - LISTA GERAL
+# ====================================
 
 @router.get("/turmas", response_model=List[TurmaResponse])
 def listar_turmas():
@@ -974,6 +909,10 @@ def listar_turmas():
         raise HTTPException(status_code=500, detail=f"Erro ao listar turmas: {str(e)}")
 
 
+# ====================================
+# 5. TURMAS - ENDPOINTS ESPECÍFICOS (ANTES DE /turmas/{turma_id})
+# ====================================
+
 @router.get("/turmas/{turma_id}/catequizandos")
 def listar_catequizandos_por_turma(turma_id: str):
     """
@@ -982,7 +921,7 @@ def listar_catequizandos_por_turma(turma_id: str):
     try:
         supabase = get_supabase()
 
-        # 1. Buscar inscrições da turma
+        # 1. Buscar inscrições da turma (SEM order aninhado)
         inscricoes_result = (
             supabase
             .table("inscricao")
@@ -1030,11 +969,13 @@ def listar_catequizandos_por_turma(turma_id: str):
                 )
             """)
             .eq("turma_id", turma_id)
-            .order("catequizando:nome")
             .execute()
         )
 
         inscricoes = inscricoes_result.data or []
+
+        # Ordenar em Python
+        inscricoes.sort(key=lambda x: x["catequizando"]["nome"])
 
         # 2. Format response
         catequizandos = []
@@ -1102,7 +1043,7 @@ def listar_catequizandos_por_turma(turma_id: str):
 @router.get("/turmas/{turma_id}/exportar")
 def exportar_catequizandos_turma(
         turma_id: str,
-        campos: Optional[str] = None  # Ex: "nome,data_nascimento,responsaveis,sacramentos"
+        campos: Optional[str] = None
 ):
     """
     Exporta lista de catequizandos em CSV com campos selecionados.
@@ -1133,7 +1074,7 @@ def exportar_catequizandos_turma(
         else:
             campos_selecionados = [c.strip() for c in campos.split(",") if c.strip() in todos_campos.keys()]
 
-        # 2. Buscar catequizandos
+        # 2. Buscar catequizandos (SEM order aninhado)
         supabase = get_supabase()
 
         inscricoes_result = (
@@ -1173,11 +1114,12 @@ def exportar_catequizandos_turma(
                 )
             """)
             .eq("turma_id", turma_id)
-            .order("catequizando:nome")
             .execute()
         )
 
         inscricoes = inscricoes_result.data or []
+        # Ordenar em Python
+        inscricoes.sort(key=lambda x: x["catequizando"]["nome"])
 
         # 3. Criar CSV
         output = io.StringIO()
@@ -1292,6 +1234,10 @@ def contar_vagas_ocupadas(turma_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao contar vagas ocupadas: {str(e)}")
 
+
+# ====================================
+# 6. TURMA INDIVIDUAL - CRUD
+# ====================================
 
 @router.get("/turmas/{turma_id}", response_model=TurmaDetailResponse)
 def buscar_turma(turma_id: str):
@@ -1586,6 +1532,10 @@ def excluir_turma(turma_id: str):
         raise HTTPException(status_code=500, detail=f"Erro ao excluir turma: {str(e)}")
 
 
+# ====================================
+# 7. INSCRIÇÕES
+# ====================================
+
 @router.post("/inscricoes", response_model=InscricaoResponse)
 def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str] = Header(None)):
     """
@@ -1601,14 +1551,10 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
             token = authorization.replace("Bearer ", "")
 
             try:
-                # Validar token e pegar user_id
                 user_data = supabase.auth.get_user(token)
                 usuario_id = user_data.user.id
             except:
                 raise HTTPException(status_code=401, detail="Usuário não autenticado")
-
-        if not usuario_id:
-            raise HTTPException(status_code=401, detail="Usuário não autenticado")
 
         if not usuario_id:
             raise HTTPException(status_code=401, detail="Usuário não autenticado")
@@ -1618,17 +1564,14 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
         responsavel_existente = repo_responsavel.buscar_por_usuario_id(usuario_id)
 
         if responsavel_existente:
-            # Responsável já existe, reutilizar
             responsavel_salvo = responsavel_existente
 
-            # Atualizar dados se necessário
             if responsavel_salvo.nome != inscricao_data.responsavel_nome:
                 responsavel_salvo.nome = inscricao_data.responsavel_nome
                 responsavel_salvo.email = inscricao_data.responsavel_email
                 responsavel_salvo.telefone = inscricao_data.responsavel_telefone
                 repo_responsavel.editar(responsavel_salvo)
         else:
-            # Criar novo responsável vinculado ao usuário
             from app.domain.usuario import Usuario
 
             responsavel_novo = Responsavel(
@@ -1874,7 +1817,7 @@ def listar_inscricoes():
                 status_id=i["status_id"],
                 responsavel_nome=i["responsavel_nome"],
                 created_at=i.get("created_at"),
-                turma_id=i.get("turma_id")  # ✅ ADICIONADO
+                turma_id=i.get("turma_id")
             )
             for i in inscricoes
         ]
@@ -1989,7 +1932,7 @@ def buscar_inscricao(inscricao_id: str):
             status_id=inscricao.status.id,
             responsavel_nome=inscricao.responsavel.nome,
             created_at=str(inscricao.data_inscricao) if inscricao.data_inscricao else None,
-            turma_id=str(inscricao.turma.id) if inscricao.turma else None  # ✅ ADICIONADO
+            turma_id=str(inscricao.turma.id) if inscricao.turma else None
         )
     except HTTPException:
         raise
@@ -2037,6 +1980,7 @@ def upload_documento(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao upload documento: {str(e)}")
 
+
 @router.get("/inscricoes/{inscricao_id}/documentos")
 def listar_documentos(inscricao_id: str):
     """Lista todos os documentos de uma inscrição."""
@@ -2053,7 +1997,7 @@ def listar_documentos(inscricao_id: str):
                 "storage_path": d.caminho_storage,
                 "uploaded_at": str(d.created_at) if d.created_at else None,
                 "status_validacao": d.status_validacao,
-                "observacao_validacao": d.observacao_validacao  # ✅ ADICIONADO
+                "observacao_validacao": d.observacao_validacao
             }
             for d in documentos
         ]
@@ -2084,11 +2028,11 @@ def atualizar_status_inscricao(inscricao_id: str, status_id: int):
 
 
 @router.put("/inscricoes/{inscricao_id}/turma")
-def atribuir_turma_inscricao(inscricao_id: str, dados: AtribuirTurmaRequest):#ADICIONEI AQUI. Antes estava assim: def atribuir_turma_inscricao(inscricao_id: str, turma_id: str):
+def atribuir_turma_inscricao(inscricao_id: str, dados: AtribuirTurmaRequest):
     """Atribui uma turma a uma inscrição."""
     try:
         repo = InscricaoRepository()
-        inscricao = repo.atribuir_turma(inscricao_id, turma_id)
+        inscricao = repo.atribuir_turma(inscricao_id, dados.turma_id)
 
         if not inscricao:
             raise HTTPException(status_code=404, detail="Inscrição não encontrada")
@@ -2137,48 +2081,6 @@ def contar_inscricoes_por_turma(turma_id: str):
         return {"count": count}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao contar inscrições: {str(e)}")
-
-@router.delete("/documentos/{documento_id}")
-def excluir_documento(documento_id: str):
-    """Exclui um documento de inscrição."""
-    try:
-        from app.services.servicoDocumentoInscricao import ServicoDocumentoInscricao
-
-        servico = ServicoDocumentoInscricao()
-        documento = servico.excluir_documento(documento_id)
-
-        return {
-            "message": "Documento excluído com sucesso",
-            "documento_id": documento.id
-        }
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao excluir documento: {str(e)}")
-
-
-@router.put("/documentos/{documento_id}/status")
-def atualizar_status_documento(documento_id: str, status_validacao: str, observacao_validacao: Optional[str] = None):
-    """Aprova ou rejeita um documento."""
-    try:
-        from app.services.servicoDocumentoInscricao import ServicoDocumentoInscricao
-
-        servico = ServicoDocumentoInscricao()
-        documento = servico.atualizar_status_documento(
-            documento_id=documento_id,
-            status_validacao=status_validacao,
-            observacao_validacao=observacao_validacao
-        )
-
-        return {
-            "message": "Status do documento atualizado com sucesso",
-            "documento_id": documento.id,
-            "status_validacao": documento.status_validacao
-        }
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao atualizar status do documento: {str(e)}")
 
 
 @router.delete("/inscricoes/{inscricao_id}")
@@ -2229,7 +2131,58 @@ def excluir_inscricao(inscricao_id: str):
         raise HTTPException(status_code=500, detail=f"Erro ao excluir inscrição: {str(e)}")
 
 
-@router.get("/catequizando/{catequizando_id}")
+# ====================================
+# 8. DOCUMENTOS
+# ====================================
+
+@router.delete("/documentos/{documento_id}")
+def excluir_documento(documento_id: str):
+    """Exclui um documento de inscrição."""
+    try:
+        from app.services.servicoDocumentoInscricao import ServicoDocumentoInscricao
+
+        servico = ServicoDocumentoInscricao()
+        documento = servico.excluir_documento(documento_id)
+
+        return {
+            "message": "Documento excluído com sucesso",
+            "documento_id": documento.id
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao excluir documento: {str(e)}")
+
+
+@router.put("/documentos/{documento_id}/status")
+def atualizar_status_documento(documento_id: str, status_validacao: str, observacao_validacao: Optional[str] = None):
+    """Aprova ou rejeita um documento."""
+    try:
+        from app.services.servicoDocumentoInscricao import ServicoDocumentoInscricao
+
+        servico = ServicoDocumentoInscricao()
+        documento = servico.atualizar_status_documento(
+            documento_id=documento_id,
+            status_validacao=status_validacao,
+            observacao_validacao=observacao_validacao
+        )
+
+        return {
+            "message": "Status do documento atualizado com sucesso",
+            "documento_id": documento.id,
+            "status_validacao": documento.status_validacao
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao atualizar status do documento: {str(e)}")
+
+
+# ====================================
+# 9. CATEQUIZANDOS (PATH ESPECÍFICO)
+# ====================================
+
+@router.get("/catequizandos/{catequizando_id}")
 def buscar_catequizando(catequizando_id: str):
     """Busca dados de um catequizando específico."""
     try:
@@ -2257,7 +2210,7 @@ def buscar_catequizando(catequizando_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/catequizando/{catequizando_id}")
+@router.put("/catequizandos/{catequizando_id}")
 def editar_catequizando(catequizando_id: str, dados: CatequizandoUpdate):
     """Edita dados de um catequizando."""
     try:

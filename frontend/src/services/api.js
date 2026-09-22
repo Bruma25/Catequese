@@ -85,7 +85,6 @@ export async function listarCoordenadoresEtapa() {
 }
 
 export async function atribuirCoordenadorEtapa(etapaId, coordenadorId) {
-  // ✅ ENVIAR COMO QUERY PARAM
   const url = coordenadorId
     ? `/api/v1/etapas/${etapaId}/coordenador?coordenador_id=${encodeURIComponent(coordenadorId)}`
     : `/api/v1/etapas/${etapaId}/coordenador`
@@ -396,13 +395,13 @@ export async function atualizarPapeisUsuario(usuarioId, papeisIds) {
 }
 
 // Meus Catequizandos
+export async function buscarCatequizandoPorId(id) {
+  return request(`/api/v1/catequizandos/${id}`)
+}
+
 export async function atualizarDadosCatequizando(catequizandoId, dados) {
   return request(`/api/v1/catequizandos/${catequizandoId}`, {
     method: 'PUT',
     body: JSON.stringify(dados)
   })
-}
-
-export async function buscarCatequizandoPorId(id) {
-  return request(`/api/v1/catequizandos/${id}`)
 }
