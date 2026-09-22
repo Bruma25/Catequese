@@ -679,159 +679,34 @@ def listar_catequistas():
 
 #Minhas turmas
 @router.get("/minhas-turmas", response_model=List[TurmaResponse])
-async def listar_minhas_turmas(request: Request):
+async def listar_minhas_turmas():
     """
-    Lista turmas do usuário logado.
-    Retorna turmas baseado nos papéis do usuário (via Supabase Auth).
+    Lista TODAS as turmas.
+    O frontend filtra baseado no perfil do usuário.
     """
     try:
-        # Pegar header de autenticação
-        auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
-
-        if not auth_header or not auth_header.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Usuário não autenticado")
-
-        token = auth_header.replace("Bearer ", "")
         supabase = get_supabase()
 
-        # USAR admin.get_user para validar token (funciona com service_role key)
-        try:
-            user_response = supabase.auth.admin.get_user(token)
-            usuario_id = user_response.user.id
-        except Exception as e:
-            print(f"❌ Erro ao validar token: {str(e)}")
-            raise HTTPException(status_code=401, detail=f"Token inválido: {str(e)}")
-
-        # Buscar papéis do usuário
-        papeis_result = (
+        # BUSCAR TODAS AS TURMAS
+        turmas_result = (
             supabase
-            .table("usuario_papel")
+            .table("turma")
             .select("""
-                papel_id,
-                tipo_papel_usuario(
-                    codigo
-                )
+                id,
+                nome_sistema,
+                nome_exibicao,
+                vagas_totais,
+                ativa,
+                etapa_id,
+                local_encontro_id,
+                ano_nasc_minimo,
+                ano_nasc_maximo
             """)
-            .eq("usuario_id", usuario_id)
+            .order("nome_sistema")
             .execute()
         )
 
-        papeis = papeis_result.data or []
-        codigos_papeis = [p["tipo_papel_usuario"]["codigo"] for p in papeis if p.get("tipo_papel_usuario")]
-
-        print(f"🔵 Papéis do usuário: {codigos_papeis}")
-
-        # Buscar turmas baseado no papel
-        turmas = []
-
-        # CATEQUISTA: apenas turmas que acompanha
-        if "CATEQUISTA" in codigos_papeis and "COORDENADOR_GERAL" not in codigos_papeis:
-            catequista_result = (
-                supabase
-                .table("catequista")
-                .select("id")
-                .eq("usuario_id", usuario_id)
-                .maybe_single()
-                .execute()
-            )
-
-            if not catequista_result.data:
-                return []
-
-            catequista_id = catequista_result.data["id"]
-
-            turmas_catequistas_result = (
-                supabase
-                .table("turma_catequista")
-                .select("turma_id")
-                .eq("catequista_id", catequista_id)
-                .execute()
-            )
-
-            turma_ids = [t["turma_id"] for t in turmas_catequistas_result.data or []]
-
-            if not turma_ids:
-                return []
-
-            turmas_result = (
-                supabase
-                .table("turma")
-                .select("""
-                    id,
-                    nome_sistema,
-                    nome_exibicao,
-                    vagas_totais,
-                    ativa,
-                    etapa_id,
-                    local_encontro_id,
-                    ano_nasc_minimo,
-                    ano_nasc_maximo
-                """)
-                .in_("id", turma_ids)
-                .order("nome_sistema")
-                .execute()
-            )
-
-            turmas = turmas_result.data or []
-
-        # COORDENADOR GERAL: todas as turmas
-        elif "COORDENADOR_GERAL" in codigos_papeis:
-            turmas_result = (
-                supabase
-                .table("turma")
-                .select("""
-                    id,
-                    nome_sistema,
-                    nome_exibicao,
-                    vagas_totais,
-                    ativa,
-                    etapa_id,
-                    local_encontro_id,
-                    ano_nasc_minimo,
-                    ano_nasc_maximo
-                """)
-                .order("nome_sistema")
-                .execute()
-            )
-
-            turmas = turmas_result.data or []
-
-        # COORDENADOR DE ETAPA: turmas da sua etapa
-        elif "COORDENADOR_ETAPA" in codigos_papeis:
-            coord_result = (
-                supabase
-                .table("coordenador_etapa")
-                .select("etapa_id")
-                .eq("usuario_id", usuario_id)
-                .maybe_single()
-                .execute()
-            )
-
-            if not coord_result.data or not coord_result.data.get("etapa_id"):
-                return []
-
-            etapa_id = coord_result.data["etapa_id"]
-
-            turmas_result = (
-                supabase
-                .table("turma")
-                .select("""
-                    id,
-                    nome_sistema,
-                    nome_exibicao,
-                    vagas_totais,
-                    ativa,
-                    etapa_id,
-                    local_encontro_id,
-                    ano_nasc_minimo,
-                    ano_nasc_maximo
-                """)
-                .eq("etapa_id", etapa_id)
-                .order("nome_sistema")
-                .execute()
-            )
-
-            turmas = turmas_result.data or []
+        turmas = turmas_result.data or []
 
         # Format response
         response = [
@@ -850,10 +725,10 @@ async def listar_minhas_turmas(request: Request):
             for t in turmas
         ]
 
+        print(f"✅ Listar minas turmas: {len(response)} turmas retornadas")
+
         return response
 
-    except HTTPException:
-        raise
     except Exception as e:
         print(f"❌ ERRO: {str(e)}")
         import traceback

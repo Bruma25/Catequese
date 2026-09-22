@@ -51,15 +51,6 @@ function MinhasTurmasPage() {
     { id: 'necessidade_especial', label: 'Necessidade Especial' }
   ]
 
-  // Status
-  const statusMap = {
-    'pendente_distribuicao': { label: 'Pendente', class: 'status-pendente' },
-    'confirmada': { label: 'Confirmada', class: 'status-confirmada' },
-    'lista_espera': { label: 'Lista de Espera', class: 'status-espera' },
-    'cancelada': { label: 'Cancelada', class: 'status-cancelada' },
-    'distribuida': { label: 'Distribuída', class: 'status-distribuida' }
-  }
-
   // CARREGAR PERFIL ATIVO DO LOCALSTORAGE
   useEffect(() => {
     const perfilSalvo = localStorage.getItem('perfil_ativo')
@@ -93,7 +84,47 @@ function MinhasTurmasPage() {
         listarCatequistas()
       ])
 
-      setTurmas(turmasData)
+      // FILTRAR TURMAS BASEADO NO PERFIL ATIVO
+      const { data: { user } } = await supabase.auth.getUser()
+
+      let turmasFiltradas = turmasData
+
+      if (perfilAtivo === 'catequista') {
+        // Catequista: apenas turmas que acompanha
+        const { data: catequista } = await supabase
+          .from('catequista')
+          .select('id')
+          .eq('usuario_id', user.id)
+          .single()
+
+        if (catequista) {
+          const { data: turmaCatequistas } = await supabase
+            .from('turma_catequista')
+            .select('turma_id')
+            .eq('catequista_id', catequista.id)
+
+          const turmaIds = turmaCatequistas?.map(t => t.turma_id) || []
+          turmasFiltradas = turmasData.filter(t => turmaIds.includes(t.id))
+        } else {
+          turmasFiltradas = []
+        }
+      } else if (perfilAtivo === 'coordenador_etapa') {
+        // Coordenador de etapa: turmas da sua etapa
+        const { data: coordenador } = await supabase
+          .from('coordenador_etapa')
+          .select('etapa_id')
+          .eq('usuario_id', user.id)
+          .single()
+
+        if (coordenador) {
+          turmasFiltradas = turmasData.filter(t => t.etapa_id === coordenador.etapa_id)
+        } else {
+          turmasFiltradas = []
+        }
+      }
+      // COORDENADOR_GERAL e outros: vê todas as turmas (não filtra)
+
+      setTurmas(turmasFiltradas)
       setEtapas(etapasData)
       setCatequistas(catequistasData)
     } catch (error) {
@@ -104,7 +135,7 @@ function MinhasTurmasPage() {
     }
   }
 
-  // FILTRAR TURMAS BASEADO NO PERFIL ATIVO
+  // Filtrar turmas (filtros de etapa e catequista)
   const turmasFiltradas = turmas.filter(turma => {
     // Filtro por etapa
     const matchEtapa = !filtroEtapa || turma.etapa_id === filtroEtapa
@@ -156,7 +187,6 @@ function MinhasTurmasPage() {
       const camposString = camposExportacao.join(',')
       await exportarCatequizandosTurma(turmaParaExportar.id, camposString)
 
-      // O download é feito automaticamente pelo navegador
       alert('Exportação realizada com sucesso!')
       setShowModalExportar(false)
       setTurmaParaExportar(null)
