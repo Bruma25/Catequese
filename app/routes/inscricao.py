@@ -694,16 +694,11 @@ async def listar_minhas_turmas(request: Request):
         token = auth_header.replace("Bearer ", "")
         print(f"🔵 [minhas-turmas] Token recebido (primeiros 50 chars): {token[:50]}...")
 
-        supabase = get_supabase()
+        # VALIDAR JWT MANUALMENTE
+        usuario_id = validar_token_supabase(token)
+        print(f"✅ [minhas-turmas] Usuário ID: {usuario_id}")
 
-        # Validar token
-        try:
-            user_data = supabase.auth.get_user(token)
-            usuario_id = user_data.user.id
-            print(f"✅ [minhas-turmas] Usuário ID: {usuario_id}")
-        except Exception as e:
-            print(f"❌ [minhas-turmas] Erro ao validar token: {str(e)}")
-            raise HTTPException(status_code=401, detail=f"Token inválido: {str(e)}")
+        supabase = get_supabase()
 
         # Buscar papéis do usuário
         papeis_result = (
@@ -738,7 +733,10 @@ async def listar_minhas_turmas(request: Request):
                 .execute()
             )
 
+            print(f"🔵 [minhas-turmas] Catequista result: {catequista_result.data}")
+
             if not catequista_result.data:
+                print(f"⚠️ [minhas-turmas] Catequista não encontrado")
                 return []
 
             catequista_id = catequista_result.data["id"]
@@ -751,9 +749,14 @@ async def listar_minhas_turmas(request: Request):
                 .execute()
             )
 
+            print(f"🔵 [minhas-turmas] Turmas catequistas result: {turmas_catequistas_result.data}")
+
             turma_ids = [t["turma_id"] for t in turmas_catequistas_result.data or []]
 
+            print(f"🔵 [minhas-turmas] Turma IDs: {turma_ids}")
+
             if not turma_ids:
+                print(f"⚠️ [minhas-turmas] Catequista sem turmas")
                 return []
 
             turmas_result = (
@@ -774,6 +777,8 @@ async def listar_minhas_turmas(request: Request):
                 .order("nome_sistema")
                 .execute()
             )
+
+            print(f"🔵 [minhas-turmas] Turmas result: {turmas_result.data}")
 
             turmas = turmas_result.data or []
 
@@ -797,6 +802,8 @@ async def listar_minhas_turmas(request: Request):
                 .execute()
             )
 
+            print(f"🔵 [minhas-turmas] Turmas result: {turmas_result.data}")
+
             turmas = turmas_result.data or []
 
         # COORDENADOR DE ETAPA: turmas da sua etapa
@@ -810,7 +817,10 @@ async def listar_minhas_turmas(request: Request):
                 .execute()
             )
 
+            print(f"🔵 [minhas-turmas] Coordenador result: {coord_result.data}")
+
             if not coord_result.data or not coord_result.data.get("etapa_id"):
+                print(f"⚠️ [minhas-turmas] Coordenador sem etapa")
                 return []
 
             etapa_id = coord_result.data["etapa_id"]
@@ -833,6 +843,8 @@ async def listar_minhas_turmas(request: Request):
                 .order("nome_sistema")
                 .execute()
             )
+
+            print(f"🔵 [minhas-turmas] Turmas result: {turmas_result.data}")
 
             turmas = turmas_result.data or []
 
