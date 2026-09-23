@@ -1,4 +1,4 @@
-#repositories/documentoInscricaoRepository
+# repositories/documentoInscricaoRepository
 from datetime import datetime
 from typing import Any, List, Optional
 import uuid
@@ -18,18 +18,21 @@ class DocumentoInscricaoRepository:
 
         payload = self._to_payload(documento, incluir_id=True)
 
+        # ✅ CORREÇÃO: Remover .select("*") após insert
+        # A API do Supabase não suporta .select() após .insert() neste contexto
         resposta = (
             self.db.table(self.table)
             .insert(payload)
-            .select("*")
             .execute()
         )
 
-        data = self._extrair_primeira_linha(resposta)
-        if not data:
+        # ✅ Buscar o documento salvo separadamente
+        documento_salvo = self.buscar_por_id(documento.id)
+
+        if not documento_salvo:
             raise ValueError("Não foi possível salvar o documento da inscrição.")
 
-        return self._from_row(data)
+        return documento_salvo
 
     def buscar_por_id(self, documento_id: str) -> Optional[DocumentoInscricao]:
         resposta = (
@@ -63,30 +66,33 @@ class DocumentoInscricaoRepository:
 
         payload = self._to_payload(documento, incluir_id=False)
 
+        # ✅ CORREÇÃO: Remover .select("*") após update
         resposta = (
             self.db.table(self.table)
             .update(payload)
             .eq("id", documento.id)
-            .select("*")
             .execute()
         )
 
-        data = self._extrair_primeira_linha(resposta)
-        if not data:
+        # ✅ Buscar o documento editado separadamente
+        documento_editado = self.buscar_por_id(documento.id)
+
+        if not documento_editado:
             raise ValueError("Não foi possível editar o documento da inscrição.")
 
-        return self._from_row(data)
+        return documento_editado
 
     def apagar(self, documento_id: str) -> bool:
+        # ✅ CORREÇÃO: Remover .select("id") após delete
         resposta = (
             self.db.table(self.table)
             .delete()
             .eq("id", documento_id)
-            .select("id")
             .execute()
         )
 
-        return bool(self._extrair_lista(resposta))
+        # Retorna True se a operação foi executada (mesmo sem dados)
+        return resposta is not None
 
     def _to_payload(self, documento: DocumentoInscricao, incluir_id: bool = True) -> dict[str, Any]:
         payload = {
