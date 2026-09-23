@@ -110,11 +110,36 @@ export async function buscarEtapa(id) {
   return request(`/api/v1/etapas/${id}`)
 }
 
-export async function criarEtapa(dados) {
-  return request('/api/v1/etapas', {
-    method: 'POST',
-    body: JSON.stringify(dados)
-  })
+// Inscrições
+export async function criarInscricao(data) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+
+    const response = await fetch(`${API_URL}/api/v1/inscricoes`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(data)
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      console.error('❌ ERRO AO CRIAR INSCRIÇÃO:', errorData)
+      throw new Error(errorData.detail || 'Erro ao criar inscrição')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('❌ ERRO AO CRIAR INSCRIÇÃO:', error)
+    throw {
+      message: error.message || 'Erro ao criar inscrição',
+      details: error,
+      status: error.status
+    }
+  }
 }
 
 export async function editarEtapa(id, dados) {
