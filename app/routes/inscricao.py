@@ -1403,36 +1403,34 @@ def excluir_turma(turma_id: str):
 # Inscrições
 @router.post("/inscricoes", response_model=InscricaoResponse)
 def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str] = Header(None)):
-    """
-    Cria uma nova inscrição de catequizando com múltiplos responsáveis.
-    """
     try:
         supabase = get_supabase()
 
-        # 1. Buscar usuário logado via token
+        # 1. Buscar usuário logado
         usuario_id = None
-
         if authorization and authorization.startswith("Bearer "):
             token = authorization.replace("Bearer ", "")
-
             try:
                 user_data = supabase.auth.get_user(token)
-                usuario_id = user_data.user.id
-            except:
-                raise HTTPException(status_code=401, detail="Usuário não autenticado")
+                # ✅ VERIFICAR SE user_data NÃO É None
+                if user_data and hasattr(user_data, 'user') and user_data.user:
+                    usuario_id = user_data.user.id
+                else:
+                    raise HTTPException(status_code=401, detail="Usuário não autenticado")
+            except Exception as e:
+                raise HTTPException(status_code=401, detail=f"Erro ao autenticar: {str(e)}")
 
         if not usuario_id:
             raise HTTPException(status_code=401, detail="Usuário não autenticado")
 
-        # 2. Validar que há pelo menos um responsável
+        # 2. Validar responsáveis
         if not inscricao_data.responsaveis or len(inscricao_data.responsaveis) == 0:
             raise HTTPException(status_code=400, detail="Pelo menos um responsável é obrigatório")
 
-        # 3. Buscar ou criar o responsável principal (primeiro da lista)
+        # 3. Buscar responsável principal
         repo_responsavel = ResponsavelRepository()
         resp_principal = inscricao_data.responsaveis[0]
 
-        # Buscar responsável existente pelo email
         responsavel_salvo = None
         if resp_principal.email:
             resp_existente = (
@@ -1444,7 +1442,8 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
                 .execute()
             )
 
-            if resp_existente.data:
+            # ✅ VERIFICAR SE resp_existente NÃO É None
+            if resp_existente and hasattr(resp_existente, 'data') and resp_existente.data:
                 responsavel_salvo = Responsavel(
                     id=resp_existente.data["id"],
                     nome=resp_existente.data["nome"],
@@ -1454,7 +1453,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
                     vinculos=[],
                 )
 
-                # Atualizar dados se necessário
                 if responsavel_salvo.nome != resp_principal.nome:
                     responsavel_salvo.nome = resp_principal.nome
                     responsavel_salvo.email = resp_principal.email
@@ -1463,7 +1461,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
 
         if not responsavel_salvo:
             from app.domain.usuario import Usuario
-
             responsavel_salvo = Responsavel(
                 id=str(uuid.uuid4()),
                 nome=resp_principal.nome,
@@ -1484,10 +1481,12 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
             .execute()
         )
 
-        if not etapa_db.data:
+        # ✅ VERIFICAR SE etapa_db NÃO É None
+        if not etapa_db or not hasattr(etapa_db, 'data') or not etapa_db.data:
             raise HTTPException(status_code=400, detail=f"Etapa {inscricao_data.etapa_id} não encontrada")
 
         etapa_data = etapa_db.data
+
 
         etapa = Etapa(
             id=etapa_data["id"],
