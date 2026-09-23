@@ -131,11 +131,23 @@ export async function excluirEtapa(id) {
 }
 
 // Inscrições
-export async function criarInscricao(dados) {
-  return request('/api/v1/inscricoes', {
-    method: 'POST',
-    body: JSON.stringify(dados)
-  })
+export async function criarInscricao(data) {
+  try {
+    const response = await api.post('/inscricoes', data)
+    return response.data
+  } catch (error) {
+    // ✅ ADICIONAR LOG DO ERRO COMPLETO
+    console.error('❌ ERRO AO CRIAR INSCRIÇÃO:', error)
+    console.error('📋 DETALHES:', error.response?.data)
+    console.error('🔢 STATUS:', error.response?.status)
+
+    // ✅ LANÇAR ERRO COM DETALHES
+    throw {
+      message: error.response?.data?.detail || 'Erro ao criar inscrição',
+      details: error.response?.data,
+      status: error.response?.status
+    }
+  }
 }
 
 export async function verificarInscricaoExiste(inscricaoId) {

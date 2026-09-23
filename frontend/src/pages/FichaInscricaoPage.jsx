@@ -240,6 +240,9 @@ function FichaInscricaoPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
+    console.log('🚀 INICIANDO SUBMIT...')
+    console.log('📋 FORM DATA:', formData)
+
     // === VALIDAÇÕES ===
     if (!formData.nomeCompleto || !formData.dataNascimento) {
       setMensagemErro('Preencha o nome e a data de nascimento do catequizando.')
@@ -346,11 +349,15 @@ function FichaInscricaoPage() {
       })
     }
 
+    console.log('👥 RESPONSÁVEIS:', responsaveisParaEnviar)
+
     // === PREPARAR SACRAMENTOS ===
     const sacramentosParaEnviar = []
     if (formData.batizado === 'sim') sacramentosParaEnviar.push(1)
     if (formData.eucaristia === 'sim') sacramentosParaEnviar.push(2)
     if (formData.crisma === 'sim') sacramentosParaEnviar.push(3)
+
+    console.log('🙏 SACRAMENTOS:', sacramentosParaEnviar)
 
     // === PREPARAR PAYLOAD ===
     const payload = {
@@ -365,12 +372,19 @@ function FichaInscricaoPage() {
       observacao_responsavel: formData.observacaoResponsavel || null,
     }
 
+    // === LOG PARA DEPURAÇÃO ===
+    console.log('📦 PAYLOAD ENVIADO:', JSON.stringify(payload, null, 2))
+    console.log('📅 Data nascimento:', payload.catequizando_data_nascimento)
+    console.log('📝 Tipo da data:', typeof payload.catequizando_data_nascimento)
+
     try {
       setLoading(true)
       setMensagemErro('')
 
       // === ENVIAR INSCRIÇÃO ===
       const response = await criarInscricao(payload)
+
+      console.log('✅ INSCRIÇÃO CRIADA:', response)
 
       // === VERIFICAR ha_vagas PARA DECIDIR A MENSAGEM ===
       if (response.ha_vagas) {
