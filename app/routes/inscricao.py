@@ -903,10 +903,7 @@ def listar_catequizandos_por_turma(turma_id: str):
 
 
 @router.get("/turmas/{turma_id}/exportar")
-def exportar_catequizandos_turma(
-        turma_id: str,
-        campos: Optional[str] = None
-):
+def exportar_catequizandos_turma(turma_id: str, campos: Optional[str] = None):
     """
     Exporta lista de catequizandos em CSV com campos selecionados.
     Campos disponíveis: nome, data_nascimento, idade, telefone, email, responsaveis, sacramentos, documentos, observacoes, necessidade_especial
@@ -1391,7 +1388,6 @@ def excluir_turma(turma_id: str):
         raise HTTPException(status_code=500, detail=f"Erro ao excluir turma: {str(e)}")
 
 
-
 # Inscrições
 @router.post("/inscricoes", response_model=InscricaoResponse)
 def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str] = Header(None)):
@@ -1659,6 +1655,43 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
         raise HTTPException(status_code=500, detail=f"Erro ao criar inscrição: {str(e)}")
 
 
+@router.post("/inscricoes/{inscricao_id}/documentos")
+def upload_documento(inscricao_id: str, file: UploadFile = File(...), tipo_documento: str = Form(...)):
+    """Faz upload de um documento para uma inscrição."""
+    try:
+        import tempfile
+        import os
+
+        with tempfile.NamedTemporaryFile(delete=False,
+                                         suffix=Path(file.filename).suffix if file.filename else "") as tmp:
+            tmp.write(file.file.read())
+            tmp_path = tmp.name
+
+        try:
+            servico = ServicoDocumentoInscricao()
+
+            documento = servico.enviar_documento(
+                inscricao_id=inscricao_id,
+                tipo_documento=tipo_documento,
+                caminho_arquivo_local=tmp_path,
+                nome_original=file.filename,
+            )
+
+            return {
+                "id": documento.id,
+                "inscricao_id": documento.inscricao_id,
+                "file_name": documento.nome_original,
+                "tipo_documento": documento.tipo_documento,
+                "storage_path": documento.caminho_storage
+            }
+        finally:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao upload documento: {str(e)}")
+
+
 @router.get("/inscricoes", response_model=List[InscricaoResponse])
 def listar_inscricoes():
     """Lista todas as inscrições."""
@@ -1682,10 +1715,7 @@ def listar_inscricoes():
         raise HTTPException(status_code=500, detail=f"Erro ao listar inscrições: {str(e)}")
 
 
-@router.get(
-    "/inscricoes/pendentes-distribuicao",
-    response_model=List[InscricaoResponse],
-)
+@router.get("/inscricoes/pendentes-distribuicao", response_model=List[InscricaoResponse])
 def listar_pendentes_distribuicao():
     """Lista inscrições pendentes de distribuição em turma."""
     try:
@@ -1795,47 +1825,6 @@ def buscar_inscricao(inscricao_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao buscar inscrição: {str(e)}")
-
-
-@router.post("/inscricoes/{inscricao_id}/documentos")
-def upload_documento(
-        inscricao_id: str,
-        file: UploadFile = File(...),
-        tipo_documento: str = Form(...)
-):
-    """Faz upload de um documento para uma inscrição."""
-    try:
-        import tempfile
-        import os
-
-        with tempfile.NamedTemporaryFile(delete=False,
-                                         suffix=Path(file.filename).suffix if file.filename else "") as tmp:
-            tmp.write(file.file.read())
-            tmp_path = tmp.name
-
-        try:
-            servico = ServicoDocumentoInscricao()
-
-            documento = servico.enviar_documento(
-                inscricao_id=inscricao_id,
-                tipo_documento=tipo_documento,
-                caminho_arquivo_local=tmp_path,
-                nome_original=file.filename,
-            )
-
-            return {
-                "id": documento.id,
-                "inscricao_id": documento.inscricao_id,
-                "file_name": documento.nome_original,
-                "tipo_documento": documento.tipo_documento,
-                "storage_path": documento.caminho_storage
-            }
-        finally:
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao upload documento: {str(e)}")
 
 
 @router.get("/inscricoes/{inscricao_id}/documentos")
@@ -2088,6 +2077,7 @@ def editar_catequizando(catequizando_id: str, dados: CatequizandoUpdate):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/inscricoes/verificar-vagas-etapa/{etapa_id}")
 def verificar_vagas_etapa(etapa_id: str):
