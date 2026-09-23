@@ -1,3 +1,4 @@
+// ../frontend/components/MenuPerfil/MenuPerfil.jsx
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import './MenuPerfil.css'
@@ -6,19 +7,16 @@ function MenuPerfil({ onClose, position = 'right' }) {
   const navigate = useNavigate()
   const { papeis, logout } = useAuth()
 
-  // Mapear códigos para nomes amigáveis
   const nomePapel = {
-    'responsavel': 'Responsável',
-    'catequista': 'Catequista',
-    'coordenador_etapa': 'Coordenador de Etapa',
-    'coordenador_geral': 'Coordenador Geral'
+    'RESPONSAVEL': 'Responsável',
+    'CATEQUISTA': 'Catequista',
+    'COORDENADOR_ETAPA': 'Coordenador de Etapa',
+    'COORDENADOR_GERAL': 'Coordenador Geral'
   }
 
   const handleSelecionarPerfil = (papel) => {
     console.log('Perfil selecionado:', papel.codigo)
-    // Salvar perfil ativo no localStorage
     localStorage.setItem('perfil_ativo', papel.codigo)
-    // Disparar evento para atualizar MenuNavegacao
     window.dispatchEvent(new CustomEvent('perfil_mudou', { detail: papel.codigo }))
     onClose()
   }
@@ -27,11 +25,13 @@ function MenuPerfil({ onClose, position = 'right' }) {
     try {
       await logout()
       localStorage.removeItem('perfil_ativo')
-      navigate('/')  // Volta para SplashScreen
+      navigate('/')
     } catch (err) {
       console.error('Erro ao sair:', err)
     }
   }
+
+  const papeisOrdenados = [...papeis].sort((a, b) => a.id - b.id)
 
   return (
     <div className={`menu-perfil ${position}`} onClick={onClose}>
@@ -39,7 +39,7 @@ function MenuPerfil({ onClose, position = 'right' }) {
         <h3 className="menu-perfil-title">Meus Perfis</h3>
 
         <ul className="menu-perfil-list">
-          {papeis.map(papel => (
+          {papeisOrdenados.map(papel => (
             <li key={papel.id}>
               <button
                 className="menu-perfil-item"
