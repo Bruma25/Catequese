@@ -18,14 +18,12 @@ class DocumentoInscricaoRepository:
 
         payload = self._to_payload(documento, incluir_id=True)
 
-        # A API do Supabase não suporta .select() após .insert() neste contexto
         resposta = (
             self.db.table(self.table)
             .insert(payload)
-            .execute()
+            .execute()  # ← SEM .select("*")
         )
 
-        # Buscar o documento salvo separadamente
         documento_salvo = self.buscar_por_id(documento.id)
 
         if not documento_salvo:
@@ -69,7 +67,7 @@ class DocumentoInscricaoRepository:
             self.db.table(self.table)
             .update(payload)
             .eq("id", documento.id)
-            .execute()
+            .execute()  # ← SEM .select("*")
         )
 
         # Buscar o documento editado separadamente
@@ -85,10 +83,9 @@ class DocumentoInscricaoRepository:
             self.db.table(self.table)
             .delete()
             .eq("id", documento_id)
-            .execute()
+            .execute()  # ← SEM .select("id")
         )
 
-        # Retorna True se a operação foi executada (mesmo sem dados)
         return resposta is not None
 
     def _to_payload(self, documento: DocumentoInscricao, incluir_id: bool = True) -> dict[str, Any]:

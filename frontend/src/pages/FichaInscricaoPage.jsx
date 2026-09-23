@@ -250,10 +250,27 @@ function FichaInscricaoPage() {
 
       setInscricaoId(inscricaoCriada.id)
 
-      // Upload de documentos (opcional)
       if (inscricaoCriada.id && Object.values(documentos).some(d => d !== null)) {
-        console.log('📎 Enviando documentos...')
-        await uploadDocumentos(inscricaoCriada.id)
+        console.log('⏳ Verificando se inscrição foi persistida...')
+
+        let existe = false
+        let tentativas = 0
+        const maxTentativas = 10
+        const delayMs = 300
+
+        while (!existe && tentativas < maxTentativas) {
+          await new Promise(resolve => setTimeout(resolve, delayMs))
+          existe = await verificarInscricaoExiste(inscricaoCriada.id)
+          tentativas++
+          console.log(`🔄 Tentativa ${tentativas}/${maxTentativas}: ${existe ? 'Encontrada!' : 'Aguardando...'}`)
+        }
+
+        if (existe) {
+          console.log('📎 Enviando documentos...')
+          await uploadDocumentos(inscricaoCriada.id)
+        } else {
+          console.warn('⚠️ Inscrição não encontrada após múltiplas tentativas. Documentos não enviados.')
+        }
       }
 
       // Verificar status

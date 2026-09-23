@@ -138,6 +138,15 @@ export async function criarInscricao(dados) {
   })
 }
 
+export async function verificarInscricaoExiste(inscricaoId) {
+  try {
+    const response = await fetch(`${API_URL}/api/v1/inscricoes/${inscricaoId}`)
+    return response.ok
+  } catch {
+    return false
+  }
+}
+
 export async function listarInscricoes() {
   return request('/api/v1/inscricoes')
 }
