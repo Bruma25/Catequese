@@ -1,7 +1,7 @@
 // ../frontend/src/pages/MinhasTurmasPage.jsx
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-//import { supabase } from '../services/supabaseClient'
+import { supabase } from '../services/supabaseClient'
 import Header from '../components/Header/Header'
 import {
   listarMinhasTurmas,
@@ -32,6 +32,12 @@ function MinhasTurmasPage() {
     'sacramentos'
   ])
 
+  // ✅ CATEQUISTAS FILTRADOS POR ETAPA
+  const [catequistasFiltrados, setCatequistasFiltrados] = useState([])
+
+  // ✅ MAP: turma_id → [catequista_ids]
+  const [turmasCatequistasMap, setTurmasCatequistasMap] = useState({})
+
   const anoAtual = new Date().getFullYear()
 
   const camposDisponiveis = [
@@ -52,6 +58,54 @@ function MinhasTurmasPage() {
     fetchData()
   }, [])
 
+  // ✅ FILTRAR CATEQUISTAS QUANDO ETAPA MUDAR
+  useEffect(() => {
+    if (filtroEtapa) {
+      // ✅ BUSCAR TURMAS DA ETAPA SELECIONADA
+      const turmasDaEtapa = turmas.filter(t => t.etapa_id === filtroEtapa)
+      const turmaIdsDaEtapa = turmasDaEtapa.map(t => t.id)
+
+      // ✅ BUSCAR CATEQUISTAS DESSAS TURMAS (via mapa)
+      const catequistaIdsDaEtapa = new Set()
+      turmaIdsDaEtapa.forEach(turmaId => {
+        const catequistasDestaTurma = turmasCatequistasMap[turmaId] || []
+        catequistasDestaTurma.forEach(cId => {
+          catequistaIdsDaEtapa.add(cId)
+        })
+      })
+
+      const catequistasDaEtapa = catequistas.filter(c =>
+        catequistaIdsDaEtapa.has(c.id)
+      )
+
+      setCatequistasFiltrados(catequistasDaEtapa)
+    } else {
+      setCatequistasFiltrados(catequistas)
+    }
+  }, [filtroEtapa, turmas, catequistas, turmasCatequistasMap])
+
+  // ✅ FUNÇÃO PARA BUSCAR CATEQUISTAS DAS TURMAS (via mapa)
+  async function buscarCatequistasDasTurmas(turmaIds) {
+    if (turmaIds.length === 0) {
+      setCatequistasFiltrados([])
+      return
+    }
+
+    const catequistaIdsDaEtapa = new Set()
+    turmaIds.forEach(turmaId => {
+      const catequistasDestaTurma = turmasCatequistasMap[turmaId] || []
+      catequistasDestaTurma.forEach(cId => {
+        catequistaIdsDaEtapa.add(cId)
+      })
+    })
+
+    const catequistasDaEtapa = catequistas.filter(c =>
+      catequistaIdsDaEtapa.has(c.id)
+    )
+
+    setCatequistasFiltrados(catequistasDaEtapa)
+  }
+
   async function fetchData() {
     try {
       const [turmasData, etapasData, catequistasData] = await Promise.all([
@@ -60,9 +114,25 @@ function MinhasTurmasPage() {
         listarCatequistas()
       ])
 
+      // ✅ BUSCAR TURMA_CATEQUISTA PARA TODAS AS TURMAS
+      const { data: turmaCatequistasData } = await supabase
+        .from('turma_catequista')
+        .select('turma_id, catequista_id')
+
+      // ✅ CRIAR MAP: turma_id → [catequista_ids]
+      const map = {}
+      turmaCatequistasData?.forEach(tc => {
+        if (!map[tc.turma_id]) {
+          map[tc.turma_id] = []
+        }
+        map[tc.turma_id].push(tc.catequista_id)
+      })
+
       setTurmas(turmasData)
       setEtapas(etapasData)
       setCatequistas(catequistasData)
+      setCatequistasFiltrados(catequistasData)
+      setTurmasCatequistasMap(map) // ✅ ARMAZENAR MAP
     } catch (error) {
       console.error('Erro ao buscar dados:', error)
       alert('Erro ao carregar dados. Tente novamente.')
@@ -71,18 +141,16 @@ function MinhasTurmasPage() {
     }
   }
 
-  // FILTRAR TURMAS (filtros de etapa e catequista)
+  // ✅ FILTRAR TURMAS (etapa + catequista via mapa)
   const turmasFiltradas = turmas.filter(turma => {
     // Filtro por etapa
     const matchEtapa = !filtroEtapa || turma.etapa_id === filtroEtapa
 
-    // Filtro por catequista
+    // ✅ Filtro por catequista (via mapa turma_catequista)
     let matchCatequista = true
-    if (filtroCatequista && turmaExpandida && catequizandosPorTurma[turma.id]) {
-      const catequizandos = catequizandosPorTurma[turma.id]
-      matchCatequista = catequizandos.some(cat =>
-        cat.responsaveis.some(resp => resp.id === filtroCatequista)
-      )
+    if (filtroCatequista) {
+      const catequistasDestaTurma = turmasCatequistasMap[turma.id] || []
+      matchCatequista = catequistasDestaTurma.includes(filtroCatequista)
     }
 
     return matchEtapa && matchCatequista
@@ -193,7 +261,7 @@ function MinhasTurmasPage() {
               className="filtro-select"
             >
               <option value="">Todos</option>
-              {catequistas.map(catequista => (
+              {catequistasFiltrados.map(catequista => (
                 <option key={catequista.id} value={catequista.id}>
                   {catequista.nome}
                 </option>
@@ -213,6 +281,7 @@ function MinhasTurmasPage() {
 
               return (
                 <div key={turma.id} className={`turma-card ${isExpandida ? 'expandida' : ''}`}>
+                  {/* HEADER OCUPA LARGURA TOTAL */}
                   <div className="turma-header" onClick={() => handleExpandirTurma(turma)}>
                     <div className="turma-info">
                       <h3 className="turma-nome">{turma.nome_exibicao || turma.nome_sistema}</h3>
@@ -228,6 +297,7 @@ function MinhasTurmasPage() {
                     </button>
                   </div>
 
+                  {/* DETALHES EXPANDEM ABAIXO */}
                   {isExpandida && (
                     <div className="turma-detalhes">
                       <div className="turma-actions">

@@ -171,6 +171,7 @@ function MinhasTurmasCatequistaPage() {
 
               return (
                 <div key={turma.id} className={`turma-card ${isExpandida ? 'expandida' : ''}`}>
+                  {/* HEADER OCUPA LARGURA TOTAL */}
                   <div className="turma-header" onClick={() => handleExpandirTurma(turma)}>
                     <div className="turma-info">
                       <h3 className="turma-nome">{turma.nome_exibicao || turma.nome_sistema}</h3>
@@ -183,6 +184,7 @@ function MinhasTurmasCatequistaPage() {
                     </button>
                   </div>
 
+                  {/* DETALHES EXPANDEM ABAIXO */}
                   {isExpandida && (
                     <div className="turma-detalhes">
                       <div className="turma-actions">

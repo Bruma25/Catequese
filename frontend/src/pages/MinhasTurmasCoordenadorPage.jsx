@@ -29,6 +29,12 @@ function MinhasTurmasCoordenadorPage() {
     'sacramentos'
   ])
 
+  // ✅ CATEQUISTAS FILTRADOS (APENAS DA ETAPA)
+  const [catequistasFiltrados, setCatequistasFiltrados] = useState([])
+
+  // ✅ MAP: turma_id → [catequista_ids]
+  const [turmasCatequistasMap, setTurmasCatequistasMap] = useState({})
+
   const camposDisponiveis = [
     { id: 'nome', label: 'Nome' },
     { id: 'data_nascimento', label: 'Data Nascimento' },
@@ -68,13 +74,40 @@ function MinhasTurmasCoordenadorPage() {
       const turmasData = await listarMinhasTurmas()
       const turmasFiltradasPorEtapa = turmasData.filter(t => t.etapa_id === coordenador.etapa_id)
 
-      const [, catequistasData] = await Promise.all([
-        Promise.resolve(),
-        listarCatequistas()
-      ])
+      const catequistasData = await listarCatequistas()
+
+      // ✅ BUSCAR TURMA_CATEQUISTA PARA TODAS AS TURMAS DA ETAPA
+      const turmaIds = turmasFiltradasPorEtapa.map(t => t.id)
+
+      const { data: turmaCatequistasData } = await supabase
+        .from('turma_catequista')
+        .select('turma_id, catequista_id')
+        .in('turma_id', turmaIds)
+
+      // ✅ CRIAR MAP: turma_id → [catequista_ids]
+      const map = {}
+      turmaCatequistasData?.forEach(tc => {
+        if (!map[tc.turma_id]) {
+          map[tc.turma_id] = []
+        }
+        map[tc.turma_id].push(tc.catequista_id)
+      })
+
+      // ✅ BUSCAR CATEQUISTAS DAS TURMAS DA ETAPA (via mapa)
+      const catequistaIds = new Set()
+      turmaIds.forEach(turmaId => {
+        const catequistasDestaTurma = map[turmaId] || []
+        catequistasDestaTurma.forEach(cId => {
+          catequistaIds.add(cId)
+        })
+      })
+
+      const catequistasDaEtapa = catequistasData.filter(c => catequistaIds.has(c.id))
 
       setTurmas(turmasFiltradasPorEtapa)
       setCatequistas(catequistasData)
+      setCatequistasFiltrados(catequistasDaEtapa)
+      setTurmasCatequistasMap(map) // ✅ ARMAZENAR MAP
     } catch (error) {
       console.error('Erro ao buscar dados:', error)
       alert('Erro ao carregar dados. Tente novamente.')
@@ -83,17 +116,13 @@ function MinhasTurmasCoordenadorPage() {
     }
   }
 
-  // Filtrar por catequista
+  // ✅ FILTRAR TURMAS POR CATEQUISTA (via mapa turma_catequista)
   const turmasFiltradas = turmas.filter(turma => {
-    let matchCatequista = true
-    if (filtroCatequista && turmaExpandida && catequizandosPorTurma[turma.id]) {
-      const catequizandos = catequizandosPorTurma[turma.id]
-      matchCatequista = catequizandos.some(cat =>
-        cat.responsaveis.some(resp => resp.id === filtroCatequista)
-      )
-    }
+    if (!filtroCatequista) return true
 
-    return matchCatequista
+    // ✅ USAR MAPA PARA FILTRAR
+    const catequistasDestaTurma = turmasCatequistasMap[turma.id] || []
+    return catequistasDestaTurma.includes(filtroCatequista)
   })
 
   const handleExpandirTurma = async (turma) => {
@@ -184,7 +213,7 @@ function MinhasTurmasCoordenadorPage() {
               className="filtro-select"
             >
               <option value="">Todos</option>
-              {catequistas.map(catequista => (
+              {catequistasFiltrados.map(catequista => (
                 <option key={catequista.id} value={catequista.id}>
                   {catequista.nome}
                 </option>
@@ -204,6 +233,7 @@ function MinhasTurmasCoordenadorPage() {
 
               return (
                 <div key={turma.id} className={`turma-card ${isExpandida ? 'expandida' : ''}`}>
+                  {/* HEADER OCUPA LARGURA TOTAL */}
                   <div className="turma-header" onClick={() => handleExpandirTurma(turma)}>
                     <div className="turma-info">
                       <h3 className="turma-nome">{turma.nome_exibicao || turma.nome_sistema}</h3>
@@ -216,6 +246,7 @@ function MinhasTurmasCoordenadorPage() {
                     </button>
                   </div>
 
+                  {/* DETALHES EXPANDEM ABAIXO */}
                   {isExpandida && (
                     <div className="turma-detalhes">
                       <div className="turma-actions">

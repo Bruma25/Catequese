@@ -1,5 +1,4 @@
 /* src/pages/MinhasTurmasPage.css */
-
 .gestao-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #CECCD1 0%, #8B888C 100%);
@@ -79,12 +78,14 @@
   gap: 20px;
 }
 
+/* CARD COMO BLOCO (NÃO FLEX) */
 .turma-card {
   background: white;
   border-radius: 15px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   transition: transform 0.3s, box-shadow 0.3s;
+  display: block; /* GARANTIR QUE SEJA BLOCO */
 }
 
 .turma-card:hover {
@@ -96,6 +97,7 @@
   box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
 }
 
+/* HEADER COMO FLEX */
 .turma-header {
   display: flex;
   justify-content: space-between;
@@ -105,6 +107,8 @@
   background: linear-gradient(135deg, #B2ADB3 0%, #8B888C 100%);
   color: white;
   transition: background 0.3s;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .turma-header:hover {
@@ -113,6 +117,7 @@
 
 .turma-info {
   flex: 1;
+  width: 100%;
 }
 
 .turma-nome {
@@ -141,6 +146,7 @@
   cursor: pointer;
   transition: all 0.3s;
   flex-shrink: 0;
+  margin-left: 20px;
 }
 
 .expandir-button:hover {
@@ -148,10 +154,14 @@
   color: #8B888C;
 }
 
-/* Detalhes da Turma */
+/* DETALHES COMO BLOCO */
 .turma-detalhes {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
   padding: 25px;
   background: #fafafa;
+  border-top: 3px solid #B2ADB3;
 }
 
 .turma-actions {
