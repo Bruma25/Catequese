@@ -32,10 +32,10 @@ function MinhasTurmasPage() {
     'sacramentos'
   ])
 
-  // ✅ CATEQUISTAS FILTRADOS POR ETAPA
+  // CATEQUISTAS FILTRADOS POR ETAPA
   const [catequistasFiltrados, setCatequistasFiltrados] = useState([])
 
-  // ✅ MAP: turma_id → [catequista_ids]
+  // MAP: turma_id → [catequista_ids]
   const [turmasCatequistasMap, setTurmasCatequistasMap] = useState({})
 
   const anoAtual = new Date().getFullYear()
@@ -58,14 +58,14 @@ function MinhasTurmasPage() {
     fetchData()
   }, [])
 
-  // ✅ FILTRAR CATEQUISTAS QUANDO ETAPA MUDAR
+  // FILTRAR CATEQUISTAS QUANDO ETAPA MUDAR
   useEffect(() => {
     if (filtroEtapa) {
-      // ✅ BUSCAR TURMAS DA ETAPA SELECIONADA
+      // BUSCAR TURMAS DA ETAPA SELECIONADA
       const turmasDaEtapa = turmas.filter(t => t.etapa_id === filtroEtapa)
       const turmaIdsDaEtapa = turmasDaEtapa.map(t => t.id)
 
-      // ✅ BUSCAR CATEQUISTAS DESSAS TURMAS (via mapa)
+      // BUSCAR CATEQUISTAS DESSAS TURMAS (via mapa)
       const catequistaIdsDaEtapa = new Set()
       turmaIdsDaEtapa.forEach(turmaId => {
         const catequistasDestaTurma = turmasCatequistasMap[turmaId] || []
@@ -84,7 +84,7 @@ function MinhasTurmasPage() {
     }
   }, [filtroEtapa, turmas, catequistas, turmasCatequistasMap])
 
-  // ✅ FUNÇÃO PARA BUSCAR CATEQUISTAS DAS TURMAS (via mapa)
+  // FUNÇÃO PARA BUSCAR CATEQUISTAS DAS TURMAS (via mapa)
   async function buscarCatequistasDasTurmas(turmaIds) {
     if (turmaIds.length === 0) {
       setCatequistasFiltrados([])
@@ -114,12 +114,12 @@ function MinhasTurmasPage() {
         listarCatequistas()
       ])
 
-      // ✅ BUSCAR TURMA_CATEQUISTA PARA TODAS AS TURMAS
+      // BUSCAR TURMA_CATEQUISTA PARA TODAS AS TURMAS
       const { data: turmaCatequistasData } = await supabase
         .from('turma_catequista')
         .select('turma_id, catequista_id')
 
-      // ✅ CRIAR MAP: turma_id → [catequista_ids]
+      // CRIAR MAP: turma_id → [catequista_ids]
       const map = {}
       turmaCatequistasData?.forEach(tc => {
         if (!map[tc.turma_id]) {
@@ -132,7 +132,7 @@ function MinhasTurmasPage() {
       setEtapas(etapasData)
       setCatequistas(catequistasData)
       setCatequistasFiltrados(catequistasData)
-      setTurmasCatequistasMap(map) // ✅ ARMAZENAR MAP
+      setTurmasCatequistasMap(map)
     } catch (error) {
       console.error('Erro ao buscar dados:', error)
       alert('Erro ao carregar dados. Tente novamente.')
@@ -141,12 +141,12 @@ function MinhasTurmasPage() {
     }
   }
 
-  // ✅ FILTRAR TURMAS (etapa + catequista via mapa)
+  // FILTRAR TURMAS (etapa + catequista via mapa)
   const turmasFiltradas = turmas.filter(turma => {
     // Filtro por etapa
     const matchEtapa = !filtroEtapa || turma.etapa_id === filtroEtapa
 
-    // ✅ Filtro por catequista (via mapa turma_catequista)
+    // Filtro por catequista (via mapa turma_catequista)
     let matchCatequista = true
     if (filtroCatequista) {
       const catequistasDestaTurma = turmasCatequistasMap[turma.id] || []
