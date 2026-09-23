@@ -1,24 +1,21 @@
-// ../frontend/src/pages/MinhasTurmasPage.jsx
+// ../frontend/src/pages/MinhasTurmasCoordenadorPage.jsx
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-//import { supabase } from '../services/supabaseClient'
+import { supabase } from '../services/supabaseClient'
 import Header from '../components/Header/Header'
 import {
   listarMinhasTurmas,
   listarCatequizandosPorTurma,
   exportarCatequizandosTurma,
-  listarEtapas,
   listarCatequistas
 } from '../services/api'
 import './MinhasTurmasPage.css'
 
-function MinhasTurmasPage() {
+function MinhasTurmasCoordenadorPage() {
   const navigate = useNavigate()
   const [turmas, setTurmas] = useState([])
-  const [etapas, setEtapas] = useState([])
   const [catequistas, setCatequistas] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filtroEtapa, setFiltroEtapa] = useState('')
   const [filtroCatequista, setFiltroCatequista] = useState('')
   const [turmaExpandida, setTurmaExpandida] = useState(null)
   const [catequizandosPorTurma, setCatequizandosPorTurma] = useState({})
@@ -31,8 +28,6 @@ function MinhasTurmasPage() {
     'responsaveis',
     'sacramentos'
   ])
-
-  const anoAtual = new Date().getFullYear()
 
   const camposDisponiveis = [
     { id: 'nome', label: 'Nome' },
@@ -54,14 +49,31 @@ function MinhasTurmasPage() {
 
   async function fetchData() {
     try {
-      const [turmasData, etapasData, catequistasData] = await Promise.all([
-        listarMinhasTurmas(),
-        listarEtapas(),
+      const { data: { user } } = await supabase.auth.getUser()
+
+      // BUSCAR ETAPA DO COORDENADOR
+      const { data: coordenador } = await supabase
+        .from('coordenador_etapa')
+        .select('etapa_id')
+        .eq('usuario_id', user.id)
+        .single()
+
+      if (!coordenador) {
+        alert('Você não é coordenador de nenhuma etapa.')
+        setLoading(false)
+        return
+      }
+
+      // Buscar todas as turmas e filtrar por etapa
+      const turmasData = await listarMinhasTurmas()
+      const turmasFiltradasPorEtapa = turmasData.filter(t => t.etapa_id === coordenador.etapa_id)
+
+      const [, catequistasData] = await Promise.all([
+        Promise.resolve(),
         listarCatequistas()
       ])
 
-      setTurmas(turmasData)
-      setEtapas(etapasData)
+      setTurmas(turmasFiltradasPorEtapa)
       setCatequistas(catequistasData)
     } catch (error) {
       console.error('Erro ao buscar dados:', error)
@@ -71,12 +83,8 @@ function MinhasTurmasPage() {
     }
   }
 
-  // FILTRAR TURMAS (filtros de etapa e catequista)
+  // Filtrar por catequista
   const turmasFiltradas = turmas.filter(turma => {
-    // Filtro por etapa
-    const matchEtapa = !filtroEtapa || turma.etapa_id === filtroEtapa
-
-    // Filtro por catequista
     let matchCatequista = true
     if (filtroCatequista && turmaExpandida && catequizandosPorTurma[turma.id]) {
       const catequizandos = catequizandosPorTurma[turma.id]
@@ -85,10 +93,9 @@ function MinhasTurmasPage() {
       )
     }
 
-    return matchEtapa && matchCatequista
+    return matchCatequista
   })
 
-  // Expandir turma para ver catequizandos
   const handleExpandirTurma = async (turma) => {
     if (turmaExpandida === turma.id) {
       setTurmaExpandida(null)
@@ -164,27 +171,11 @@ function MinhasTurmasPage() {
       <main className="gestao-content">
         <div className="gestao-header-content">
           <h2 className="page-title">Minhas Turmas</h2>
-          <p className="perfil-ativo-info">Perfil: Coordenador Geral</p>
+          <p className="perfil-ativo-info">Perfil: Coordenador de Etapa</p>
         </div>
 
-        {/* Filtros */}
+        {/* Filtro por Catequista */}
         <div className="filtros-container">
-          <div className="filtro-group">
-            <label className="filtro-label">Etapa:</label>
-            <select
-              value={filtroEtapa}
-              onChange={(e) => setFiltroEtapa(e.target.value)}
-              className="filtro-select"
-            >
-              <option value="">Todas</option>
-              {etapas.map(etapa => (
-                <option key={etapa.id} value={etapa.id}>
-                  {etapa.nome}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div className="filtro-group">
             <label className="filtro-label">Catequista:</label>
             <select
@@ -216,9 +207,6 @@ function MinhasTurmasPage() {
                   <div className="turma-header" onClick={() => handleExpandirTurma(turma)}>
                     <div className="turma-info">
                       <h3 className="turma-nome">{turma.nome_exibicao || turma.nome_sistema}</h3>
-                      <p className="turma-etapa">
-                        Etapa: {etapas.find(e => e.id === turma.etapa_id)?.nome || 'N/A'}
-                      </p>
                       <p className="turma-catequistas">
                         Catequizandos: {catequizandos.length}
                       </p>
@@ -339,4 +327,4 @@ function MinhasTurmasPage() {
   )
 }
 
-export default MinhasTurmasPage
+export default MinhasTurmasCoordenadorPage

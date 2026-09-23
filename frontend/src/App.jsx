@@ -11,6 +11,8 @@ import GestaoTurmasPage from './pages/GestaoTurmasPage'
 import GestaoInscricoesPage from './pages/GestaoInscricoesPage'
 import ConfiguracoesPage from './pages/ConfiguracoesPage'
 import MinhasTurmasPage from './pages/MinhasTurmasPage'
+import MinhasTurmasCoordenadorPage from './pages/MinhasTurmasCoordenadorPage'
+import MinhasTurmasCatequistaPage from './pages/MinhasTurmasCatequistaPage'
 import GestaoUsuariosPage from './pages/GestaoUsuariosPage'
 import MeusCatequizandosPage from './pages/MeusCatequizandosPage'
 import './App.css'
@@ -68,14 +70,6 @@ function App() {
           </RotaPublica>
         }
       />
-      {/*<Route*/}
-      {/*    path="/reset-senha"*/}
-      {/*    element={*/}
-      {/*      <RotaPublica>*/}
-      {/*        <ResetSenhaPage />*/}
-      {/*      </RotaPublica>*/}
-      {/*    }*/}
-      {/*/>*/}
 
       {/* Rotas protegidas */}
       <Route
@@ -155,6 +149,22 @@ function App() {
         element={
           <RotaProtegida>
             <MinhasTurmasPage />
+          </RotaProtegida>
+        }
+      />
+      <Route
+        path="/minhas-turmas-coordenador"
+        element={
+          <RotaProtegida>
+            <MinhasTurmasCoordenadorPage />
+          </RotaProtegida>
+        }
+      />
+      <Route
+        path="/minhas-turmas-catequista"
+        element={
+          <RotaProtegida>
+            <MinhasTurmasCatequistaPage />
           </RotaProtegida>
         }
       />

@@ -1,25 +1,19 @@
-// ../frontend/src/pages/MinhasTurmasPage.jsx
+// ../frontend/src/pages/MinhasTurmasCatequistaPage.jsx
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-//import { supabase } from '../services/supabaseClient'
+import { supabase } from '../services/supabaseClient'
 import Header from '../components/Header/Header'
 import {
   listarMinhasTurmas,
   listarCatequizandosPorTurma,
-  exportarCatequizandosTurma,
-  listarEtapas,
-  listarCatequistas
+  exportarCatequizandosTurma
 } from '../services/api'
 import './MinhasTurmasPage.css'
 
-function MinhasTurmasPage() {
+function MinhasTurmasCatequistaPage() {
   const navigate = useNavigate()
   const [turmas, setTurmas] = useState([])
-  const [etapas, setEtapas] = useState([])
-  const [catequistas, setCatequistas] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filtroEtapa, setFiltroEtapa] = useState('')
-  const [filtroCatequista, setFiltroCatequista] = useState('')
   const [turmaExpandida, setTurmaExpandida] = useState(null)
   const [catequizandosPorTurma, setCatequizandosPorTurma] = useState({})
   const [showModalExportar, setShowModalExportar] = useState(false)
@@ -31,8 +25,6 @@ function MinhasTurmasPage() {
     'responsaveis',
     'sacramentos'
   ])
-
-  const anoAtual = new Date().getFullYear()
 
   const camposDisponiveis = [
     { id: 'nome', label: 'Nome' },
@@ -54,15 +46,34 @@ function MinhasTurmasPage() {
 
   async function fetchData() {
     try {
-      const [turmasData, etapasData, catequistasData] = await Promise.all([
-        listarMinhasTurmas(),
-        listarEtapas(),
-        listarCatequistas()
-      ])
+      const { data: { user } } = await supabase.auth.getUser()
 
-      setTurmas(turmasData)
-      setEtapas(etapasData)
-      setCatequistas(catequistasData)
+      // BUSCAR CATEQUISTA_ID
+      const { data: catequista } = await supabase
+        .from('catequista')
+        .select('id')
+        .eq('usuario_id', user.id)
+        .single()
+
+      if (!catequista) {
+        alert('Você não é catequista.')
+        setLoading(false)
+        return
+      }
+
+      // BUSCAR TURMAS_CATEQUISTAS
+      const { data: turmaCatequistas } = await supabase
+        .from('turma_catequista')
+        .select('turma_id')
+        .eq('catequista_id', catequista.id)
+
+      const turmaIds = turmaCatequistas?.map(t => t.turma_id) || []
+
+      // Buscar todas as turmas e filtrar
+      const turmasData = await listarMinhasTurmas()
+      const turmasFiltradas = turmasData.filter(t => turmaIds.includes(t.id))
+
+      setTurmas(turmasFiltradas)
     } catch (error) {
       console.error('Erro ao buscar dados:', error)
       alert('Erro ao carregar dados. Tente novamente.')
@@ -71,24 +82,6 @@ function MinhasTurmasPage() {
     }
   }
 
-  // FILTRAR TURMAS (filtros de etapa e catequista)
-  const turmasFiltradas = turmas.filter(turma => {
-    // Filtro por etapa
-    const matchEtapa = !filtroEtapa || turma.etapa_id === filtroEtapa
-
-    // Filtro por catequista
-    let matchCatequista = true
-    if (filtroCatequista && turmaExpandida && catequizandosPorTurma[turma.id]) {
-      const catequizandos = catequizandosPorTurma[turma.id]
-      matchCatequista = catequizandos.some(cat =>
-        cat.responsaveis.some(resp => resp.id === filtroCatequista)
-      )
-    }
-
-    return matchEtapa && matchCatequista
-  })
-
-  // Expandir turma para ver catequizandos
   const handleExpandirTurma = async (turma) => {
     if (turmaExpandida === turma.id) {
       setTurmaExpandida(null)
@@ -164,50 +157,15 @@ function MinhasTurmasPage() {
       <main className="gestao-content">
         <div className="gestao-header-content">
           <h2 className="page-title">Minhas Turmas</h2>
-          <p className="perfil-ativo-info">Perfil: Coordenador Geral</p>
-        </div>
-
-        {/* Filtros */}
-        <div className="filtros-container">
-          <div className="filtro-group">
-            <label className="filtro-label">Etapa:</label>
-            <select
-              value={filtroEtapa}
-              onChange={(e) => setFiltroEtapa(e.target.value)}
-              className="filtro-select"
-            >
-              <option value="">Todas</option>
-              {etapas.map(etapa => (
-                <option key={etapa.id} value={etapa.id}>
-                  {etapa.nome}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filtro-group">
-            <label className="filtro-label">Catequista:</label>
-            <select
-              value={filtroCatequista}
-              onChange={(e) => setFiltroCatequista(e.target.value)}
-              className="filtro-select"
-            >
-              <option value="">Todos</option>
-              {catequistas.map(catequista => (
-                <option key={catequista.id} value={catequista.id}>
-                  {catequista.nome}
-                </option>
-              ))}
-            </select>
-          </div>
+          <p className="perfil-ativo-info">Perfil: Catequista</p>
         </div>
 
         {/* Lista de Turmas */}
         <div className="turmas-list">
-          {turmasFiltradas.length === 0 ? (
+          {turmas.length === 0 ? (
             <p className="sem-turmas">Nenhuma turma encontrada</p>
           ) : (
-            turmasFiltradas.map(turma => {
+            turmas.map(turma => {
               const catequizandos = catequizandosPorTurma[turma.id] || []
               const isExpandida = turmaExpandida === turma.id
 
@@ -216,9 +174,6 @@ function MinhasTurmasPage() {
                   <div className="turma-header" onClick={() => handleExpandirTurma(turma)}>
                     <div className="turma-info">
                       <h3 className="turma-nome">{turma.nome_exibicao || turma.nome_sistema}</h3>
-                      <p className="turma-etapa">
-                        Etapa: {etapas.find(e => e.id === turma.etapa_id)?.nome || 'N/A'}
-                      </p>
                       <p className="turma-catequistas">
                         Catequizandos: {catequizandos.length}
                       </p>
@@ -339,4 +294,4 @@ function MinhasTurmasPage() {
   )
 }
 
-export default MinhasTurmasPage
+export default MinhasTurmasCatequistaPage

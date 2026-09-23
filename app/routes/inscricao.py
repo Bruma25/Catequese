@@ -9,7 +9,6 @@ from app.repositories.inscricaoRepository import InscricaoRepository
 from app.repositories.documentoInscricaoRepository import DocumentoInscricaoRepository
 from app.services.servicoDocumentoInscricao import ServicoDocumentoInscricao
 from app.infra.supabaseClient import get_supabase
-from app.infra.jwt_utils import validar_token_supabase
 from app.repositories.catequizandoRepository import CatequizandoRepository
 from app.repositories.responsavelRepository import ResponsavelRepository
 import uuid
