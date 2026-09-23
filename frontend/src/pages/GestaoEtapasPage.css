@@ -296,7 +296,7 @@
   font-weight: 600;
 }
 
-/* ✅ RESPONSIVO */
+/* RESPONSIVO */
 @media (max-width: 600px) {
   .gestao-content {
     padding: 20px 15px;

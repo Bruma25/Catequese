@@ -52,12 +52,12 @@ function GestaoEtapasPage() {
       // Buscar etapas
       const etapasData = await listarEtapas()
 
-      // ✅ Buscar detalhes de cada etapa e coordenador
+      // Buscar detalhes de cada etapa e coordenador
       const etapasComDetalhes = await Promise.all(
         etapasData.map(async (etapa) => {
           const detalhe = await buscarEtapa(etapa.id)
 
-          // ✅ BUSCAR NOME DO COORDENADOR
+          // BUSCAR NOME DO COORDENADOR
           const { data: coordData } = await supabase
             .from('coordenador_etapa')
             .select(`
@@ -96,7 +96,7 @@ function GestaoEtapasPage() {
     if (etapa) {
       const etapaDetalhes = await buscarEtapa(etapa.id)
 
-      // ✅ BUSCAR COORDENADOR ATUAL
+      // BUSCAR COORDENADOR ATUAL
       const { data: coordData } = await supabase
         .from('coordenador_etapa')
         .select('id')

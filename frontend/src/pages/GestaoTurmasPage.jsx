@@ -1,6 +1,7 @@
 // ../frontend/src/pages/GestaoTurmasPage.jsx
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { supabase } from '../services/supabaseClient'
 import Header from '../components/Header/Header'
 import {
   listarTurmas,
@@ -38,7 +39,6 @@ function GestaoTurmasPage() {
     catequistas_ids: []
   })
 
-  // Buscar dados da API
   useEffect(() => {
     window.scrollTo(0, 0)
     fetchData()
@@ -53,12 +53,37 @@ function GestaoTurmasPage() {
         listarCatequistas()
       ])
 
-      setTurmas(turmasData)
+      // BUSCAR CATEQUISTAS DE CADA TURMA
+      const turmasComCatequistas = await Promise.all(
+        turmasData.map(async (turma) => {
+          const { data: turmaCatequistas } = await supabase
+            .from('turma_catequista')
+            .select(`
+              catequista_id,
+              catequista:catequista_id (
+                id,
+                nome
+              )
+            `)
+            .eq('turma_id', turma.id)
+
+          const catequistasDaTurma = turmaCatequistas && turmaCatequistas.length > 0
+            ? turmaCatequistas.map(tc => tc.catequista).filter(c => c !== null)
+            : []
+
+          return {
+            ...turma,
+            catequistas: catequistasDaTurma
+          }
+        })
+      )
+
+      setTurmas(turmasComCatequistas)
       setEtapas(etapasData)
       setLocaisEncontro(locaisData)
       setCatequistas(catequistasData)
 
-      // ✅ Buscar quantidade de inscrições por turma
+      // Buscar quantidade de inscrições por turma
       const inscricoes = await Promise.all(
         turmasData.map(async (turma) => {
           const count = await contarInscricoesPorTurma(turma.id)
@@ -79,7 +104,6 @@ function GestaoTurmasPage() {
     }
   }
 
-  // ✅ Filtrar turmas por etapa
   const turmasFiltradas = turmas.filter(turma => {
     if (!filtroEtapa) return true
     return turma.etapa_id === filtroEtapa
@@ -87,7 +111,6 @@ function GestaoTurmasPage() {
 
   const handleOpenModal = async (turma = null) => {
     if (turma) {
-      // Buscar detalhes completos da turma (com catequistas)
       const turmaDetalhes = await buscarTurmaPorId(turma.id)
 
       setEditandoTurma(turmaDetalhes)
@@ -201,7 +224,6 @@ function GestaoTurmasPage() {
     } catch (error) {
       console.error('Erro ao excluir turma:', error)
 
-      // Verificar erro de foreign key (inscrições vinculadas)
       const errorMsg = error.message || ''
       const errorCode = error.code || ''
       const errorDetail = error.detail || ''
@@ -229,10 +251,8 @@ function GestaoTurmasPage() {
 
   return (
     <div className="gestao-container">
-      {/* Cabeçalho Reutilizável */}
       <Header titulo="Catequese Divino Espírito Santo" />
 
-      {/* Conteúdo Principal */}
       <main className="gestao-content">
         <div className="gestao-header-content">
           <h2 className="page-title">Gestão de Turmas</h2>
@@ -241,7 +261,6 @@ function GestaoTurmasPage() {
           </button>
         </div>
 
-        {/* ✅ Filtro por Etapa */}
         <div className="filtros-container">
           <div className="filtro-group">
             <label className="filtro-label">Filtrar por Etapa:</label>
@@ -260,7 +279,6 @@ function GestaoTurmasPage() {
           </div>
         </div>
 
-        {/* Lista de Turmas */}
         <div className="turmas-list">
           {turmasFiltradas.length === 0 ? (
             <p className="sem-turmas">
@@ -276,7 +294,9 @@ function GestaoTurmasPage() {
               return (
                 <div key={turma.id} className="turma-card">
                   <div className="turma-info">
-                    <h3 className="turma-nome">{turma.nome_exibicao || turma.nome_sistema}</h3>
+                    <h3 className="turma-nome">
+                      {turma.nome_exibicao || turma.nome_sistema}
+                    </h3>
                     <p className="turma-etapa">
                       Etapa: {etapas.find(e => e.id === turma.etapa_id)?.nome || 'N/A'}
                     </p>
@@ -286,6 +306,15 @@ function GestaoTurmasPage() {
                     <p className={`turma-status ${turma.ativa ? 'ativa' : 'inativa'}`}>
                       Status: {turma.ativa ? 'Ativa' : 'Inativa'}
                     </p>
+                    {turma.catequistas && turma.catequistas.length > 0 ? (
+                      <p className="turma-catequistas">
+                        <strong>Catequistas:</strong> {turma.catequistas.map(c => c.nome).join(', ')}
+                      </p>
+                    ) : (
+                      <p className="sem-catequistas">
+                        Sem catequistas
+                      </p>
+                    )}
                   </div>
                   <div className="turma-actions">
                     <button
@@ -308,7 +337,6 @@ function GestaoTurmasPage() {
         </div>
       </main>
 
-      {/* Modal de Cadastro/Edição */}
       {showModal && (
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -431,7 +459,6 @@ function GestaoTurmasPage() {
                 </div>
               </div>
 
-              {/* Catequistas */}
               <div className="form-group">
                 <label className="form-label">Catequistas:</label>
                 <div className="catequistas-container">
