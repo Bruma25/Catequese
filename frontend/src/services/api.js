@@ -136,12 +136,11 @@ export async function criarInscricao(data) {
     const response = await api.post('/inscricoes', data)
     return response.data
   } catch (error) {
-    // ✅ ADICIONAR LOG DO ERRO COMPLETO
     console.error('❌ ERRO AO CRIAR INSCRIÇÃO:', error)
     console.error('📋 DETALHES:', error.response?.data)
     console.error('🔢 STATUS:', error.response?.status)
 
-    // ✅ LANÇAR ERRO COM DETALHES
+    // LANÇAR ERRO COM DETALHES
     throw {
       message: error.response?.data?.detail || 'Erro ao criar inscrição',
       details: error.response?.data,
