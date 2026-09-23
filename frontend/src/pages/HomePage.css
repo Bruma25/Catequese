@@ -1,3 +1,4 @@
+/*../frontend/src/pages/HomePage.css*/
 .home-container {
   min-height: 100vh;
   background-color: #ffffff;
@@ -12,7 +13,22 @@
   flex-direction: column;
   align-items: center;
   padding: 40px 20px;
-  gap: 40px;
+  gap: 30px;
+}
+
+/* MENSAGEM DE BOAS-VINDAS */
+.boas-vindas-container {
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.boas-vindas-texto {
+  font-size: 20px;
+  color: #555555;
+  font-weight: 600;
+  margin: 0;
 }
 
 .inscricao-button {
@@ -47,17 +63,18 @@
 
 .periodo-label {
   display: block;
-  font-size: 16px;
+  font-size: 14px;
   color: #666;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   font-weight: 500;
+  line-height: 1.4;
 }
 
 .periodo-texto {
-  font-size: 18px;
+  font-size: 16px;
   color: #333;
   background-color: #f5f5f5;
-  padding: 15px;
+  padding: 12px;
   border-radius: 8px;
   border: 1px solid #e0e0e0;
 }
@@ -66,6 +83,11 @@
 @media (max-width: 480px) {
   .home-content {
     padding: 30px 15px;
+    gap: 25px;
+  }
+
+  .boas-vindas-texto {
+    font-size: 18px;
   }
 
   .inscricao-button {
@@ -74,11 +96,11 @@
   }
 
   .periodo-label {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .periodo-texto {
-    font-size: 16px;
+    font-size: 14px;
   }
 }
 
@@ -88,8 +110,20 @@
     padding: 60px 40px;
   }
 
+  .boas-vindas-texto {
+    font-size: 22px;
+  }
+
   .inscricao-button {
     max-width: 500px;
     font-size: 20px;
+  }
+
+  .periodo-label {
+    font-size: 15px;
+  }
+
+  .periodo-texto {
+    font-size: 17px;
   }
 }

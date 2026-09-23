@@ -15,6 +15,7 @@ import MinhasTurmasCoordenadorPage from './pages/MinhasTurmasCoordenadorPage'
 import MinhasTurmasCatequistaPage from './pages/MinhasTurmasCatequistaPage'
 import GestaoUsuariosPage from './pages/GestaoUsuariosPage'
 import MeusCatequizandosPage from './pages/MeusCatequizandosPage'
+import ConfiguracaoPeriodosPage from './pages/ConfiguracaoPeriodosPage'
 import './App.css'
 
 // Componente para rotas protegidas
@@ -77,6 +78,14 @@ function App() {
         element={
           <RotaProtegida>
             <HomePage />
+          </RotaProtegida>
+        }
+      />
+      <Route
+        path="/configuracao-periodos"
+        element={
+          <RotaProtegida>
+            <ConfiguracaoPeriodosPage />
           </RotaProtegida>
         }
       />

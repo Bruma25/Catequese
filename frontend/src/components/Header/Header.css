@@ -1,3 +1,4 @@
+/*../frontend/src/components/Header/Header.css*/
 .header {
   display: flex;
   justify-content: space-between;
@@ -12,8 +13,8 @@
 .header-left {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex: 1;
+  gap: 12px;
+  flex: 0 0 auto;
 }
 
 .header-logo {
@@ -29,14 +30,30 @@
   color: #b3b2b4;
   margin: 0;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.header-divino {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
 }
 
 .header-right {
   display: flex;
-  gap: 15px;
-  position: relative;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.perfil-badge {
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .icon-button {
@@ -69,5 +86,15 @@
   .header-logo {
     width: 40px;
     height: 40px;
+  }
+
+  .header-divino {
+    width: 30px;
+    height: 30px;
+  }
+
+  .perfil-badge {
+    font-size: 10px;
+    padding: 4px 8px;
   }
 }
