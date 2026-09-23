@@ -1692,6 +1692,30 @@ def upload_documento(inscricao_id: str, file: UploadFile = File(...), tipo_docum
         raise HTTPException(status_code=500, detail=f"Erro ao upload documento: {str(e)}")
 
 
+@router.get("/inscricoes/{inscricao_id}/documentos")
+def listar_documentos(inscricao_id: str):
+    """Lista todos os documentos de uma inscrição."""
+    try:
+        repo = DocumentoInscricaoRepository()
+        documentos = repo.listar_por_inscricao(inscricao_id)
+
+        return [
+            {
+                "id": d.id,
+                "inscricao_id": d.inscricao_id,
+                "file_name": d.nome_original,
+                "tipo_documento": d.tipo_documento,
+                "storage_path": d.caminho_storage,
+                "uploaded_at": str(d.created_at) if d.created_at else None,
+                "status_validacao": d.status_validacao,
+                "observacao_validacao": d.observacao_validacao
+            }
+            for d in documentos
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao listar documentos: {str(e)}")
+
+
 @router.get("/inscricoes", response_model=List[InscricaoResponse])
 def listar_inscricoes():
     """Lista todas as inscrições."""
@@ -1825,30 +1849,6 @@ def buscar_inscricao(inscricao_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao buscar inscrição: {str(e)}")
-
-
-@router.get("/inscricoes/{inscricao_id}/documentos")
-def listar_documentos(inscricao_id: str):
-    """Lista todos os documentos de uma inscrição."""
-    try:
-        repo = DocumentoInscricaoRepository()
-        documentos = repo.listar_por_inscricao(inscricao_id)
-
-        return [
-            {
-                "id": d.id,
-                "inscricao_id": d.inscricao_id,
-                "file_name": d.nome_original,
-                "tipo_documento": d.tipo_documento,
-                "storage_path": d.caminho_storage,
-                "uploaded_at": str(d.created_at) if d.created_at else None,
-                "status_validacao": d.status_validacao,
-                "observacao_validacao": d.observacao_validacao
-            }
-            for d in documentos
-        ]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao listar documentos: {str(e)}")
 
 
 @router.put("/inscricoes/{inscricao_id}/status")
