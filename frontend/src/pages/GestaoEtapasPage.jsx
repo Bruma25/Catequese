@@ -35,7 +35,6 @@ function GestaoEtapasPage() {
 
   const anoAtual = new Date().getFullYear()
 
-  // Buscar etapas e sacramentos da API
   useEffect(() => {
     window.scrollTo(0, 0)
     fetchData()
@@ -43,7 +42,6 @@ function GestaoEtapasPage() {
 
   async function fetchData() {
     try {
-      // ✅ Verificar autenticação
       const { data: { user } } = await supabase.auth.getUser()
       const { data: { session } } = await supabase.auth.getSession()
 
@@ -54,11 +52,26 @@ function GestaoEtapasPage() {
       // Buscar etapas
       const etapasData = await listarEtapas()
 
-      // Buscar detalhes de cada etapa para ter sacramentos_requeridos e proibidos
+      // ✅ Buscar detalhes de cada etapa e coordenador
       const etapasComDetalhes = await Promise.all(
         etapasData.map(async (etapa) => {
           const detalhe = await buscarEtapa(etapa.id)
-          return detalhe
+
+          // ✅ BUSCAR NOME DO COORDENADOR
+          const { data: coordData } = await supabase
+            .from('coordenador_etapa')
+            .select(`
+              id,
+              nome,
+              usuario_id
+            `)
+            .eq('etapa_id', etapa.id)
+            .single()
+
+          return {
+            ...detalhe,
+            coordenador_etapa_nome: coordData?.nome || null
+          }
         })
       )
 
@@ -81,10 +94,19 @@ function GestaoEtapasPage() {
 
   const handleOpenModal = async (etapa = null) => {
     if (etapa) {
-      // Buscar detalhes completos da etapa
       const etapaDetalhes = await buscarEtapa(etapa.id)
 
-      setEditandoEtapa(etapaDetalhes)
+      // ✅ BUSCAR COORDENADOR ATUAL
+      const { data: coordData } = await supabase
+        .from('coordenador_etapa')
+        .select('id')
+        .eq('etapa_id', etapa.id)
+        .single()
+
+      setEditandoEtapa({
+        ...etapaDetalhes,
+        coordenador_etapa_nome: etapa.coordenador_etapa_nome
+      })
       setFormData({
         nome: etapaDetalhes.nome || '',
         descricao: etapaDetalhes.descricao || '',
@@ -92,7 +114,7 @@ function GestaoEtapasPage() {
         ano_nasc_maximo: etapaDetalhes.ano_nasc_maximo || '',
         sacramentos_requeridos: etapaDetalhes.sacramentos_requeridos || [],
         sacramentos_proibidos: etapaDetalhes.sacramentos_proibidos || [],
-        coordenador_etapa_id: etapaDetalhes.coordenador_etapa_id || ''
+        coordenador_etapa_id: coordData?.id || ''
       })
     } else {
       setEditandoEtapa(null)
@@ -138,7 +160,6 @@ function GestaoEtapasPage() {
           ? prev.sacramentos_requeridos.filter(id => id !== sacramentoId)
           : [...prev.sacramentos_requeridos, sacramentoId]
 
-        // Remove dos proibidos se estiver
         const novosProibidos = prev.sacramentos_proibidos.filter(id => id !== sacramentoId)
 
         return {
@@ -153,7 +174,6 @@ function GestaoEtapasPage() {
           ? prev.sacramentos_proibidos.filter(id => id !== sacramentoId)
           : [...prev.sacramentos_proibidos, sacramentoId]
 
-        // Remove dos requeridos se estiver
         const novosRequeridos = prev.sacramentos_requeridos.filter(id => id !== sacramentoId)
 
         return {
@@ -201,10 +221,8 @@ function GestaoEtapasPage() {
       }
 
       if (editandoEtapa) {
-        // Editar etapa existente
         await editarEtapa(editandoEtapa.id, dadosEtapa)
 
-        // Atualizar coordenador da etapa
         const coordenadorId = formData.coordenador_etapa_id || null
         console.log('🔵 [handleSubmit] Atribuindo coordenador:', {
           etapaId: editandoEtapa.id,
@@ -215,7 +233,6 @@ function GestaoEtapasPage() {
 
         alert('Etapa atualizada com sucesso!')
       } else {
-        // Criar nova etapa
         await criarEtapa(dadosEtapa)
         alert('Etapa criada com sucesso!')
       }
@@ -240,7 +257,6 @@ function GestaoEtapasPage() {
     } catch (error) {
       console.error('Erro ao excluir etapa:', error)
 
-      // Verificar erro de foreign key (turmas vinculadas)
       const errorMsg = error.message || ''
       const errorCode = error.code || ''
       const errorDetail = error.detail || ''
@@ -268,10 +284,8 @@ function GestaoEtapasPage() {
 
   return (
     <div className="gestao-container">
-      {/* Cabeçalho Reutilizável */}
       <Header titulo="Catequese Divino Espírito Santo" />
 
-      {/* Conteúdo Principal */}
       <main className="gestao-content">
         <div className="gestao-header-content">
           <h2 className="page-title">Gestão de Etapas</h2>
@@ -280,7 +294,6 @@ function GestaoEtapasPage() {
           </button>
         </div>
 
-        {/* Lista de Etapas */}
         <div className="etapas-list">
           {etapas.length === 0 ? (
             <p className="sem-etapas">Nenhuma etapa cadastrada</p>
@@ -351,7 +364,6 @@ function GestaoEtapasPage() {
         </div>
       </main>
 
-      {/* Modal de Cadastro/Edição */}
       {showModal && (
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -417,7 +429,6 @@ function GestaoEtapasPage() {
                 </div>
               </div>
 
-              {/* Coordenador de Etapa */}
               <div className="form-group">
                 <label className="form-label">Coordenador de Etapa:</label>
                 <select
@@ -440,7 +451,6 @@ function GestaoEtapasPage() {
                 </p>
               </div>
 
-              {/* Sacramentos Requeridos */}
               <div className="form-group">
                 <label className="form-label">Sacramentos Requeridos:</label>
                 <div className="sacramentos-container">
@@ -464,7 +474,6 @@ function GestaoEtapasPage() {
                 </p>
               </div>
 
-              {/* Sacramentos Proibidos */}
               <div className="form-group">
                 <label className="form-label">Sacramentos Proibidos:</label>
                 <div className="sacramentos-container">
