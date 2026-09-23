@@ -397,3 +397,26 @@ export async function atualizarDadosCatequizando(catequizandoId, dados) {
     body: JSON.stringify(dados)
   })
 }
+
+// Verificar vagas por etapa
+export async function verificarVagasEtapa(etapaId) {
+  try {
+    const response = await fetch(`${API_URL}/api/v1/inscricoes/verificar-vagas-etapa/${etapaId}`)
+
+    if (!response.ok) {
+      console.warn(`⚠️ Erro ao verificar vagas para etapa ${etapaId}: ${response.status}`)
+      return { sem_vagas: false, vagas_disponiveis: 0 }
+    }
+
+    const data = await response.json()
+    return {
+      sem_vagas: data.sem_vagas || false,
+      vagas_disponiveis: data.vagas_disponiveis || 0,
+      total_vagas: data.total_vagas || 0,
+      total_inscricoes: data.total_inscricoes || 0
+    }
+  } catch (error) {
+    console.error('❌ Erro ao verificar vagas:', error)
+    return { sem_vagas: false, vagas_disponiveis: 0 }
+  }
+}

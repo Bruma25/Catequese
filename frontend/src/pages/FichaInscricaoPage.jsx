@@ -260,7 +260,7 @@ function FichaInscricaoPage() {
       if (inscricaoCriada.status_id === 2 || inscricaoCriada.status_id === 3) {
         alert('Inscrição confirmada com vaga!')
       } else if (inscricaoCriada.status_id === 5) {
-        alert('Inscrição em lista de espera devido à falta de vagas.')
+        alert('Inscrição em fila de espera realizada com sucesso!')
       } else {
         alert('Inscrição realizada com sucesso!')
       }

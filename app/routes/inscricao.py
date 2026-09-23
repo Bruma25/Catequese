@@ -2088,3 +2088,48 @@ def editar_catequizando(catequizando_id: str, dados: CatequizandoUpdate):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/inscricoes/verificar-vagas-etapa/{etapa_id}")
+def verificar_vagas_etapa(etapa_id: str):
+    """
+    Verifica se há vagas disponíveis em uma etapa.
+    Retorna:
+    - total_vagas: soma de vagas_totais de todas as turmas ativas da etapa
+    - total_inscricoes: soma de inscrições confirmadas na etapa
+    - vagas_disponiveis: total_vagas - total_inscricoes
+    - sem_vagas: True se vagas_disponiveis <= 0
+    """
+    try:
+        supabase = get_supabase()
+
+        # 1. Buscar todas as turmas ativas da etapa
+        turmas_result = (
+            supabase
+            .table("turma")
+            .select("id, vagas_totais")
+            .eq("etapa_id", etapa_id)
+            .eq("ativa", True)
+            .execute()
+        )
+
+        turmas = turmas_result.data or []
+        total_vagas = sum(t.get("vagas_totais", 0) for t in turmas)
+
+        # 2. Contar inscrições confirmadas na etapa
+        repo = InscricaoRepository()
+        total_inscricoes = repo.contar_inscricoes_por_etapa(etapa_id)
+
+        # 3. Calcular vagas disponíveis
+        vagas_disponiveis = total_vagas - total_inscricoes
+        sem_vagas = vagas_disponiveis <= 0
+
+        return {
+            "etapa_id": etapa_id,
+            "total_vagas": total_vagas,
+            "total_inscricoes": total_inscricoes,
+            "vagas_disponiveis": vagas_disponiveis,
+            "sem_vagas": sem_vagas
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao verificar vagas: {str(e)}")

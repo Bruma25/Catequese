@@ -1,7 +1,8 @@
+// ../frontend/src/pages/EtapaPage.jsx
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Header from '../components/Header/Header'
-import { listarEtapas, listarSacramentos } from '../services/api'
+import { listarEtapas, listarSacramentos, verificarVagasEtapa } from '../services/api'
 import './EtapaPage.css'
 
 function EtapaPage() {
@@ -13,17 +14,20 @@ function EtapaPage() {
   const [sacramentos, setSacramentos] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // Estado para popup de confirmação
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [etapaParaInscricao, setEtapaParaInscricao] = useState(null)
+  const [vagasInfo, setVagasInfo] = useState(null)
+
   const anoAtual = new Date().getFullYear()
 
   // Buscar sacramentos e etapas da API
   useEffect(() => {
     async function fetchData() {
       try {
-        // Buscar sacramentos
         const sacramentosData = await listarSacramentos()
         setSacramentos(sacramentosData)
 
-        // Buscar etapas
         const etapasData = await listarEtapas()
         setEtapas(etapasData)
       } catch (err) {
@@ -51,19 +55,16 @@ function EtapaPage() {
     }
 
     const etapasElegiveis = etapas.filter(etapa => {
-      // ✅ Verifica idade
       const idadeOk = (
         (!etapa.ano_nascimento_min || anoNasc >= etapa.ano_nascimento_min) &&
         (!etapa.ano_nascimento_max || anoNasc <= etapa.ano_nascimento_max)
       )
 
-      // ✅ Verifica sacramentos requeridos (deve ter TODOS)
       const temSacramentosRequeridos = !etapa.sacramentos_requeridos || etapa.sacramentos_requeridos.length === 0 ||
         etapa.sacramentos_requeridos.every(
           sacramentoRequerido => sacramentosSelecionados.includes(sacramentoRequerido)
         )
 
-      // ✅ Verifica sacramentos proibidos (não pode ter NENHUM)
       const naoTemSacramentosProibidos = !etapa.sacramentos_proibidos || etapa.sacramentos_proibidos.length === 0 ||
         !etapa.sacramentos_proibidos.some(
           sacramentoProibido => sacramentosSelecionados.includes(sacramentoProibido)
@@ -87,14 +88,58 @@ function EtapaPage() {
     )
   }
 
-  const handleSelecionarEtapa = (etapa) => {
-    // Salva dados em localStorage para usar na ficha
-    localStorage.setItem('inscricao_data', JSON.stringify({
-      dataNascimento,
-      sacramentos: sacramentosSelecionados,
-      etapaSelecionada: etapa
-    }))
-    navigate('/inscricao')
+  //Verificar vagas e mostrar popup
+  const handleSelecionarEtapa = async (etapa) => {
+    try {
+      const vagasData = await verificarVagasEtapa(etapa.id)
+      setVagasInfo(vagasData)
+
+      if (vagasData.sem_vagas) {
+        // Mostrar popup de confirmação
+        setEtapaParaInscricao(etapa)
+        setShowConfirmModal(true)
+      } else {
+        // Vagas disponíveis, ir direto para ficha
+        localStorage.setItem('inscricao_data', JSON.stringify({
+          dataNascimento,
+          sacramentos: sacramentosSelecionados,
+          etapaSelecionada: etapa,
+          sem_vagas: false
+        }))
+        navigate('/inscricao')
+      }
+    } catch (error) {
+      console.error('Erro ao verificar vagas:', error)
+      // Em caso de erro, permitir inscrição normalmente
+      localStorage.setItem('inscricao_data', JSON.stringify({
+        dataNascimento,
+        sacramentos: sacramentosSelecionados,
+        etapaSelecionada: etapa,
+        sem_vagas: false
+      }))
+      navigate('/inscricao')
+    }
+  }
+
+  // CONFIRMAR: Usuário quer continuar para fila de espera
+  const handleConfirmarInscricao = () => {
+    if (etapaParaInscricao) {
+      localStorage.setItem('inscricao_data', JSON.stringify({
+        dataNascimento,
+        sacramentos: sacramentosSelecionados,
+        etapaSelecionada: etapaParaInscricao,
+        sem_vagas: true
+      }))
+      navigate('/inscricao')
+    }
+    setShowConfirmModal(false)
+    setEtapaParaInscricao(null)
+  }
+
+  // CANCELAR: Usuário não quer continuar
+  const handleCancelarInscricao = () => {
+    setShowConfirmModal(false)
+    setEtapaParaInscricao(null)
   }
 
   if (loading) {
@@ -103,12 +148,9 @@ function EtapaPage() {
 
   return (
     <div className="etapa-container">
-      {/* Cabeçalho Reutilizável */}
       <Header titulo="Catequese Divino Espírito Santo" />
 
-      {/* Conteúdo Principal */}
       <main className="etapa-content">
-        {/* Dados do Catequizando */}
         <section className="dados-section">
           <h2 className="section-title">Dados do Catequizando</h2>
 
@@ -146,7 +188,6 @@ function EtapaPage() {
           </button>
         </section>
 
-        {/* Etapas Disponíveis */}
         {etapasFiltradas.length > 0 && (
           <section className="etapas-section">
             <h2 className="section-title">Etapas Disponíveis</h2>
@@ -175,6 +216,37 @@ function EtapaPage() {
           </section>
         )}
       </main>
+
+      {/* MODAL DE CONFIRMAÇÃO */}
+      {showConfirmModal && (
+        <div className="modal-overlay" onClick={handleCancelarInscricao}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-icon">⚠️</div>
+            <h3 className="modal-title">Atenção: Vagas Preenchidas</h3>
+            <p className="modal-text">
+              As vagas para <strong>{etapaParaInscricao?.nome}</strong> já foram preenchidas.
+            </p>
+            <p className="modal-text">
+              Você pode continuar e sua inscrição será incluída na <strong>fila de espera</strong>.
+              Assim que houver vaga disponível, entraremos em contato.
+            </p>
+            <div className="modal-actions">
+              <button
+                className="modal-button cancelar"
+                onClick={handleCancelarInscricao}
+              >
+                Cancelar
+              </button>
+              <button
+                className="modal-button confirmar"
+                onClick={handleConfirmarInscricao}
+              >
+                Continuar para Fila de Espera
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
