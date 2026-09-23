@@ -110,6 +110,26 @@ export async function buscarEtapa(id) {
   return request(`/api/v1/etapas/${id}`)
 }
 
+export async function criarEtapa(dados) {
+  return request('/api/v1/etapas', {
+    method: 'POST',
+    body: JSON.stringify(dados)
+  })
+}
+
+export async function editarEtapa(id, dados) {
+  return request(`/api/v1/etapas/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(dados)
+  })
+}
+
+export async function excluirEtapa(id) {
+  return request(`/api/v1/etapas/${id}`, {
+    method: 'DELETE'
+  })
+}
+
 // Inscrições
 export async function criarInscricao(data) {
   try {
@@ -142,38 +162,6 @@ export async function criarInscricao(data) {
   }
 }
 
-export async function editarEtapa(id, dados) {
-  return request(`/api/v1/etapas/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(dados)
-  })
-}
-
-export async function excluirEtapa(id) {
-  return request(`/api/v1/etapas/${id}`, {
-    method: 'DELETE'
-  })
-}
-
-// Inscrições
-export async function criarInscricao(data) {
-  try {
-    const response = await api.post('/inscricoes', data)
-    return response.data
-  } catch (error) {
-    console.error('❌ ERRO AO CRIAR INSCRIÇÃO:', error)
-    console.error('📋 DETALHES:', error.response?.data)
-    console.error('🔢 STATUS:', error.response?.status)
-
-    // LANÇAR ERRO COM DETALHES
-    throw {
-      message: error.response?.data?.detail || 'Erro ao criar inscrição',
-      details: error.response?.data,
-      status: error.response?.status
-    }
-  }
-}
-
 export async function verificarInscricaoExiste(inscricaoId) {
   try {
     const response = await fetch(`${API_URL}/api/v1/inscricoes/${inscricaoId}`)
@@ -182,6 +170,7 @@ export async function verificarInscricaoExiste(inscricaoId) {
     return false
   }
 }
+
 
 export async function listarInscricoes() {
   return request('/api/v1/inscricoes')
