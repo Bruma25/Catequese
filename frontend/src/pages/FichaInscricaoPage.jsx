@@ -345,7 +345,7 @@ function FichaInscricaoPage() {
         email: formData.emailOutro || null,
         telefone: formData.telefoneOutro,
         tipo_vinculo_id: 4, // 4=outro
-        descricao_outro: null,
+        descricao_outro: 'Responsável adicional',
       })
     }
 
