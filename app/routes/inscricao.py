@@ -25,15 +25,19 @@ router = APIRouter()
 
 # --- Pydantic Models para Request/Response ---
 
+class ResponsavelInput(BaseModel):
+    nome: str
+    email: Optional[str] = None
+    telefone: str
+    tipo_vinculo_id: int  # 1=pai, 2=mae, 3=responsavel_legal, 4=outro
+    descricao_outro: Optional[str] = None
+
 class InscricaoCreate(BaseModel):
     catequizando_nome: str
     catequizando_data_nascimento: date
     catequizando_sacramentos: List[int]
     etapa_id: str
-    responsavel_nome: str
-    responsavel_email: Optional[str] = None
-    responsavel_telefone: str
-    responsavel_vinculo: int
+    responsaveis: List[ResponsavelInput]
     local_encontro_id: Optional[int] = None
     referencia_irmao: Optional[str] = None
     quer_mesma_turma_que_irmao: bool = False
@@ -48,6 +52,7 @@ class InscricaoResponse(BaseModel):
     responsavel_nome: str
     created_at: Optional[str] = None
     turma_id: Optional[str] = None
+    ha_vagas: bool = True
 
 
 class EtapaResponse(BaseModel):
@@ -768,7 +773,14 @@ def listar_turmas():
                 "ano_nasc_maximo": t.get("ano_nasc_maximo")
             })
 
-        return turmas
+        return [
+        TurmaResponse(
+            id=t["id"],
+            nome_sistema=t["nome_sistema"],
+            # ... (demais campos)
+        )
+        for t in result.data
+    ]
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao listar turmas: {str(e)}")
@@ -1392,7 +1404,7 @@ def excluir_turma(turma_id: str):
 @router.post("/inscricoes", response_model=InscricaoResponse)
 def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str] = Header(None)):
     """
-    Cria uma nova inscrição de catequizando.
+    Cria uma nova inscrição de catequizando com múltiplos responsáveis.
     """
     try:
         supabase = get_supabase()
@@ -1412,32 +1424,57 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
         if not usuario_id:
             raise HTTPException(status_code=401, detail="Usuário não autenticado")
 
-        # 2. Buscar responsável existente pelo usuario_id
+        # 2. Validar que há pelo menos um responsável
+        if not inscricao_data.responsaveis or len(inscricao_data.responsaveis) == 0:
+            raise HTTPException(status_code=400, detail="Pelo menos um responsável é obrigatório")
+
+        # 3. Buscar ou criar o responsável principal (primeiro da lista)
         repo_responsavel = ResponsavelRepository()
-        responsavel_existente = repo_responsavel.buscar_por_usuario_id(usuario_id)
+        resp_principal = inscricao_data.responsaveis[0]
 
-        if responsavel_existente:
-            responsavel_salvo = responsavel_existente
-
-            if responsavel_salvo.nome != inscricao_data.responsavel_nome:
-                responsavel_salvo.nome = inscricao_data.responsavel_nome
-                responsavel_salvo.email = inscricao_data.responsavel_email
-                responsavel_salvo.telefone = inscricao_data.responsavel_telefone
-                repo_responsavel.editar(responsavel_salvo)
-        else:
-            from app.domain.usuario import Usuario
-
-            responsavel_novo = Responsavel(
-                id=str(uuid.uuid4()),
-                nome=inscricao_data.responsavel_nome,
-                email=inscricao_data.responsavel_email,
-                telefone=inscricao_data.responsavel_telefone,
-                usuario=Usuario(id=usuario_id, nome="", email=""),
-                vinculos=[],
+        # Buscar responsável existente pelo email
+        responsavel_salvo = None
+        if resp_principal.email:
+            resp_existente = (
+                supabase
+                .table("responsavel")
+                .select("*")
+                .eq("email", resp_principal.email)
+                .maybe_single()
+                .execute()
             )
 
-            responsavel_salvo = repo_responsavel.salvar(responsavel_novo)
+            if resp_existente.data:
+                responsavel_salvo = Responsavel(
+                    id=resp_existente.data["id"],
+                    nome=resp_existente.data["nome"],
+                    email=resp_existente.data.get("email"),
+                    telefone=resp_existente.data.get("telefone"),
+                    usuario=None,
+                    vinculos=[],
+                )
 
+                # Atualizar dados se necessário
+                if responsavel_salvo.nome != resp_principal.nome:
+                    responsavel_salvo.nome = resp_principal.nome
+                    responsavel_salvo.email = resp_principal.email
+                    responsavel_salvo.telefone = resp_principal.telefone
+                    repo_responsavel.editar(responsavel_salvo)
+
+        if not responsavel_salvo:
+            from app.domain.usuario import Usuario
+
+            responsavel_salvo = Responsavel(
+                id=str(uuid.uuid4()),
+                nome=resp_principal.nome,
+                email=resp_principal.email,
+                telefone=resp_principal.telefone,
+                usuario=Usuario(id=usuario_id, nome="", email="") if usuario_id else None,
+                vinculos=[],
+            )
+            responsavel_salvo = repo_responsavel.salvar(responsavel_salvo)
+
+        # 4. Buscar etapa
         etapa_db = (
             supabase
             .table("etapa")
@@ -1462,6 +1499,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
             sacramentos_proibidos=[],
         )
 
+        # 5. Criar catequizando
         from app.domain.historicoSacramental import HistoricoSacramental
         from app.domain.sacramento import Sacramento
 
@@ -1482,6 +1520,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
         repo_catequizando = CatequizandoRepository()
         catequizando_salvo = repo_catequizando.salvar(catequizando_novo)
 
+        # 6. Salvar histórico sacramental
         for sacramento_id in inscricao_data.catequizando_sacramentos:
             sacramento_db = (
                 supabase
@@ -1512,40 +1551,90 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
 
         repo_catequizando.sincronizar_historico_sacramental(catequizando_salvo)
 
-        tipo_vinculo_db = (
-            supabase
-            .table("tipo_vinculo_responsavel")
-            .select("*")
-            .eq("id", inscricao_data.responsavel_vinculo)
-            .maybe_single()
-            .execute()
-        )
+        # 7. SALVAR MÚLTIPLOS RESPONSÁVEIS NA TABELA catequizando_responsavel
+        for resp_input in inscricao_data.responsaveis:
+            # Buscar ou criar responsável
+            responsavel_resp = None
 
-        if not tipo_vinculo_db.data:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Tipo de vínculo {inscricao_data.responsavel_vinculo} não encontrado"
+            if resp_input.email:
+                resp_existente = (
+                    supabase
+                    .table("responsavel")
+                    .select("*")
+                    .eq("email", resp_input.email)
+                    .maybe_single()
+                    .execute()
+                )
+
+                if resp_existente.data:
+                    responsavel_resp = Responsavel(
+                        id=resp_existente.data["id"],
+                        nome=resp_existente.data["nome"],
+                        email=resp_existente.data.get("email"),
+                        telefone=resp_existente.data.get("telefone"),
+                        usuario=None,
+                        vinculos=[],
+                    )
+                else:
+                    responsavel_resp = Responsavel(
+                        id=str(uuid.uuid4()),
+                        nome=resp_input.nome,
+                        email=resp_input.email,
+                        telefone=resp_input.telefone,
+                        usuario=None,
+                        vinculos=[],
+                    )
+                    repo_responsavel.salvar(responsavel_resp)
+            else:
+                # Se não tem email, criar novo responsável
+                responsavel_resp = Responsavel(
+                    id=str(uuid.uuid4()),
+                    nome=resp_input.nome,
+                    email=resp_input.email,
+                    telefone=resp_input.telefone,
+                    usuario=None,
+                    vinculos=[],
+                )
+                repo_responsavel.salvar(responsavel_resp)
+
+            # Buscar tipo de vínculo
+            tipo_vinculo_db = (
+                supabase
+                .table("tipo_vinculo_responsavel")
+                .select("*")
+                .eq("id", resp_input.tipo_vinculo_id)
+                .maybe_single()
+                .execute()
             )
 
-        tipo_vinculo = TipoVinculoResponsavel(
-            id=tipo_vinculo_db.data["id"],
-            codigo=tipo_vinculo_db.data["codigo"],
-            descricao=tipo_vinculo_db.data["descricao"],
-        )
+            if not tipo_vinculo_db.data:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Tipo de vínculo {resp_input.tipo_vinculo_id} não encontrado"
+                )
 
-        vinculo = CatequizandoResponsavel(
-            catequizando=catequizando_salvo,
-            responsavel=responsavel_salvo,
-            tipo_vinculo=tipo_vinculo,
-            descricao_outro=None,
-        )
-        vinculo.validar()
+            tipo_vinculo = TipoVinculoResponsavel(
+                id=tipo_vinculo_db.data["id"],
+                codigo=tipo_vinculo_db.data["codigo"],
+                descricao=tipo_vinculo_db.data["descricao"],
+            )
 
-        catequizando_salvo.adicionar_vinculo_responsavel(vinculo)
-        responsavel_salvo.adicionar_vinculo(vinculo)
+            # Criar vínculo
+            vinculo = CatequizandoResponsavel(
+                catequizando=catequizando_salvo,
+                responsavel=responsavel_resp,
+                tipo_vinculo=tipo_vinculo,
+                descricao_outro=resp_input.descricao_outro if resp_input.tipo_vinculo_id == 4 else None,
+            )
+            vinculo.validar()
 
+            catequizando_salvo.adicionar_vinculo_responsavel(vinculo)
+            responsavel_resp.adicionar_vinculo(vinculo)
+
+        # Sincronizar vínculos na tabela catequizando_responsavel
         repo_catequizando.sincronizar_vinculos_responsaveis(catequizando_salvo)
 
+        # 8. Buscar status pendente_distribuicao
         status_db = (
             supabase
             .table("status_inscricao")
@@ -1564,6 +1653,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
             descricao=status_db.data["descricao"],
         )
 
+        # 9. Validar requisitos
         if not responsavel_salvo.pode_responder_por(catequizando_salvo):
             raise HTTPException(
                 status_code=400,
@@ -1576,12 +1666,14 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
                 detail="O catequizando não atende aos requisitos da etapa."
             )
 
+        # 10. Verificar vagas
         repo_inscricao = InscricaoRepository()
         turmas, total_inscricoes = repo_inscricao.buscar_dados_para_verificar_vagas(
             etapa_id=etapa.id,
             catequizando=catequizando_salvo,
         )
 
+        # 11. Buscar status confirmada e lista_espera
         status_confirmada_db = (
             supabase
             .table("status_inscricao")
@@ -1618,6 +1710,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
             descricao=status_lista_espera_db.data["descricao"],
         )
 
+        # 12. Criar serviço e inscrição
         servico = ServicoInscricao(
             status_pendente_distribuicao=status,
             status_confirmada=status_confirmada,
@@ -1639,6 +1732,14 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
 
         inscricao_salva = repo_inscricao.salvar(inscricao)
 
+        # 13. VERIFICAR SE HÁ VAGAS PARA RETORNAR NO RESPONSE
+        ha_vagas = servico.verificar_vagas_antes_da_inscricao(
+            etapa=etapa,
+            catequizando=catequizando_salvo,
+            turmas=turmas,
+            total_inscricoes_etapa=total_inscricoes,
+        )
+
         return InscricaoResponse(
             id=inscricao_salva.id,
             catequizando_nome=inscricao_salva.catequizando.nome,
@@ -1646,14 +1747,14 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
             status_id=inscricao_salva.status.id,
             responsavel_nome=inscricao_salva.responsavel.nome,
             created_at=str(inscricao_salva.data_inscricao) if inscricao_salva.data_inscricao else None,
-            turma_id=str(inscricao_salva.turma.id) if inscricao_salva.turma else None
+            turma_id=str(inscricao_salva.turma.id) if inscricao_salva.turma else None,
+            ha_vagas=ha_vagas,
         )
 
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao criar inscrição: {str(e)}")
-
 
 @router.post("/inscricoes/{inscricao_id}/documentos")
 def upload_documento(inscricao_id: str, file: UploadFile = File(...), tipo_documento: str = Form(...)):
@@ -1741,50 +1842,6 @@ def listar_pendentes_distribuicao():
         )
 
 
-@router.get("/inscricoes/etapa/{etapa_id}", response_model=List[InscricaoResponse])
-def listar_inscricoes_por_etapa(etapa_id: str):
-    """Lista todas as inscrições de uma etapa específica."""
-    try:
-        repo = InscricaoRepository()
-        inscricoes = repo.listar_por_etapa(etapa_id)
-
-        return [
-            InscricaoResponse(
-                id=i["id"],
-                catequizando_nome=i["catequizando_nome"],
-                etapa_id=i["etapa_id"],
-                status_id=i["status_id"],
-                responsavel_nome=i["responsavel_nome"],
-                created_at=i.get("created_at")
-            )
-            for i in inscricoes
-        ]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao listar inscrições por etapa: {str(e)}")
-
-
-@router.get("/inscricoes/status/{status_codigo}", response_model=List[InscricaoResponse])
-def listar_inscricoes_por_status(status_codigo: str):
-    """Lista todas as inscrições com um status específico."""
-    try:
-        repo = InscricaoRepository()
-        inscricoes = repo.listar_por_status(status_codigo)
-
-        return [
-            InscricaoResponse(
-                id=i["id"],
-                catequizando_nome=i["catequizando_nome"],
-                etapa_id=i["etapa_id"],
-                status_id=i["status_id"],
-                responsavel_nome=i["responsavel_nome"],
-                created_at=i.get("created_at")
-            )
-            for i in inscricoes
-        ]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao listar inscrições por status: {str(e)}")
-
-
 @router.get("/inscricoes/{inscricao_id}/completa")
 def buscar_inscricao_completa(inscricao_id: str):
     """Busca uma inscrição com todos os detalhes e relacionamentos."""
@@ -1819,7 +1876,8 @@ def buscar_inscricao(inscricao_id: str):
             status_id=inscricao.status.id,
             responsavel_nome=inscricao.responsavel.nome,
             created_at=str(inscricao.data_inscricao) if inscricao.data_inscricao else None,
-            turma_id=str(inscricao.turma.id) if inscricao.turma else None
+            turma_id=str(inscricao.turma.id) if inscricao.turma else None,
+            ha_vagas=True,
         )
     except HTTPException:
         raise
@@ -1927,6 +1985,96 @@ def contar_inscricoes_por_turma(turma_id: str):
         return {"count": count}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao contar inscrições: {str(e)}")
+
+
+@router.get("/inscricoes/verificar-vagas-etapa/{etapa_id}")
+def verificar_vagas_etapa(etapa_id: str):
+    """
+    Verifica se há vagas disponíveis em uma etapa.
+    Retorna:
+    - total_vagas: soma de vagas_totais de todas as turmas ativas da etapa
+    - total_inscricoes: soma de inscrições confirmadas na etapa
+    - vagas_disponiveis: total_vagas - total_inscricoes
+    - sem_vagas: True se vagas_disponiveis <= 0
+    """
+    try:
+        supabase = get_supabase()
+
+        # 1. Buscar todas as turmas ativas da etapa
+        turmas_result = (
+            supabase
+            .table("turma")
+            .select("id, vagas_totais")
+            .eq("etapa_id", etapa_id)
+            .eq("ativa", True)
+            .execute()
+        )
+
+        turmas = turmas_result.data or []
+        total_vagas = sum(t.get("vagas_totais", 0) for t in turmas)
+
+        # 2. Contar inscrições confirmadas na etapa
+        repo = InscricaoRepository()
+        total_inscricoes = repo.contar_inscricoes_por_etapa(etapa_id)
+
+        # 3. Calcular vagas disponíveis
+        vagas_disponiveis = total_vagas - total_inscricoes
+        sem_vagas = vagas_disponiveis <= 0
+
+        return {
+            "etapa_id": etapa_id,
+            "total_vagas": total_vagas,
+            "total_inscricoes": total_inscricoes,
+            "vagas_disponiveis": vagas_disponiveis,
+            "sem_vagas": sem_vagas
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao verificar vagas: {str(e)}")
+
+
+@router.get("/inscricoes/etapa/{etapa_id}", response_model=List[InscricaoResponse])
+def listar_inscricoes_por_etapa(etapa_id: str):
+    """Lista todas as inscrições de uma etapa específica."""
+    try:
+        repo = InscricaoRepository()
+        inscricoes = repo.listar_por_etapa(etapa_id)
+
+        return [
+            InscricaoResponse(
+                id=i["id"],
+                catequizando_nome=i["catequizando_nome"],
+                etapa_id=i["etapa_id"],
+                status_id=i["status_id"],
+                responsavel_nome=i["responsavel_nome"],
+                created_at=i.get("created_at")
+            )
+            for i in inscricoes
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao listar inscrições por etapa: {str(e)}")
+
+
+@router.get("/inscricoes/status/{status_codigo}", response_model=List[InscricaoResponse])
+def listar_inscricoes_por_status(status_codigo: str):
+    """Lista todas as inscrições com um status específico."""
+    try:
+        repo = InscricaoRepository()
+        inscricoes = repo.listar_por_status(status_codigo)
+
+        return [
+            InscricaoResponse(
+                id=i["id"],
+                catequizando_nome=i["catequizando_nome"],
+                etapa_id=i["etapa_id"],
+                status_id=i["status_id"],
+                responsavel_nome=i["responsavel_nome"],
+                created_at=i.get("created_at")
+            )
+            for i in inscricoes
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao listar inscrições por status: {str(e)}")
 
 
 @router.delete("/inscricoes/{inscricao_id}")
@@ -2077,49 +2225,3 @@ def editar_catequizando(catequizando_id: str, dados: CatequizandoUpdate):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/inscricoes/verificar-vagas-etapa/{etapa_id}")
-def verificar_vagas_etapa(etapa_id: str):
-    """
-    Verifica se há vagas disponíveis em uma etapa.
-    Retorna:
-    - total_vagas: soma de vagas_totais de todas as turmas ativas da etapa
-    - total_inscricoes: soma de inscrições confirmadas na etapa
-    - vagas_disponiveis: total_vagas - total_inscricoes
-    - sem_vagas: True se vagas_disponiveis <= 0
-    """
-    try:
-        supabase = get_supabase()
-
-        # 1. Buscar todas as turmas ativas da etapa
-        turmas_result = (
-            supabase
-            .table("turma")
-            .select("id, vagas_totais")
-            .eq("etapa_id", etapa_id)
-            .eq("ativa", True)
-            .execute()
-        )
-
-        turmas = turmas_result.data or []
-        total_vagas = sum(t.get("vagas_totais", 0) for t in turmas)
-
-        # 2. Contar inscrições confirmadas na etapa
-        repo = InscricaoRepository()
-        total_inscricoes = repo.contar_inscricoes_por_etapa(etapa_id)
-
-        # 3. Calcular vagas disponíveis
-        vagas_disponiveis = total_vagas - total_inscricoes
-        sem_vagas = vagas_disponiveis <= 0
-
-        return {
-            "etapa_id": etapa_id,
-            "total_vagas": total_vagas,
-            "total_inscricoes": total_inscricoes,
-            "vagas_disponiveis": vagas_disponiveis,
-            "sem_vagas": sem_vagas
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao verificar vagas: {str(e)}")

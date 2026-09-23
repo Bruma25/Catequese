@@ -1,3 +1,4 @@
+// ../frontend/src/pages/FichaInscricaoPage.jsx
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Header from '../components/Header/Header'
@@ -12,6 +13,38 @@ function FichaInscricaoPage() {
   const [sacramentosCatequizando, setSacramentosCatequizando] = useState([])
   const [locaisEncontro, setLocaisEncontro] = useState([])
   const [inscricaoId, setInscricaoId] = useState(null)
+  const [mensagemSucesso, setMensagemSucesso] = useState('')
+  const [mensagemErro, setMensagemErro] = useState('')
+  const [showModal, setShowModal] = useState(false)
+  const [etapaInscrito, setEtapaInscrito] = useState(null)
+
+  // Estados dos responsáveis (adicionar/ajustar)
+  const [responsavelPrincipal, setResponsavelPrincipal] = useState({
+    nome: '',
+    email: '',
+    telefone: '',
+    tipoVinculo: 2, // 2=mãe (padrão)
+  });
+
+  const [pai, setPai] = useState({
+    nome: '',
+    email: '',
+    telefone: '',
+  });
+
+  const [mae, setMae] = useState({
+    nome: '',
+    email: '',
+    telefone: '',
+  });
+
+  const [outroResponsavel, setOutroResponsavel] = useState({
+    nome: '',
+    email: '',
+    telefone: '',
+    tipoVinculo: 4, // 4=outro
+    descricaoOutro: '',
+  });
 
   // Dados do catequizando
   const [formData, setFormData] = useState({
@@ -110,17 +143,14 @@ function FichaInscricaoPage() {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
 
-    console.log('📝 Mudança:', { name, value, type, checked })
-
-        setFormData(prev => {
-        const novo = {
-          ...prev,
-          [name]: type === 'checkbox' ? checked : value
-        }
-        console.log('📝 Novo formData:', novo)
-        return novo
-      })
-    }
+    setFormData(prev => {
+      const novo = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }
+      return novo
+    })
+  }
 
   const handleDocumentoChange = (tipo, file) => {
     setDocumentos(prev => ({
@@ -210,88 +240,159 @@ function FichaInscricaoPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    console.log('✅ termoCompromisso:', formData.termoCompromisso)
-    console.log('🔍 formData completo:', formData)
-
-    if (!formData.termoCompromisso) {
-      alert('Por favor, aceite o termo de compromisso')
+    // === VALIDAÇÕES ===
+    if (!formData.nomeCompleto || !formData.dataNascimento) {
+      setMensagemErro('Preencha o nome e a data de nascimento do catequizando.')
       return
     }
 
-    setLoading(true)
+    if (!etapaSelecionada) {
+      setMensagemErro('Selecione uma etapa.')
+      return
+    }
+
+    // === DETERMINAR RESPONSÁVEL PRINCIPAL ===
+    let respPrincipal = { ...responsavelPrincipal }
+
+    if (formData.responsavelProprio === 'sim') {
+      // O próprio catequizando é o responsável
+      respPrincipal = {
+        nome: formData.nomeCompleto,
+        email: formData.email,
+        telefone: formData.telefone1,
+        tipoVinculo: 5, // 5=proprio
+      }
+    } else {
+      // Responsável é pai, mãe ou outro
+      switch (formData.tipoResponsavel) {
+        case 'pai':
+          respPrincipal = {
+            nome: formData.nomePai,
+            email: formData.emailPai,
+            telefone: formData.telefonePai,
+            tipoVinculo: 1, // 1=pai
+          }
+          break
+        case 'mae':
+          respPrincipal = {
+            nome: formData.nomeMae,
+            email: formData.emailMae,
+            telefone: formData.telefoneMae,
+            tipoVinculo: 2, // 2=mãe
+          }
+          break
+        case 'outro':
+          respPrincipal = {
+            nome: formData.outroResponsavel,
+            email: formData.emailOutro,
+            telefone: formData.telefoneOutro,
+            tipoVinculo: 4, // 4=outro
+          }
+          break
+        default:
+          setMensagemErro('Selecione o tipo de responsável.')
+          return
+      }
+    }
+
+    // Validar responsável principal
+    if (!respPrincipal.nome || !respPrincipal.telefone) {
+      setMensagemErro('Preencha pelo menos o nome e telefone do responsável principal.')
+      return
+    }
+
+    // === PREPARAR LISTA DE RESPONSÁVEIS ===
+    const responsaveisParaEnviar = []
+
+    // 1. Responsável principal
+    responsaveisParaEnviar.push({
+      nome: respPrincipal.nome,
+      email: respPrincipal.email || null,
+      telefone: respPrincipal.telefone,
+      tipo_vinculo_id: respPrincipal.tipoVinculo,
+      descricao_outro: null,
+    })
+
+    // 2. Pai (se preenchido e diferente do principal)
+    if (formData.nomePai && formData.telefonePai && formData.emailPai !== respPrincipal.email) {
+      responsaveisParaEnviar.push({
+        nome: formData.nomePai,
+        email: formData.emailPai || null,
+        telefone: formData.telefonePai,
+        tipo_vinculo_id: 1, // 1=pai
+        descricao_outro: null,
+      })
+    }
+
+    // 3. Mãe (se preenchida e diferente do principal)
+    if (formData.nomeMae && formData.telefoneMae && formData.emailMae !== respPrincipal.email) {
+      responsaveisParaEnviar.push({
+        nome: formData.nomeMae,
+        email: formData.emailMae || null,
+        telefone: formData.telefoneMae,
+        tipo_vinculo_id: 2, // 2=mãe
+        descricao_outro: null,
+      })
+    }
+
+    // 4. Outro responsável (se preenchido e diferente do principal)
+    if (formData.outroResponsavel && formData.telefoneOutro && formData.emailOutro !== respPrincipal.email) {
+      responsaveisParaEnviar.push({
+        nome: formData.outroResponsavel,
+        email: formData.emailOutro || null,
+        telefone: formData.telefoneOutro,
+        tipo_vinculo_id: 4, // 4=outro
+        descricao_outro: null,
+      })
+    }
+
+    // === PREPARAR SACRAMENTOS ===
+    const sacramentosParaEnviar = []
+    if (formData.batizado === 'sim') sacramentosParaEnviar.push(1)
+    if (formData.eucaristia === 'sim') sacramentosParaEnviar.push(2)
+    if (formData.crisma === 'sim') sacramentosParaEnviar.push(3)
+
+    // === PREPARAR PAYLOAD ===
+    const payload = {
+      catequizando_nome: formData.nomeCompleto,
+      catequizando_data_nascimento: formData.dataNascimento,
+      catequizando_sacramentos: sacramentosParaEnviar,
+      etapa_id: etapaSelecionada,
+      responsaveis: responsaveisParaEnviar,
+      local_encontro_id: formData.local_encontro_id || null,
+      referencia_irmao: formData.temIrmao === 'sim' ? formData.referenciaIrmao : null,
+      quer_mesma_turma_que_irmao: formData.querMesmaTurmaQueIrmao === 'sim',
+      observacao_responsavel: formData.observacaoResponsavel || null,
+    }
 
     try {
-      const mapeamentoVinculo = {
-        'pai': 1,
-        'mae': 2,
-        'outro': 3
-      }
+      setLoading(true)
+      setMensagemErro('')
 
-      const dadosInscricao = {
-        catequizando_nome: formData.nomeCompleto,
-        catequizando_data_nascimento: formData.dataNascimento,
-        catequizando_sacramentos: sacramentosCatequizando || [],
-        etapa_id: etapaSelecionada.id,
-        responsavel_nome: getNomeResponsavel(),
-        responsavel_email: formData.emailMae || formData.emailPai || formData.emailOutro || formData.email || null,
-        responsavel_telefone: formData.telefoneMae || formData.telefonePai || formData.telefoneOutro || formData.telefone1 || null,
-        responsavel_vinculo: mapeamentoVinculo[formData.tipoResponsavel] || 3,
-        local_encontro_id: formData.local_encontro_id ? parseInt(formData.local_encontro_id) : null,
-        referencia_irmao: formData.temIrmao === 'sim' ? formData.referenciaIrmao : null,
-        quer_mesma_turma_que_irmao: formData.temIrmao === 'sim' && formData.querMesmaTurmaQueIrmao === 'sim',
-        observacao_responsavel: formData.observacaoResponsavel || null
-      }
+      // === ENVIAR INSCRIÇÃO ===
+      const response = await criarInscricao(payload)
 
-      console.log('📤 Enviando inscrição:', dadosInscricao)
-
-      const inscricaoCriada = await criarInscricao(dadosInscricao)
-
-      console.log('✅ Inscrição criada:', inscricaoCriada)
-
-      setInscricaoId(inscricaoCriada.id)
-
-      if (inscricaoCriada.id && Object.values(documentos).some(d => d !== null)) {
-        console.log('⏳ Verificando se inscrição foi persistida...')
-
-        let existe = false
-        let tentativas = 0
-        const maxTentativas = 10
-        const delayMs = 300
-
-        while (!existe && tentativas < maxTentativas) {
-          await new Promise(resolve => setTimeout(resolve, delayMs))
-          existe = await verificarInscricaoExiste(inscricaoCriada.id)
-          tentativas++
-          console.log(`🔄 Tentativa ${tentativas}/${maxTentativas}: ${existe ? 'Encontrada!' : 'Aguardando...'}`)
-        }
-
-        if (existe) {
-          console.log('📎 Enviando documentos...')
-          await uploadDocumentos(inscricaoCriada.id)
-        } else {
-          console.warn('⚠️ Inscrição não encontrada após múltiplas tentativas. Documentos não enviados.')
-        }
-      }
-
-      // Verificar status
-      if (inscricaoCriada.status_id === 2 || inscricaoCriada.status_id === 3) {
-        alert('Inscrição confirmada com vaga!')
-      } else if (inscricaoCriada.status_id === 5) {
-        alert('Inscrição em fila de espera realizada com sucesso!')
+      // === VERIFICAR ha_vagas PARA DECIDIR A MENSAGEM ===
+      if (response.ha_vagas) {
+        setMensagemSucesso('Inscrição realizada com sucesso!')
       } else {
-        alert('Inscrição realizada com sucesso!')
+        setMensagemSucesso('Inscrição em fila de espera realizada com sucesso!')
       }
 
-      // Limpar localStorage
-      localStorage.removeItem('inscricao_data')
+      setInscricaoId(response.id)
+      setEtapaInscrito(response.etapa_id)
+      setShowModal(true)
 
-      navigate('/home')
+      // === UPLOAD DE DOCUMENTOS (após inscrição criada) ===
+      if (response.id) {
+        await uploadDocumentos(response.id)
+      }
 
     } catch (error) {
       console.error('Erro ao criar inscrição:', error)
-
-      const mensagemErro = error.message || 'Erro ao realizar inscrição'
-      alert(`Erro: ${mensagemErro}`)
+      setMensagemErro(
+        error.response?.data?.detail || 'Erro ao criar inscrição. Tente novamente.'
+      )
     } finally {
       setLoading(false)
     }
@@ -1113,6 +1214,105 @@ function FichaInscricaoPage() {
             {loading ? 'ENVIANDO...' : 'ENVIAR INSCRIÇÃO'}
           </button>
         </form>
+
+        {/* MODAL DE CONFIRMAÇÃO */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+              <div className="text-center">
+                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                  <svg
+                    className="h-6 w-6 text-green-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </div>
+
+                <h3 className="mt-4 text-lg font-medium text-gray-900">
+                  {mensagemSucesso.includes('fila de espera')
+                    ? 'Inscrição em fila de espera!'
+                    : 'Inscrição realizada com sucesso!'}
+                </h3>
+
+                <p className="mt-2 text-sm text-gray-500">
+                  {mensagemSucesso}
+                </p>
+
+                {inscricaoId && (
+                  <p className="mt-2 text-xs text-gray-400">
+                    ID da inscrição: {inscricaoId.substring(0, 8)}...
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowModal(false)
+                    navigate('/inscricao-sucesso', { state: { inscricaoId, etapaInscrito } })
+                  }}
+                  className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700"
+                >
+                  Confirmar
+                </button>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL DE ERRO */}
+        {mensagemErro && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+              <div className="text-center">
+                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                  <svg
+                    className="h-6 w-6 text-red-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </div>
+
+                <h3 className="mt-4 text-lg font-medium text-gray-900">Erro na Inscrição</h3>
+
+                <p className="mt-2 text-sm text-gray-500">
+                  {mensagemErro}
+                </p>
+              </div>
+
+              <div className="mt-6">
+                <button
+                  onClick={() => setMensagemErro('')}
+                  className="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )
