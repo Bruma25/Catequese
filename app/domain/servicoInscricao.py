@@ -106,8 +106,8 @@ class ServicoInscricao:
         if etapa is None:
             raise ValueError("A etapa da inscrição é obrigatória.")
 
-        if not responsavel.pode_responder_por(catequizando):
-            raise ValueError("O responsável informado não possui vínculo com o catequizando.")
+        #if not responsavel.pode_responder_por(catequizando):
+        #    raise ValueError("O responsável informado não possui vínculo com o catequizando.")
 
         if not etapa.aceita_catequizando(catequizando):
             raise ValueError("O catequizando não atende aos requisitos da etapa.")
