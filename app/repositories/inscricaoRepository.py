@@ -775,6 +775,7 @@ class InscricaoRepository:
 
         status_ids = [s["id"] for s in data_status]
 
+        # VERIFICAR SE ESTÁ CONTANDO CORRETAMENTE
         result = (
             self.db.table(self.table)
             .select("id", count="exact")
