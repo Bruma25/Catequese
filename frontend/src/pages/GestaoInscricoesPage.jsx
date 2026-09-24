@@ -11,7 +11,8 @@ import {
   listarTurmas,
   listarDocumentosInscricao,
   atualizarStatusDocumento,
-  excluirInscricao
+  excluirInscricao,
+  buscarVagasDetalhes
 } from '../services/api'
 import './GestaoInscricoesPage.css'
 
@@ -62,33 +63,40 @@ function GestaoInscricoesPage() {
       setTurmas(turmasData)
 
       // Buscar vagas de todas as turmas
-      const vagasPromises = turmasData.map(async (turma) => {
-        try {
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/turmas/${turma.id}/vagas-detalhes`)
-          const data = await response.json()
-          return { turmaId: turma.id, vagas: data }
-        } catch (error) {
-          console.error(`Erro ao buscar vagas da turma ${turma.id}:`, error)
-          return { turmaId: turma.id, vagas: null }
-        }
-      })
+    console.log('🔵 Buscando vagas para', turmasData.length, 'turmas...')
 
-      const vagasResults = await Promise.all(vagasPromises)
-      const vagasMap = {}
-      vagasResults.forEach(result => {
-        if (result.vagas) {
-          vagasMap[result.turmaId] = result.vagas
-        }
-      })
-      setTurmasVagas(vagasMap)
+    const vagasPromises = turmasData.map(async (turma) => {
+      try {
+        console.log('🔵 Buscando vagas da turma:', turma.id)
+        const vagas = await buscarVagasDetalhes(turma.id)
+        console.log('✅ Vagas da turma', turma.id, ':', vagas)
+        return { turmaId: turma.id, vagas: vagas }
+      } catch (error) {
+        console.error('❌ Erro ao buscar vagas da turma', turma.id, ':', error)
+        return { turmaId: turma.id, vagas: null }
+      }
+    })
 
-    } catch (error) {
-      console.error('Erro ao buscar dados:', error)
-      alert('Erro ao carregar dados. Tente novamente.')
-    } finally {
-      setLoading(false)
-    }
+    const vagasResults = await Promise.all(vagasPromises)
+    console.log('📊 Resultados das vagas:', vagasResults)
+
+    const vagasMap = {}
+    vagasResults.forEach(result => {
+      if (result.vagas) {
+        vagasMap[result.turmaId] = result.vagas
+      }
+    })
+
+    console.log('🗺️ Mapa de vagas:', vagasMap)
+    setTurmasVagas(vagasMap)
+
+  } catch (error) {
+    console.error('Erro ao buscar dados:', error)
+    alert('Erro ao carregar dados. Tente novamente.')
+  } finally {
+    setLoading(false)
   }
+}
 
   // Filtrar inscrições
   const inscricoesFiltradas = inscricoes.filter(inscricao => {

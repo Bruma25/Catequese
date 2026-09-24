@@ -322,6 +322,24 @@ export async function contarVagasOcupadas(turmaId) {
   return request(`/api/v1/turmas/${turmaId}/vagas-ocupadas`)
 }
 
+export async function buscarVagasDetalhes(turmaId) {
+  try {
+    const response = await fetch(`${API_URL}/api/v1/turmas/${turmaId}/vagas-detalhes`)
+
+    if (!response.ok) {
+      console.warn(`⚠️ Erro ao buscar vagas detalhadas para turma ${turmaId}: ${response.status}`)
+      return null
+    }
+
+    const data = await response.json()
+    console.log('✅ Vagas detalhadas:', data)
+    return data
+  } catch (error) {
+    console.error('❌ Erro ao buscar vagas detalhadas:', error)
+    return null
+  }
+}
+
 export async function uploadDocumento(inscricaoId, file, tipoDocumento) {
   const formData = new FormData()
   formData.append('file', file)
