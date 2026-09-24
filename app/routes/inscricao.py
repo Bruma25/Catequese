@@ -1482,12 +1482,10 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
             try:
                 user_data = supabase.auth.get_user(token)
 
-                # VERIFICAÇÃO DE NULLIDADE
                 if user_data and hasattr(user_data, 'user') and user_data.user:
                     usuario_id = user_data.user.id
                     usuario_nome = user_data.user.email or ""
                     print(f"🔵 Usuário: {usuario_id}, Email: {usuario_nome}")
-
                 else:
                     raise HTTPException(status_code=401, detail="Usuário não autenticado")
             except Exception as e:
@@ -1504,7 +1502,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
         repo_responsavel = ResponsavelRepository()
         resp_principal = inscricao_data.responsaveis[0]
 
-        # Buscar responsável existente pelo email
+        # ✅ BUSCAR RESPONSÁVEL PELO EMAIL
         responsavel_salvo = None
         if resp_principal.email:
             resp_existente = (
@@ -1516,7 +1514,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
                 .execute()
             )
 
-            # VERIFICAÇÃO DE NULLIDADE
             if resp_existente and hasattr(resp_existente, 'data') and resp_existente.data:
                 responsavel_salvo = Responsavel(
                     id=resp_existente.data["id"],
@@ -1534,6 +1531,35 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
                     responsavel_salvo.telefone = resp_principal.telefone
                     repo_responsavel.editar(responsavel_salvo)
 
+        # ✅ BUSCAR RESPONSÁVEL PELO USUÁRIO LOGADO (NOVO!)
+        if not responsavel_salvo and usuario_id:
+            resp_por_usuario = (
+                supabase
+                .table("responsavel")
+                .select("*")
+                .eq("usuario_id", usuario_id)
+                .maybe_single()
+                .execute()
+            )
+
+            if resp_por_usuario and hasattr(resp_por_usuario, 'data') and resp_por_usuario.data:
+                responsavel_salvo = Responsavel(
+                    id=resp_por_usuario.data["id"],
+                    nome=resp_por_usuario.data["nome"],
+                    email=resp_por_usuario.data.get("email"),
+                    telefone=resp_por_usuario.data.get("telefone"),
+                    usuario=None,
+                    vinculos=[],
+                )
+
+                # Atualizar dados se necessário
+                if responsavel_salvo.nome != resp_principal.nome:
+                    responsavel_salvo.nome = resp_principal.nome
+                    responsavel_salvo.email = resp_principal.email
+                    responsavel_salvo.telefone = resp_principal.telefone
+                    repo_responsavel.editar(responsavel_salvo)
+
+        # ✅ CRIAR APENAS SE NÃO ENCONTROU
         if not responsavel_salvo:
             from app.domain.usuario import Usuario
 
@@ -1557,7 +1583,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
             .execute()
         )
 
-        # VERIFICAÇÃO DE NULLIDADE
         if not etapa_db or not hasattr(etapa_db, 'data') or not etapa_db.data:
             raise HTTPException(status_code=400, detail=f"Etapa {inscricao_data.etapa_id} não encontrada")
 
@@ -1605,7 +1630,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
                 .execute()
             )
 
-            # VERIFICAÇÃO DE NULLIDADE
             if sacramento_db and hasattr(sacramento_db, 'data') and sacramento_db.data:
                 sacramento = Sacramento(
                     id=sacramento_db.data["id"],
@@ -1628,7 +1652,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
 
         # 7. SALVAR MÚLTIPLOS RESPONSÁVEIS NA TABELA catequizando_responsavel
         for resp_input in inscricao_data.responsaveis:
-            # Buscar ou criar responsável
             responsavel_resp = None
 
             if resp_input.email:
@@ -1641,7 +1664,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
                     .execute()
                 )
 
-                # VERIFICAÇÃO DE NULLIDADE
                 if resp_existente and hasattr(resp_existente, 'data') and resp_existente.data:
                     responsavel_resp = Responsavel(
                         id=resp_existente.data["id"],
@@ -1662,7 +1684,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
                     )
                     repo_responsavel.salvar(responsavel_resp)
             else:
-                # Se não tem email, criar novo responsável
                 responsavel_resp = Responsavel(
                     id=str(uuid.uuid4()),
                     nome=resp_input.nome,
@@ -1673,7 +1694,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
                 )
                 repo_responsavel.salvar(responsavel_resp)
 
-            # Buscar tipo de vínculo
             tipo_vinculo_db = (
                 supabase
                 .table("tipo_vinculo_responsavel")
@@ -1683,7 +1703,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
                 .execute()
             )
 
-            # VERIFICAÇÃO DE NULLIDADE
             if not tipo_vinculo_db or not hasattr(tipo_vinculo_db, 'data') or not tipo_vinculo_db.data:
                 raise HTTPException(
                     status_code=400,
@@ -1696,7 +1715,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
                 descricao=tipo_vinculo_db.data["descricao"],
             )
 
-            # Criar vínculo
             vinculo = CatequizandoResponsavel(
                 catequizando=catequizando_salvo,
                 responsavel=responsavel_resp,
@@ -1708,7 +1726,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
             catequizando_salvo.adicionar_vinculo_responsavel(vinculo)
             responsavel_resp.adicionar_vinculo(vinculo)
 
-        # Sincronizar vínculos na tabela catequizando_responsavel
         repo_catequizando.sincronizar_vinculos_responsaveis(catequizando_salvo)
 
         # 8. Buscar status pendente_distribuicao
@@ -1721,7 +1738,6 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
             .execute()
         )
 
-        # VERIFICAÇÃO DE NULLIDADE
         if not status_db or not hasattr(status_db, 'data') or not status_db.data:
             raise HTTPException(status_code=500, detail="Status 'pendente_distribuicao' não encontrado")
 
@@ -1733,16 +1749,10 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
 
         # 9. Validar requisitos
         if not responsavel_salvo or not responsavel_salvo.id:
-            raise HTTPException(
-                status_code=500,
-                detail="Erro ao criar responsável"
-            )
+            raise HTTPException(status_code=500, detail="Erro ao criar responsável")
 
         if not etapa.aceita_catequizando(catequizando_salvo):
-            raise HTTPException(
-                status_code=400,
-                detail="O catequizando não atende aos requisitos da etapa."
-            )
+            raise HTTPException(status_code=400, detail="O catequizando não atende aos requisitos da etapa.")
 
         # 10. Verificar vagas
         repo_inscricao = InscricaoRepository()
@@ -1770,18 +1780,11 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
             .execute()
         )
 
-        # VERIFICAÇÃO DE NULLIDADE
         if not status_confirmada_db or not hasattr(status_confirmada_db, 'data') or not status_confirmada_db.data:
-            raise HTTPException(
-                status_code=500,
-                detail="Status 'confirmada' não encontrado"
-            )
+            raise HTTPException(status_code=500, detail="Status 'confirmada' não encontrado")
 
         if not status_lista_espera_db or not hasattr(status_lista_espera_db, 'data') or not status_lista_espera_db.data:
-            raise HTTPException(
-                status_code=500,
-                detail="Status 'lista_espera' não encontrado"
-            )
+            raise HTTPException(status_code=500, detail="Status 'lista_espera' não encontrado")
 
         status_confirmada = StatusInscricao(
             id=status_confirmada_db.data["id"],
