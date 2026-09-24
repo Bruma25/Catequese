@@ -20,6 +20,7 @@ function GestaoInscricoesPage() {
   const [inscricoes, setInscricoes] = useState([])
   const [etapas, setEtapas] = useState([])
   const [turmas, setTurmas] = useState([])
+  const [turmasVagas, setTurmasVagas] = useState({})
   const [loading, setLoading] = useState(true)
   const [filtroEtapa, setFiltroEtapa] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('')
@@ -59,6 +60,28 @@ function GestaoInscricoesPage() {
       setInscricoes(inscricoesData)
       setEtapas(etapasData)
       setTurmas(turmasData)
+
+      // Buscar vagas de todas as turmas
+      const vagasPromises = turmasData.map(async (turma) => {
+        try {
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/turmas/${turma.id}/vagas-detalhes`)
+          const data = await response.json()
+          return { turmaId: turma.id, vagas: data }
+        } catch (error) {
+          console.error(`Erro ao buscar vagas da turma ${turma.id}:`, error)
+          return { turmaId: turma.id, vagas: null }
+        }
+      })
+
+      const vagasResults = await Promise.all(vagasPromises)
+      const vagasMap = {}
+      vagasResults.forEach(result => {
+        if (result.vagas) {
+          vagasMap[result.turmaId] = result.vagas
+        }
+      })
+      setTurmasVagas(vagasMap)
+
     } catch (error) {
       console.error('Erro ao buscar dados:', error)
       alert('Erro ao carregar dados. Tente novamente.')
@@ -162,7 +185,7 @@ function GestaoInscricoesPage() {
     }
   }
 
-  // ✅ EXCLUIR INSCRIÇÃO
+  // Excluir inscrição
   const handleExcluirInscricao = async (inscricaoId, catequizandoNome) => {
     if (!confirm(`Tem certeza que deseja excluir a inscrição de "${catequizandoNome}"?`)) {
       return
@@ -340,7 +363,7 @@ function GestaoInscricoesPage() {
             <p className="sem-inscricoes">Nenhuma inscrição encontrada</p>
           ) : (
             inscricoesFiltradas.map(inscricao => {
-              // ✅ Debug: verificar se tem turma
+              // Debug: verificar se tem turma
               const temTurma = inscricao.turma_id || (inscricao.turma && inscricao.turma.id)
 
               console.log('📋 Inscrição:', inscricao.catequizando_nome, 'Turma:', temTurma)
@@ -368,7 +391,7 @@ function GestaoInscricoesPage() {
                       Detalhes
                     </button>
 
-                    {/* ✅ Botão aparece se NÃO tem turma */}
+                    {/* Botão aparece se NÃO tem turma */}
                     {!temTurma && (
                       <button
                         className="atribuir-turma-button"
@@ -378,7 +401,7 @@ function GestaoInscricoesPage() {
                       </button>
                     )}
 
-                    {/* ✅ Botão aparece se TEM turma */}
+                    {/* Botão aparece se TEM turma */}
                     {inscricao.turma_id && (
                       <button
                         className="remover-turma-button"
@@ -388,7 +411,7 @@ function GestaoInscricoesPage() {
                       </button>
                     )}
 
-                    {/* ✅ Botão Excluir */}
+                    {/* Botão Excluir */}
                     <button
                       className="excluir-button"
                       onClick={() => handleExcluirInscricao(inscricao.id, inscricao.catequizando_nome)}
@@ -431,11 +454,10 @@ function GestaoInscricoesPage() {
                 <p><strong>Status:</strong> {statusMap[inscricaoSelecionada.status?.id]?.label || 'N/A'}</p>
                 <p><strong>Data:</strong> {inscricaoSelecionada.data_inscricao ? new Date(inscricaoSelecionada.data_inscricao).toLocaleDateString('pt-BR') : 'N/A'}</p>
                 <p><strong>Turma:</strong> {inscricaoSelecionada.turma?.nome_exibicao || 'Não atribuída'}</p>
-                {/* ✅ Termo assinado */}
-                <p><strong>Termo:</strong> {inscricaoSelecionada.termo_assinado ? '✅ Assinado' : '❌ Não assinado'}</p>
+                <p><strong>Termo:</strong> {inscricaoSelecionada.termo_assinado ? 'Assinado' : 'Não assinado'}</p>
               </div>
 
-              {/* ✅ Irmãos na Catequese */}
+              {/* Irmãos na Catequese */}
               {inscricaoSelecionada.referencia_irmao && (
                 <div className="detalhes-section">
                   <h4 className="detalhes-subtitulo">Irmãos na Catequese</h4>
@@ -446,7 +468,7 @@ function GestaoInscricoesPage() {
                 </div>
               )}
 
-              {/* ✅ Local de Preferência */}
+              {/* Local de Preferência */}
               {inscricaoSelecionada.local_encontro_id && (
                 <div className="detalhes-section">
                   <h4 className="detalhes-subtitulo">Local de Preferência</h4>
@@ -454,7 +476,7 @@ function GestaoInscricoesPage() {
                 </div>
               )}
 
-              {/* ✅ Observações do Responsável */}
+              {/* Observações do Responsável */}
               {inscricaoSelecionada.observacao_responsavel && (
                 <div className="detalhes-section full-width">
                   <h4 className="detalhes-subtitulo">Observações do Responsável</h4>
@@ -518,11 +540,18 @@ function GestaoInscricoesPage() {
                 <option value="">Selecione uma turma...</option>
                 {turmas
                   .filter(t => t.etapa_id === inscricaoSelecionada.etapa_id && t.ativa)
-                  .map(turma => (
-                    <option key={turma.id} value={turma.id}>
-                      {turma.nome_exibicao || turma.nome_sistema} ({turma.vagas_totais} vagas)
-                    </option>
-                  ))
+                  .map(turma => {
+                    const vagasInfo = turmasVagas[turma.id]
+                    const vagasOcupadas = vagasInfo?.vagas_ocupadas || 0
+                    const vagasTotais = vagasInfo?.vagas_totais || turma.vagas_totais || 0
+                    const vagasDisponiveis = vagasInfo?.vagas_disponiveis || (vagasTotais - vagasOcupadas)
+
+                    return (
+                      <option key={turma.id} value={turma.id}>
+                        {turma.nome_exibicao || turma.nome_sistema} ({vagasOcupadas}/{vagasTotais} vagas)
+                      </option>
+                    )
+                  })
                 }
               </select>
             </div>
@@ -557,9 +586,9 @@ function GestaoInscricoesPage() {
                 <p className="sem-documentos">Nenhum documento enviado</p>
               ) : (
                 documentos.map(doc => {
-                  // ✅ Normaliza o status para comparação
+                  // Normaliza o status para comparação
                   const statusNormalizado = (doc.status_validacao || '').toLowerCase().trim()
-                  // ✅ Só mostra botões se estiver pendente
+                  // Só mostra botões se estiver pendente
                   const mostrarBotoes = statusNormalizado === 'pendente'
 
                   return (
@@ -570,7 +599,7 @@ function GestaoInscricoesPage() {
                         <p className="documento-data">
                           Enviado em: {doc.uploaded_at || doc.created_at ? new Date(doc.uploaded_at || doc.created_at).toLocaleDateString('pt-BR') : 'N/A'}
                         </p>
-                        {/* ✅ Motivo da rejeição (só aparece se rejeitado) */}
+                        {/* Motivo da rejeição (só aparece se rejeitado) */}
                         {doc.status_validacao === 'rejeitado' && doc.observacao_validacao && (
                           <p className="documento-observacao-rejeicao">
                             <strong>Motivo da rejeição:</strong> {doc.observacao_validacao}
@@ -583,7 +612,7 @@ function GestaoInscricoesPage() {
                         </span>
                       </div>
                       <div className="documento-actions">
-                        {/* ✅ Botões só aparecem se estiver pendente */}
+                        {/* Botões só aparecem se estiver pendente */}
                         {mostrarBotoes && (
                           <>
                             <button
