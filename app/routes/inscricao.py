@@ -750,39 +750,54 @@ def listar_turmas():
         from app.repositories.turmaRepository import TurmaRepository
 
         repo = TurmaRepository()
-
         supabase = get_supabase()
+
         result = (
             supabase
             .table("turma")
-            .select("*")
+            .select("""
+                id,
+                nome_sistema,
+                nome_exibicao,
+                vagas_totais,
+                ativa,
+                etapa_id,
+                local_encontro_id,
+                ano_nasc_minimo,
+                ano_nasc_maximo
+            """)
             .order("nome_sistema")
             .execute()
         )
 
         turmas = []
         for t in result.data:
-            turmas.append({
-                "id": t["id"],
-                "nome_sistema": t["nome_sistema"],
-                "nome_exibicao": t.get("nome_exibicao"),
-                "vagas_totais": t["vagas_totais"],
-                "ativa": t.get("ativa", True),
-                "etapa_id": t["etapa_id"],
-                "etapa_nome": "",
-                "local_encontro_id": str(t.get("local_encontro_id")) if t.get("local_encontro_id") else None,
-                "ano_nasc_minimo": t.get("ano_nasc_minimo"),
-                "ano_nasc_maximo": t.get("ano_nasc_maximo")
-            })
+            # BUSCAR NOME DA ETAPA
+            etapa_result = (
+                supabase
+                .table("etapa")
+                .select("nome")
+                .eq("id", t["etapa_id"])
+                .maybe_single()
+                .execute()
+            )
 
-        return [
-        TurmaResponse(
-            id=t["id"],
-            nome_sistema=t["nome_sistema"],
-            # ... (demais campos)
-        )
-        for t in result.data
-    ]
+            etapa_nome = etapa_result.data["nome"] if etapa_result and etapa_result.data else ""
+
+            turmas.append(TurmaResponse(
+                id=t["id"],
+                nome_sistema=t["nome_sistema"],
+                nome_exibicao=t.get("nome_exibicao"),
+                vagas_totais=t["vagas_totais"],
+                ativa=t.get("ativa", True),
+                etapa_id=t["etapa_id"],
+                etapa_nome=etapa_nome,
+                local_encontro_id=str(t.get("local_encontro_id")) if t.get("local_encontro_id") else None,
+                ano_nasc_minimo=t.get("ano_nasc_minimo"),
+                ano_nasc_maximo=t.get("ano_nasc_maximo")
+            ))
+
+        return turmas
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao listar turmas: {str(e)}")
@@ -1108,6 +1123,52 @@ def contar_vagas_ocupadas(turma_id: str):
         raise HTTPException(status_code=500, detail=f"Erro ao contar vagas ocupadas: {str(e)}")
 
 
+@router.get("/turmas/{turma_id}/vagas-detalhes")
+def contar_vagas_detalhes(turma_id: str):
+    """
+    Retorna vagas totais, ocupadas e disponíveis de uma turma.
+    """
+    try:
+        from app.repositories.turmaRepository import TurmaRepository
+
+        repo = TurmaRepository()
+        supabase = get_supabase()
+
+        # 1. Buscar turma
+        turma_result = (
+            supabase
+            .table("turma")
+            .select("vagas_totais")
+            .eq("id", turma_id)
+            .maybe_single()
+            .execute()
+        )
+
+        if not turma_result or not turma_result.data:
+            raise HTTPException(status_code=404, detail="Turma não encontrada")
+
+        vagas_totais = turma_result.data["vagas_totais"]
+
+        # 2. Contar vagas ocupadas (confirmadas + lista de espera)
+        repo_inscricao = InscricaoRepository()
+        vagas_ocupadas = repo_inscricao.contar_vagas_ocupadas_por_turma(turma_id)
+
+        # 3. Calcular disponíveis
+        vagas_disponiveis = max(0, vagas_totais - vagas_ocupadas)
+
+        return {
+            "turma_id": turma_id,
+            "vagas_totais": vagas_totais,
+            "vagas_ocupadas": vagas_ocupadas,
+            "vagas_disponiveis": vagas_disponiveis
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao contar vagas: {str(e)}")
+
+
 # Turma Individual - CRUD
 @router.get("/turmas/{turma_id}", response_model=TurmaDetailResponse)
 def buscar_turma(turma_id: str):
@@ -1420,7 +1481,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
             try:
                 user_data = supabase.auth.get_user(token)
 
-                # ✅ VERIFICAÇÃO DE NULLIDADE
+                # VERIFICAÇÃO DE NULLIDADE
                 if user_data and hasattr(user_data, 'user') and user_data.user:
                     usuario_id = user_data.user.id
                 else:
@@ -1451,7 +1512,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
                 .execute()
             )
 
-            # ✅ VERIFICAÇÃO DE NULLIDADE
+            # VERIFICAÇÃO DE NULLIDADE
             if resp_existente and hasattr(resp_existente, 'data') and resp_existente.data:
                 responsavel_salvo = Responsavel(
                     id=resp_existente.data["id"],
@@ -1492,7 +1553,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
             .execute()
         )
 
-        # ✅ VERIFICAÇÃO DE NULLIDADE
+        # VERIFICAÇÃO DE NULLIDADE
         if not etapa_db or not hasattr(etapa_db, 'data') or not etapa_db.data:
             raise HTTPException(status_code=400, detail=f"Etapa {inscricao_data.etapa_id} não encontrada")
 
@@ -1540,7 +1601,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
                 .execute()
             )
 
-            # ✅ VERIFICAÇÃO DE NULLIDADE
+            # VERIFICAÇÃO DE NULLIDADE
             if sacramento_db and hasattr(sacramento_db, 'data') and sacramento_db.data:
                 sacramento = Sacramento(
                     id=sacramento_db.data["id"],
@@ -1576,7 +1637,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
                     .execute()
                 )
 
-                # ✅ VERIFICAÇÃO DE NULLIDADE
+                # VERIFICAÇÃO DE NULLIDADE
                 if resp_existente and hasattr(resp_existente, 'data') and resp_existente.data:
                     responsavel_resp = Responsavel(
                         id=resp_existente.data["id"],
@@ -1618,7 +1679,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
                 .execute()
             )
 
-            # ✅ VERIFICAÇÃO DE NULLIDADE
+            # VERIFICAÇÃO DE NULLIDADE
             if not tipo_vinculo_db or not hasattr(tipo_vinculo_db, 'data') or not tipo_vinculo_db.data:
                 raise HTTPException(
                     status_code=400,
@@ -1656,7 +1717,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
             .execute()
         )
 
-        # ✅ VERIFICAÇÃO DE NULLIDADE
+        # VERIFICAÇÃO DE NULLIDADE
         if not status_db or not hasattr(status_db, 'data') or not status_db.data:
             raise HTTPException(status_code=500, detail="Status 'pendente_distribuicao' não encontrado")
 
@@ -1705,7 +1766,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
             .execute()
         )
 
-        # ✅ VERIFICAÇÃO DE NULLIDADE
+        # VERIFICAÇÃO DE NULLIDADE
         if not status_confirmada_db or not hasattr(status_confirmada_db, 'data') or not status_confirmada_db.data:
             raise HTTPException(
                 status_code=500,
