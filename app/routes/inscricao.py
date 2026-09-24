@@ -1542,7 +1542,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
                 nome=resp_principal.nome,
                 email=resp_principal.email,
                 telefone=resp_principal.telefone,
-                usuario=Usuario(id=usuario_id, nome=usuario_nome, email=usuario_email) if usuario_id else None,
+                usuario=Usuario(id=usuario_id, nome=usuario_nome, email=usuario_nome) if usuario_id else None,
                 vinculos=[],
             )
             responsavel_salvo = repo_responsavel.salvar(responsavel_salvo)
