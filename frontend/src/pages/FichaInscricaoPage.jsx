@@ -1227,107 +1227,111 @@ function FichaInscricaoPage() {
           >
             {loading ? 'ENVIANDO...' : 'ENVIAR INSCRIÇÃO'}
           </button>
-        </form>
-
-        {/* MODAL DE CONFIRMAÇÃO */}
-        {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
-              <div className="text-center">
-                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-                  <svg
-                    className="h-6 w-6 text-green-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
-
-                <h3 className="mt-4 text-lg font-medium text-gray-900">
-                  {mensagemSucesso.includes('fila de espera')
-                    ? 'Inscrição em fila de espera!'
-                    : 'Inscrição realizada com sucesso!'}
-                </h3>
-
-                <p className="mt-2 text-sm text-gray-500">
-                  {mensagemSucesso}
-                </p>
-
-                {inscricaoId && (
-                  <p className="mt-2 text-xs text-gray-400">
-                    ID da inscrição: {inscricaoId.substring(0, 8)}...
-                  </p>
-                )}
-              </div>
-
-              <div className="mt-6 flex gap-3">
-                <button
-                  onClick={() => {
-                    setShowModal(false)
-                    navigate('/inscricao-sucesso', { state: { inscricaoId, etapaInscrito } })
-                  }}
-                  className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700"
-                >
-                  Confirmar
-                </button>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300"
-                >
-                  Fechar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* MODAL DE ERRO */}
-        {mensagemErro && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
-              <div className="text-center">
-                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                  <svg
-                    className="h-6 w-6 text-red-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </div>
-
-                <h3 className="mt-4 text-lg font-medium text-gray-900">Erro na Inscrição</h3>
-
-                <p className="mt-2 text-sm text-gray-500">
-                  {mensagemErro}
-                </p>
-              </div>
-
-              <div className="mt-6">
-                <button
-                  onClick={() => setMensagemErro('')}
-                  className="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700"
-                >
-                  Fechar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+                </form>
       </main>
+
+      {/* ============================================================================
+          MODAL DE CONFIRMAÇÃO (FORA DO MAIN)
+          ============================================================================ */}
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <div className="text-center">
+              <div className="modal-icon-success">
+                <svg
+                  className="modal-icon-svg"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+
+              <h3 className="modal-title">
+                {mensagemSucesso.includes('fila de espera')
+                  ? 'Inscrição em fila de espera!'
+                  : 'Inscrição realizada com sucesso!'}
+              </h3>
+
+              <p className="modal-message">
+                {mensagemSucesso}
+              </p>
+
+              {inscricaoId && (
+                <p className="modal-id">
+                  ID da inscrição: {inscricaoId.substring(0, 8)}...
+                </p>
+              )}
+            </div>
+
+            <div className="modal-buttons">
+              <button
+                onClick={() => {
+                  setShowModal(false)
+                  navigate('/inscricao-sucesso', { state: { inscricaoId, etapaInscrito } })
+                }}
+                className="modal-button modal-button-success"
+              >
+                Confirmar
+              </button>
+              <button
+                onClick={() => setShowModal(false)}
+                className="modal-button modal-button-secondary"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================================
+          MODAL DE ERRO (FORA DO MAIN)
+          ============================================================================ */}
+      {mensagemErro && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <div className="text-center">
+              <div className="modal-icon-error">
+                <svg
+                  className="modal-icon-svg"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </div>
+
+              <h3 className="modal-title">Erro na Inscrição</h3>
+
+              <p className="modal-message">
+                {mensagemErro}
+              </p>
+            </div>
+
+            <div className="modal-buttons">
+              <button
+                onClick={() => setMensagemErro('')}
+                className="modal-button modal-button-error"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

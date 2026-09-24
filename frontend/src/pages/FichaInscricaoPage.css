@@ -264,3 +264,213 @@
     font-size: 12px;
   }
 }
+
+/* Overlay do Modal */
+.fixed.inset-0 {
+  backdrop-filter: blur(4px);
+}
+
+/* ============================================================================
+   MODAL DE CONFIRMAÇÃO E ERRO
+   ============================================================================ */
+
+/* Overlay do Modal (fundo escuro) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999; /* ✅ GARANTE QUE FIQUE ACIMA DE TUDO */
+  animation: fadeIn 0.3s ease;
+}
+
+/* Container do Modal */
+.modal-container {
+  background-color: white;
+  border-radius: 16px;
+  padding: 40px 30px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.3s ease;
+}
+
+/* Ícone de Sucesso */
+.modal-icon-success {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto;
+  background-color: #d1fae5;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ícone de Erro */
+.modal-icon-error {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto;
+  background-color: #fee2e2;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* SVG do Ícone */
+.modal-icon-svg {
+  width: 32px;
+  height: 32px;
+}
+
+.modal-icon-success .modal-icon-svg {
+  color: #059669;
+}
+
+.modal-icon-error .modal-icon-svg {
+  color: #dc2626;
+}
+
+/* Título do Modal */
+.modal-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-top: 24px;
+  margin-bottom: 12px;
+}
+
+/* Mensagem do Modal */
+.modal-message {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #555;
+}
+
+/* ID da Inscrição */
+.modal-id {
+  font-size: 13px;
+  color: #999;
+  margin-top: 12px;
+}
+
+/* Botões do Modal */
+.modal-buttons {
+  display: flex;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.modal-button {
+  flex: 1;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.modal-button-success {
+  background-color: #059669;
+  color: white;
+}
+
+.modal-button-success:hover {
+  background-color: #047857;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+}
+
+.modal-button-secondary {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.modal-button-secondary:hover {
+  background-color: #d1d5db;
+  transform: translateY(-2px);
+}
+
+.modal-button-error {
+  background-color: #dc2626;
+  color: white;
+  width: 100%;
+}
+
+.modal-button-error:hover {
+  background-color: #b91c1c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* Animações */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Responsivo para Mobile */
+@media (max-width: 480px) {
+  .modal-container {
+    width: 95%;
+    padding: 30px 20px;
+  }
+
+  .modal-title {
+    font-size: 20px;
+  }
+
+  .modal-message {
+    font-size: 15px;
+  }
+
+  .modal-button {
+    font-size: 15px;
+    padding: 12px 20px;
+  }
+
+  .modal-buttons {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+/* Responsivo para Tablet */
+@media (min-width: 481px) and (max-width: 768px) {
+  .modal-container {
+    width: 85%;
+    padding: 35px 25px;
+  }
+}
+
+/* Responsivo para Desktop */
+@media (min-width: 769px) {
+  .modal-container {
+    width: 450px;
+  }
+}
