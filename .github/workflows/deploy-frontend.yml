@@ -46,6 +46,7 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_SUPABASE_SERVICE_KEY: ${{ secrets.VITE_SUPABASE_SERVICE_KEY }}
 
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v6
@@ -54,7 +55,6 @@ jobs:
         uses: actions/upload-pages-artifact@v4
         with:
           path: "./frontend/dist"
-
       - name: Publicar
         id: deployment
         uses: actions/deploy-pages@v4
