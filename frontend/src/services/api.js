@@ -324,10 +324,19 @@ export async function contarVagasOcupadas(turmaId) {
 
 export async function buscarVagasDetalhes(turmaId) {
   try {
-    const response = await fetch(`${API_URL}/api/v1/turmas/${turmaId}/vagas-detalhes`)
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+
+    const response = await fetch(`${API_URL}/api/v1/turmas/${turmaId}/vagas-detalhes`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      }
+    })
 
     if (!response.ok) {
       console.warn(`⚠️ Erro ao buscar vagas detalhadas para turma ${turmaId}: ${response.status}`)
+      const errorData = await response.json().catch(() => ({}))
+      console.error('❌ Erro:', errorData)
       return null
     }
 
