@@ -10,6 +10,7 @@
   position: relative;
 }
 
+/* Lado Esquerdo: Logo, Título e Imagem Divino */
 .header-left {
   display: flex;
   align-items: center;
@@ -38,49 +39,106 @@
   object-fit: contain;
 }
 
+/* Lado Direito: Badge e Ícones */
 .header-right {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-left: auto;
+  gap: 12px;
+  flex: 0 0 auto;
 }
 
 .perfil-badge {
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 8px 16px;
+  border-radius: 20px;
   color: white;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .icon-button {
   background: none;
   border: none;
+  padding: 8px;
   cursor: pointer;
-  padding: 5px;
+  border-radius: 8px;
+  transition: background-color 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s;
 }
 
 .icon-button:hover {
-  transform: scale(1.1);
+  background-color: #e0e0e0;
 }
 
 .header-icon {
-  width: 35px;
-  height: 35px;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
 }
 
-/* Responsivo */
-@media (max-width: 480px) {
+/* Tablet: Esconder badge de perfil */
+@media (max-width: 768px) {
+  .header {
+    padding: 12px 15px;
+  }
+
+  .perfil-badge {
+    display: none;
+  }
+
   .header-title {
     font-size: 14px;
+  }
+
+  .header-divino {
+    width: 35px;
+    height: 35px;
+  }
+}
+
+/* Mobile:  */
+@media (max-width: 480px) {
+  .header {
+    padding: 10px 15px;
+  }
+
+  .header-left {
+    gap: 8px;
+  }
+
+  .header-title {
+    display: none;
+  }
+
+  .header-divino {
+    display: none;
+  }
+
+  .header-logo {
+    width: 45px;
+    height: 45px;
+  }
+
+  .header-right {
+    gap: 8px;
+  }
+
+  .header-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .icon-button {
+    padding: 6px;
+  }
+}
+
+/* Mobile Extra Pequeno: Ajustes finais */
+@media (max-width: 360px) {
+  .header {
+    padding: 8px 12px;
   }
 
   .header-logo {
@@ -88,13 +146,8 @@
     height: 40px;
   }
 
-  .header-divino {
-    width: 30px;
-    height: 30px;
-  }
-
-  .perfil-badge {
-    font-size: 10px;
-    padding: 4px 8px;
+  .header-icon {
+    width: 26px;
+    height: 26px;
   }
 }

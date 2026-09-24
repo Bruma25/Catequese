@@ -79,12 +79,14 @@ function Header({ titulo = 'Catequese Divino Espírito Santo' }) {
   return (
     <>
       <header className="header">
+        {/* LADO ESQUERDO: Logo, Título e Imagem Divino */}
         <div className="header-left">
           <img src={logo} alt="Logo" className="header-logo" />
           <h1 className="header-title">{titulo}</h1>
           <img src={divino} alt="Divino Espírito Santo" className="header-divino" />
         </div>
-        
+
+        {/* LADO DIREITO: Badge de Perfil e Ícones */}
         <div className="header-right">
           {perfilAtivoInfo && (
             <div
