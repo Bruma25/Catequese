@@ -1665,7 +1665,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
         )
 
         # 9. Validar requisitos
-        if not responsavel_salvo:
+        if not responsavel_salvo or not responsavel_salvo.id:
             raise HTTPException(
                 status_code=500,
                 detail="Erro ao criar responsável"
