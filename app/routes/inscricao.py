@@ -1474,6 +1474,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
 
         # 1. Buscar usuário logado via token
         usuario_id = None
+        usuario_nome = ""
 
         if authorization and authorization.startswith("Bearer "):
             token = authorization.replace("Bearer ", "")
@@ -1484,6 +1485,9 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
                 # VERIFICAÇÃO DE NULLIDADE
                 if user_data and hasattr(user_data, 'user') and user_data.user:
                     usuario_id = user_data.user.id
+                    usuario_nome = user_data.user.email or ""
+                    print(f"🔵 Usuário: {usuario_id}, Email: {usuario_nome}")
+
                 else:
                     raise HTTPException(status_code=401, detail="Usuário não autenticado")
             except Exception as e:
@@ -1538,7 +1542,7 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
                 nome=resp_principal.nome,
                 email=resp_principal.email,
                 telefone=resp_principal.telefone,
-                usuario=Usuario(id=usuario_id, nome="", email="") if usuario_id else None,
+                usuario=Usuario(id=usuario_id, nome=usuario_nome, email=usuario_email) if usuario_id else None,
                 vinculos=[],
             )
             responsavel_salvo = repo_responsavel.salvar(responsavel_salvo)
