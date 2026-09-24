@@ -1,4 +1,6 @@
 #app/routes/inscricao.py
+import traceback
+
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Header, Query, Request
 from pydantic import BaseModel, field_validator
 from typing import Optional, List
@@ -1703,26 +1705,11 @@ def criar_inscricao(inscricao_data: InscricaoCreate, authorization: Optional[str
             .execute()
         )
 
-        # VERIFICAÇÃO DE NULLIDADE
-        print("STATUS CONFIRMADA:", status_confirmada_db)
-        print("STATUS LISTA ESPERA:", status_lista_espera_db)
-
-        if status_confirmada_db:
-            print("DATA CONFIRMADA:", status_confirmada_db.data)
-
-        if status_lista_espera_db:
-            print("DATA LISTA ESPERA:", status_lista_espera_db.data)
-            
-        if not status_confirmada_db or not status_confirmada_db.data:
+        # ✅ VERIFICAÇÃO DE NULLIDADE
+        if not status_confirmada_db or not hasattr(status_confirmada_db, 'data') or not status_confirmada_db.data:
             raise HTTPException(
                 status_code=500,
                 detail="Status 'confirmada' não encontrado"
-            )
-
-        if not status_lista_espera_db or not status_lista_espera_db.data:
-            raise HTTPException(
-                status_code=500,
-                detail="Status 'lista_espera' não encontrado"
             )
 
         if not status_lista_espera_db or not hasattr(status_lista_espera_db, 'data') or not status_lista_espera_db.data:
